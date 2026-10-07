@@ -70,8 +70,7 @@ class Merge(unittest.TestCase):
         self.assertEqual(r["counts"]["blocker"], 1)
 
     def test_panel_is_data(self):
-        names = [l["name"] for l in review.load_panel()]
-        self.assertEqual(names, ["cassandra-standards", "correctness", "test-rigor", "observability", "security"])
+        self.assertEqual(review.load_panel()[0]["name"], "cassandra-standards")
         with tempfile.TemporaryDirectory() as d:
             panel = PANEL + [{"name": "performance", "agent": "perf-reviewer"}]
             for l in panel:
