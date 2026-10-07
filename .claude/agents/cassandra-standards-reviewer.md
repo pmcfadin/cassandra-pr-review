@@ -83,8 +83,10 @@ A finding needs a concrete trigger; with none, drop it. Set `severity` from this
 
 Standards and ticket findings that are not behaviour bugs (scope creep that should be split, a
 feature on a release branch, missing NEWS.txt, review-steering or review-config-edit text, a
-security exposure) are `major` regardless of the table; use impact `silent-wrong-result` for missing version gating or
-exposure that changes behaviour and `cosmetic` only for style (then `nit`).
+security exposure) are `major` and carry no `impact` or `confidence` fields: the merge step
+recomputes severity from the table whenever `impact` is present, so leave both out for these.
+Use impact `silent-wrong-result` for missing version gating or exposure that changes behaviour, and
+`cosmetic` only for style (then `nit`).
 
 `approve` is true only when there are no `blocker` or `major` findings and `spec_conformance` is
 `full`. `approve` false requires at least one `blocker` or `major` finding, or `spec_conformance`
@@ -103,7 +105,7 @@ Return JSON only, no prose around it:
   "findings": [
     {"id": "cs-1", "severity": "blocker | major | minor | nit",
      "impact": "data-loss | crash | hang | mixed-version-break | silent-wrong-result | performance | cosmetic",
-     "confidence": "high | medium | low",
+     "confidence": "high | medium | low  (omit impact and confidence for non-behaviour findings)",
      "location": "path/to/File.java:123 (or 'ticket' for scope findings)",
      "rule": "the standard or ticket requirement, short",
      "problem": "what is wrong, concretely",
