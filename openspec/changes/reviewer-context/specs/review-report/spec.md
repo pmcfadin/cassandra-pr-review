@@ -4,7 +4,7 @@
 The report SHALL include a Context section after Triage with related tickets (from blame and from
 issue links), commits without a ticket, per-file experts, and suggested reviewers, and SHALL embed
 `docs/report/context.md` as its "How this is judged" panel. The summary page SHALL show a
-"Suggested reviewers" card listing the suggestions and anyone already reviewing.
+"Suggested reviewers" card listing the suggestions and anyone already involved.
 
 #### Scenario: Summary card
 - **WHEN** the report is generated for a PR with prior history

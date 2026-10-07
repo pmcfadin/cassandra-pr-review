@@ -61,7 +61,11 @@ test("opens from file:// offline and every section renders", async ({ page }) =>
     }
     for (const id of s.checks) await expect(sec.locator(`[id="check-${id}"]`)).toHaveCount(1);
   }
-  await expect(sectionLocator(page, "review")).toContainText("Not run in this version");
+  // The 5201 fixture carries a real lens panel: every lens is listed with its status.
+  for (const lens of m.review.lenses) await expect(sectionLocator(page, "review")).toContainText(lens.name);
+  // Reviewer context: the Context section lists suggestions and the tickets behind the changed code.
+  await expect(sectionLocator(page, "context")).toContainText("Suggested reviewers");
+  for (const t of m.context.related_tickets.slice(0, 3)) await expect(sectionLocator(page, "context")).toContainText(t.key);
   // Back to the summary through history.
   await page.goBack();
   await expect(sectionLocator(page, m.sections[m.sections.length - 2].id)).toBeVisible();
@@ -191,4 +195,13 @@ test("the bare template shows a no-data banner", async ({ page }) => {
   await page.goto(fileUrl(process.env.CPR_TEMPLATE));
   await expect(page.locator("#no-data")).toBeVisible();
   await expect(page.locator("#no-data")).toContainText("No report data");
+});
+
+test("summary shows the suggested reviewers card", async ({ page }) => {
+  const m = model();
+  await page.goto(fileUrl(fixtures().report, "#summary"));
+  const card = page.locator(".reviewers-card");
+  await expect(card).toBeVisible();
+  for (const p of m.context.suggested_reviewers) await expect(card).toContainText(p.name);
+  await expect(card.getByRole("link", { name: "Context details" })).toHaveAttribute("href", "#context");
 });

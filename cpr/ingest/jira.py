@@ -46,6 +46,42 @@ def _text(value):
     return str(value)
 
 
+def _issuelink(link):
+    kind = link.get("type") or {}
+    if "outwardIssue" in link:
+        other, relation = link["outwardIssue"], kind.get("outward")
+    else:
+        other, relation = link.get("inwardIssue") or {}, kind.get("inward")
+    fields = other.get("fields") or {}
+    return {"relation": relation or kind.get("name"), "key": other.get("key"),
+            "summary": fields.get("summary") or "", "status": (fields.get("status") or {}).get("name"),
+            "url": f"{BASE}/browse/{other.get('key')}"}
+
+
+def lookup_keys(keys, recorder):
+    """{key: {summary, status, resolution, issuetype, url}} for many keys; unknown keys are dropped.
+
+    Uses validateQuery=warn so one key that does not exist does not fail the whole query.
+    """
+    import urllib.parse
+    out = {}
+    keys = sorted(set(keys))
+    for i in range(0, len(keys), 50):
+        chunk = keys[i:i + 50]
+        jql = urllib.parse.quote(f"key in ({','.join(chunk)})")
+        url = (f"{API}/search?jql={jql}&fields=summary,status,resolution,issuetype,created"
+               f"&maxResults=50&validateQuery=warn")
+        data = json.loads(http_get(url, recorder=recorder))
+        for issue in data.get("issues", []):
+            f = issue.get("fields") or {}
+            out[issue["key"]] = {"summary": f.get("summary") or "", "status": (f.get("status") or {}).get("name"),
+                                 "resolution": (f.get("resolution") or {}).get("name") if f.get("resolution") else None,
+                                 "issuetype": (f.get("issuetype") or {}).get("name"),
+                                 "created": (f.get("created") or "")[:10],
+                                 "url": f"{BASE}/browse/{issue['key']}"}
+    return out
+
+
 def field_ids(recorder):
     """Map our logical field names to JIRA custom field ids, by field name."""
     fields = json.loads(http_get(API + "/field", recorder=recorder))
@@ -100,6 +136,7 @@ def normalize(issue, ids, remotelinks):
             }
             for a in f.get("attachment") or []
         ],
+        "issuelinks": [_issuelink(link) for link in f.get("issuelinks") or []],
         "remotelinks": [
             {"title": (r.get("object") or {}).get("title"), "url": (r.get("object") or {}).get("url")}
             for r in remotelinks or []

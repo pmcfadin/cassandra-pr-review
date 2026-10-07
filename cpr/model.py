@@ -22,6 +22,7 @@ SECTIONS = [
     ("compatibility", "Compatibility", ["compatibility"], ["compatibility"]),
     ("votes", "Reviews & votes", ["votes"], ["votes"]),
     ("triage", "Triage", ["triage"], []),
+    ("context", "Context", ["context"], []),
     ("review", "Code review", ["code-review"], []),
     ("changes", "Changes", ["changes"], []),
     ("about", "About", [], []),
@@ -101,7 +102,7 @@ def _branch_rows(bundle):
     return rows, unmapped
 
 
-def build(bundle, checks, triage, docs, diffview, review=None):
+def build(bundle, checks, triage, docs, diffview, review=None, context=None):
     """Assemble the report model. `review` is None until review lenses exist."""
     pr = bundle["pr"]
     ticket = (bundle.get("jira") or {}).get("ticket")
@@ -125,6 +126,8 @@ def build(bundle, checks, triage, docs, diffview, review=None):
                 status = "warn"
             else:
                 status = "pass"
+        elif sid == "context":
+            status = "info" if context and context.get("status") == "ok" else "unknown"
         elif sid == "changes":
             status = "info" if diffview.get("status") == "ok" else "unknown"
         sections.append({"id": sid, "title": title, "status": status, "docs": doc_aspects,
@@ -163,6 +166,7 @@ def build(bundle, checks, triage, docs, diffview, review=None):
         "recommendation": rec,
         "triage": triage,
         "review": review or {"status": "not-run", "lenses": []},
+        "context": context or {"status": "unavailable", "reason": "Reviewer context was not computed."},
         "github_reviews": [{k: r.get(k) for k in ("user", "state", "association", "submitted_at", "url")}
                            for r in bundle.get("reviews", [])],
         "sections": sections,
@@ -215,3 +219,9 @@ def validate(model):
         for a in s["docs"]:
             need(isinstance(model["docs"].get(a), str), f"docs.{a}")
     need(model.get("diffview", {}).get("status") in ("ok", "unavailable"), "diffview.status")
+    ctx = model.get("context") or {}
+    need(ctx.get("status") in ("ok", "unavailable"), "context.status")
+    if ctx.get("status") == "ok":
+        for k in ("related_tickets", "untracked_commits", "linked_issues", "suggested_reviewers", "already_reviewing"):
+            need(isinstance(ctx.get(k), list), f"context.{k}")
+        need(isinstance(ctx.get("experts"), dict), "context.experts")

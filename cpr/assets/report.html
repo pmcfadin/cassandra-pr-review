@@ -203,6 +203,11 @@ button.tool:hover { border-color: var(--accent); }
 .next { grid-column: 2; margin-top: 4px; background: var(--panel-2); border-radius: 4px; padding: 7px 10px; border: 1px solid var(--rule); }
 .next .lead { font: 700 11px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink); margin-right: 6px; }
 
+.summary-left { display: grid; gap: 18px; align-content: start; }
+.reviewers-card ul { margin: 6px 0 0; padding-left: 18px; }
+.reviewers-card li { margin: 4px 0; }
+.panel.expert { margin: 0 0 10px; }
+.panel.expert ul { margin: 6px 0 0; padding-left: 18px; }
 .summary-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.9fr); gap: 18px; margin-top: 18px; align-items: start; }
 .triage-card .rating { font-size: 22px; font-weight: 750; letter-spacing: -0.02em; text-transform: capitalize; }
 .triage-card .pts { font: 500 12.5px var(--mono); color: var(--ink-3); margin-left: 6px; }
@@ -783,7 +788,10 @@ body.no-data #no-data { display: block; }
     var tl = h("a", null, "Triage details");
     tl.href = "#triage";
     append(tc, h("p", null, tl));
-    grid.appendChild(tc);
+    var left = h("div", "summary-left");
+    left.appendChild(tc);
+    left.appendChild(reviewersCard());
+    grid.appendChild(left);
 
     var mx = h("section", "matrix");
     mx.setAttribute("aria-label", "Every check");
@@ -987,6 +995,88 @@ body.no-data #no-data { display: block; }
     return out;
   }
 
+  function personLine(p) {
+    return [h("strong", null, p.name), p.asf_id ? h("span", "mono muted", " " + p.asf_id) : null,
+      h("span", "muted", " · " + p.patches + (p.patches === 1 ? " patch" : " patches") + ", " + plural(p.reviews, "review") + ", latest " + p.latest)];
+  }
+  function reviewersCard() {
+    var cx = M.context || {};
+    var card = h("section", "panel reviewers-card");
+    card.setAttribute("aria-label", "Suggested reviewers");
+    append(card, h("div", "eyebrow", "Suggested reviewers"));
+    if (cx.status !== "ok") { append(card, h("p", "muted", cx.reason || "Not available.")); return card; }
+    var sug = cx.suggested_reviewers || [], already = cx.already_reviewing || [];
+    if (!sug.length && !already.length) {
+      append(card, h("p", "muted", cx.new_files_only ? "The PR only adds new files, so there is no prior history for the changed code."
+        : "No committer has recent history with the changed files."));
+    } else {
+      if (sug.length) append(card, list(sug, personLine));
+      if (already.length) {
+        append(card, h("div", "eyebrow", "Already involved"));
+        append(card, list(already, personLine));
+      }
+    }
+    var cl = h("a", null, "Context details");
+    cl.href = "#context";
+    append(card, h("p", null, cl));
+    return card;
+  }
+
+  function renderContext() {
+    var cx = M.context || {};
+    var out = [];
+    if (cx.status !== "ok") {
+      out.push(h("div", "notice s-unknown", cx.reason || "Reviewer context is not available."));
+      out.push(docsBlock(sectionById.context));
+      return out;
+    }
+    if (cx.new_files_only) out.push(h("div", "notice s-info", "The PR only adds new files, so there is no prior history for the changed code."));
+    var b = cx.budget || {};
+    if (b.hunks_skipped || b.files_skipped) {
+      out.push(h("div", "notice s-info", "Work was bounded on this large PR: blamed " + b.hunks_blamed + " of " + b.hunks_total +
+        " hunks (" + b.hunks_skipped + " skipped) and read history for " + b.files_logged + " of " + b.files_total + " files (" + b.files_skipped + " skipped). Production files were done first."));
+    }
+    if (cx.tickets_error) out.push(h("div", "notice s-unknown", "Ticket details could not be fetched: " + cx.tickets_error));
+
+    var sug = cx.suggested_reviewers || [];
+    out.push(block("Suggested reviewers", [sug.length ? table(["Committer", "Score", "Patches", "Reviews", "Latest", "Files"], sug.map(function (p) {
+      return { cells: [h("span", null, [h("strong", null, p.name), p.asf_id ? h("span", "mono muted", " " + p.asf_id) : null]),
+        { num: true, node: String(p.score) }, { num: true, node: String(p.patches) }, { num: true, node: String(p.reviews) }, p.latest,
+        h("span", "mono", p.files.map(function (f) { return f.split("/").pop(); }).join(", "))] };
+    })) : empty("No committer has recent history with the changed files.")].concat(
+      (cx.already_reviewing || []).length ? [h("p", "muted", "Already involved (Reviewers field or ticket comments): " + cx.already_reviewing.map(function (p) { return p.name; }).join(", "))] : []), sug.length));
+
+    var rt = cx.related_tickets || [];
+    out.push(block("Tickets that last changed this code", [rt.length ? table(["Ticket", "Summary", "Status", "Lines", "Last changed"], rt.map(function (t) {
+      var commits = details(plural(t.commits.length, "commit"), list(t.commits, function (c) { return [h("span", "mono", c.sha.slice(0, 10)), " " + c.date + " " + c.subject]; }));
+      return { cells: [link(t.url, t.key, "mono"), h("div", null, [t.summary || h("span", "muted", "summary unavailable"), commits]),
+        t.status ? t.status + (t.resolution ? " (" + t.resolution + ")" : "") : "", { num: true, node: String(t.lines) }, t.last_changed] };
+    })) : empty("No earlier tickets own the changed lines.")], rt.length));
+
+    var li = cx.linked_issues || [];
+    if (li.length) out.push(block("Issues linked to this ticket", [table(["Relation", "Ticket", "Summary", "Status"], li.map(function (l) {
+      return { cells: [l.relation || "", link(l.url, l.key, "mono"), l.summary || "", l.status || ""] };
+    }))], li.length));
+
+    var un = cx.untracked_commits || [];
+    if (un.length) out.push(block("Commits without a ticket", [table(["Commit", "Date", "Subject", "Author", "Lines"], un.map(function (u) {
+      return { cells: [h("span", "mono", u.sha.slice(0, 10)), u.date, u.subject, u.author, { num: true, node: String(u.lines) }] };
+    }))], un.length));
+
+    var ex = cx.experts || {};
+    var paths = Object.keys(ex);
+    out.push(block("Most experienced with each file", [paths.length ? h("div", null, paths.map(function (p) {
+      var from = (cx.experts_from || {})[p];
+      return h("div", "panel expert", [h("div", null, [h("span", "mono", p), from ? h("span", "muted", " · history from " + from) : null]), ex[p].length ? list(ex[p], function (x) {
+        return [h("strong", null, x.name), x.asf_id ? h("span", "mono muted", " " + x.asf_id) : h("span", "muted", " (not matched to a committer)"),
+          h("span", "muted", " · score " + x.score + " · " + x.patches + " authored, " + x.reviews + " reviewed · latest " + x.latest)];
+      }) : h("p", "muted", "No commits in the last 5 years.")]);
+    })) : empty("No existing files changed.")], paths.length));
+
+    out.push(docsBlock(sectionById.context));
+    return out;
+  }
+
   function renderTriage() {
     var tr = M.triage || {};
     var out = [];
@@ -1115,7 +1205,7 @@ body.no-data #no-data { display: block; }
     summary: function (s) { return renderSummary().concat([docsBlock(s)]); },
     ticket: function (s) { return renderTicket().concat([docsBlock(s)]); },
     ci: renderCi, testing: renderTesting, commits: renderCommits, compatibility: renderCompat,
-    votes: renderVotes, triage: renderTriage, review: renderReview, changes: renderChanges, about: renderAbout
+    votes: renderVotes, triage: renderTriage, context: renderContext, review: renderReview, changes: renderChanges, about: renderAbout
   };
 
   // -------------------------------------------------------------------------

@@ -10,7 +10,7 @@ import re
 import time
 
 from cpr import REPO, VERSION
-from cpr.ingest import ci_summary, clone, github, jira, keys, roster
+from cpr.ingest import ci_summary, clone, github, history as history_mod, jira, keys, roster
 from cpr.net import NetError, Recorder, http_get
 
 BUNDLE_SCHEMA = 1
@@ -156,6 +156,14 @@ def ingest(number, work_dir, log=print):
     checkstyle_xml = clone.show(clone_path, clone.base_ref(pr["base"]), _CHECKSTYLE)
     changes_head = clone.show(clone_path, clone.base_ref(pr["base"]), "CHANGES.txt")
 
+    log("reading history of the changed code")
+    history = history_mod.gather(clone_path, mb, diff_text, files)
+    if history["keys"]:
+        try:
+            history["tickets"] = jira.lookup_keys(history["keys"], raw)
+        except (NetError, ValueError) as e:
+            history["tickets_error"] = str(e)
+
     roster_info = roster.load(os.path.join(work_dir, "roster.json"))
     emails = voter_emails(pr, reviews, raw)
 
@@ -181,6 +189,7 @@ def ingest(number, work_dir, log=print):
             "changes_txt_head": "\n".join((changes_head or "").splitlines()[:40]),
             "has_cassandra_latest_yaml": clone.show(clone_path, clone.base_ref(pr["base"]), "conf/cassandra_latest.yaml") is not None,
         },
+        "history": history,
         "roster": roster_info,
         "voter_emails": emails,
         "overrides": roster.load_overrides(),

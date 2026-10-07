@@ -1,0 +1,13 @@
+{
+  "_comment": "Reviewer context: budgets for blame and history, and expert scoring (see openspec reviewer-context D5).",
+  "max_hunks": 300,
+  "max_files": 25,
+  "context_lines": 3,
+  "window_years": 5,
+  "half_life_years": 2,
+  "author_weight": 1.0,
+  "reviewer_weight": 0.6,
+  "top_per_file": 3,
+  "max_suggestions": 5,
+  "max_log_per_file": 200
+}

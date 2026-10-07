@@ -27,6 +27,12 @@ pure-addition hunks blame 3 lines either side of the insertion point. Use
 (the forward-merge "Merge branch 'cassandra-6.0' into trunk") are skipped; blame already attributes
 lines to the original commits.
 
+### D3a. Expert history reads trunk (added during implementation)
+For backports, the release branch's own history of a file is thin (`SSTable.java` on cassandra-4.0
+had 2 commits in 5 years), so experts were near-random ties. Expert history now reads
+`origin/trunk` when the file exists there, and the merge base otherwise; the report says which.
+Blame still uses the merge base, because it must match the exact lines the patch changes.
+
 ### D4. Names
 Normalize (casefold, strip accents and punctuation, collapse spaces). Resolve in order: aliases file
 `cpr/data/people-aliases.json` → ASF id → roster display name. The roster already loads names from

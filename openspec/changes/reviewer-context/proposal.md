@@ -14,7 +14,7 @@ changes (which tickets last touched it, so they can read the context) and who sh
 - People: parse `patch by …; reviewed by … for CASSANDRA-N` lines from the history of every changed
   file, resolve names to ASF committers where possible, and score each person per file by recency.
 - Suggested reviewers: the top committers across the changed files, excluding the PR author, with
-  reviewers already on the ticket shown as "already reviewing".
+  reviewers already on the ticket shown as "already involved".
 - A new **Context** report section, a "Suggested reviewers" card on the summary, and a
   `docs/report/context.md` aspect doc.
 

@@ -13,3 +13,5 @@ reports/
 tests/browser/test-results/
 tests/browser/.fixtures/
 __pycache__/
+
+tests/browser/node_modules/

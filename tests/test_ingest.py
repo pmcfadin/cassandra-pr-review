@@ -234,7 +234,11 @@ class Clone(unittest.TestCase):
         args = g.call_args[0]
         self.assertIn("+refs/pull/5201/head:refs/cpr/pr/5201", args)
         self.assertIn("+refs/heads/cassandra-4.0:refs/remotes/origin/cassandra-4.0", args)
-        self.assertEqual(len([a for a in args if a.startswith("+refs/")]), 2)
+        self.assertIn("+refs/heads/trunk:refs/remotes/origin/trunk", args)  # expert history reads trunk
+        self.assertEqual(len([a for a in args if a.startswith("+refs/")]), 3)
+        with mock.patch.object(clone, "_git") as g:
+            clone.fetch("/c", 5202, "trunk")
+        self.assertEqual(len([a for a in g.call_args[0] if a.startswith("+refs/")]), 2)
 
     def test_changed_files_in_real_repo(self):
         with tempfile.TemporaryDirectory() as d:

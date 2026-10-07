@@ -6,6 +6,7 @@ time over the network: one blame of DatabaseDescriptor.java took over 8 minutes.
 """
 
 import os
+import re
 import subprocess
 
 from cpr import REPO
@@ -48,9 +49,10 @@ def ensure(path, runner=subprocess.run):
 
 def fetch(path, number, base):
     """Fetch only the PR head and its base branch."""
-    _git(path, "fetch", "--no-tags", "--quiet", "origin",
-         f"+refs/pull/{number}/head:{pr_ref(number)}",
-         f"+refs/heads/{base}:{base_ref(base)}")
+    refspecs = [f"+refs/pull/{number}/head:{pr_ref(number)}", f"+refs/heads/{base}:{base_ref(base)}"]
+    if base != "trunk":
+        refspecs.append(f"+refs/heads/trunk:{base_ref('trunk')}")  # expert history reads trunk
+    _git(path, "fetch", "--no-tags", "--quiet", "origin", *refspecs)
 
 
 def has_refs(path, number, base):
@@ -128,3 +130,58 @@ def worktree(path, wt_path, number, head_sha):
     _git(path, "worktree", "prune")
     _git(path, "worktree", "add", "--quiet", "--detach", "--force", os.path.abspath(wt_path), head_sha)
     return True
+
+
+_PORCELAIN_HEADER = re.compile(r"^([0-9a-f]{40}) \d+ \d+(?: \d+)?$")
+_REC = "\x1e"
+_FIELD = "\x00"
+_LOG_FORMAT = "%H%x00%P%x00%ad%x00%an%x00%ae%x00%B%x1e"
+
+
+def _parse_log(text):
+    commits = []
+    for rec in text.split(_REC):
+        rec = rec.strip("\n")
+        if not rec:
+            continue
+        sha, parents, date, name, email, body = rec.split(_FIELD, 5)
+        commits.append({"sha": sha, "merge": len(parents.split()) > 1, "date": date, "author_name": name,
+                        "author_email": email.lower(), "message": body.strip()})
+    return commits
+
+
+def line_count(path, ref, file_path):
+    proc = subprocess.run(["git", "-C", path, "cat-file", "-p", f"{ref}:{file_path}"], capture_output=True)
+    return proc.stdout.count(b"\n") if proc.returncode == 0 else 0
+
+
+def blame(path, ref, file_path, ranges):
+    """{sha: lines} for the given (start, end) ranges of file_path at ref. Boundary marks are stripped."""
+    if not ranges:
+        return {}
+    # --porcelain prints a full 40-char sha header for every blamed line ("<sha> <orig> <final>[ <n>]");
+    # the plain format truncates boundary (root) commits to 39 chars after a '^'.
+    args = ["blame", "--porcelain"]
+    for start, end in ranges:
+        args += ["-L", f"{start},{end}"]
+    args += [ref, "--", file_path]
+    out = _git(path, *args, check=False)
+    counts = {}
+    for line in out.splitlines():
+        m = _PORCELAIN_HEADER.match(line)
+        if m:
+            counts[m.group(1)] = counts.get(m.group(1), 0) + 1
+    return counts
+
+
+def show_commits(path, shas):
+    if not shas:
+        return []
+    out = _git(path, "show", "-s", "--date=short", f"--format={_LOG_FORMAT}", *shas, check=False)
+    return _parse_log(out)
+
+
+def file_log(path, ref, file_path, since="5.years"):
+    out = _git(path, "log", "--no-merges", f"--since={since}", "--date=short", f"--format={_LOG_FORMAT}",
+               ref, "--", file_path, check=False)
+    return _parse_log(out)

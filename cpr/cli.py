@@ -5,7 +5,8 @@ import json
 import os
 import sys
 
-from cpr import VERSION, checks as checks_mod, diffview, model as model_mod, render, review as review_mod
+from cpr import VERSION, checks as checks_mod, context as context_mod, diffview, model as model_mod, render, \
+    review as review_mod
 from cpr.ingest import bundle as bundle_mod, clone
 from cpr.ingest.clone import CloneError
 from cpr.ingest.github import PRNotFound
@@ -36,7 +37,7 @@ def build_report(bundle, work_dir, offline=False, review=None, log=print):
         with open(dv_cache, "w") as f:
             json.dump(dv, f)
     docs = render.load_docs()
-    return model_mod.build(bundle, results, tri, docs, dv, review=review)
+    return model_mod.build(bundle, results, tri, docs, dv, review=review, context=context_mod.build(bundle))
 
 
 def write_context(bundle, path):
@@ -122,7 +123,14 @@ def cmd_review(args):
         else:
             bundle = bundle_mod.ingest(args.pr, work_dir, log=log)
             bundle_mod.save(bundle, work_dir)
-        review = review_mod.merge(args.lenses) if args.lenses else None
+        lens_dir = args.lenses
+        if not lens_dir:
+            # Reuse lens results saved by /review-pr for this exact head, so a re-render never drops them.
+            saved = os.path.join(sha_dir(work_dir, bundle), "lenses")
+            if os.path.isdir(saved) and any(n.endswith(".json") for n in os.listdir(saved)):
+                lens_dir = saved
+                log(f"using saved code review lens results from {saved}")
+        review = review_mod.merge(lens_dir) if lens_dir else None
         model = build_report(bundle, work_dir, offline=args.offline, review=review, log=log)
         out = args.out or os.path.join(ROOT, "reports", str(args.pr), "index.html")
         path = render.write(model, out)

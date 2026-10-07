@@ -62,7 +62,8 @@ kept as written and marked as not matched to a committer.
 
 ### Requirement: File experts
 For each changed file (up to a configured number of files, largest first), the system SHALL score
-people over that file's non-merge history in the last 5 years: 1.0 per authored patch and 0.6 per
+people over that file's non-merge history in the last 5 years, read from trunk when the file exists
+there and from the merge base otherwise (stating which): 1.0 per authored patch and 0.6 per
 review, halved for every 2 years of age. It SHALL show the top 3 per file with their score,
 patch and review counts, and the date of their latest commit.
 
@@ -72,16 +73,16 @@ patch and review counts, and the date of their latest commit.
 
 ### Requirement: Suggested reviewers
 The system SHALL suggest up to 5 committers with the highest summed expert score across the changed
-files, excluding the PR author. People already in the ticket's Reviewers field SHALL be shown as
-"already reviewing" rather than suggested. Each suggestion SHALL name the files that earned it.
+files, excluding the PR author. People already involved (in the ticket's Reviewers field, or who have commented on the ticket)
+SHALL be shown as "already involved" rather than suggested. Each suggestion SHALL name the files that earned it.
 
 #### Scenario: Author excluded
 - **WHEN** the PR author is the top expert on every changed file
 - **THEN** the author is not suggested
 
-#### Scenario: Already reviewing
+#### Scenario: Already involved
 - **WHEN** the ticket's Reviewers field lists the top expert
-- **THEN** that person appears as "already reviewing" and the next committer is suggested
+- **THEN** that person appears as "already involved" and the next committer is suggested
 
 ### Requirement: Bounded work
 The system SHALL blame at most a configured number of hunks (default 300) and compute experts for at
@@ -90,3 +91,7 @@ most a configured number of files (default 25), and SHALL state in the section w
 #### Scenario: Huge PR
 - **WHEN** a PR has 1,200 hunks
 - **THEN** the 300 hunks in the largest production files are blamed and the section says 900 were skipped
+
+#### Scenario: Commented on the ticket
+- **WHEN** the Reviewers field is empty and the top expert has commented on the ticket
+- **THEN** that person appears as "already involved" and is not suggested

@@ -66,3 +66,26 @@ class RecordedBundles(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RecordedContext(unittest.TestCase):
+    """reviewer-context on real history recorded 2026-10-07."""
+
+    def test_backport_tickets_and_trunk_experts(self):
+        from cpr import context
+        c = context.build(load("5201-backport-set.json.gz"))
+        self.assertEqual(c["related_tickets"][0]["key"], "CASSANDRA-2468")  # "Clean up after failed compaction"
+        self.assertEqual(set(c["experts_from"].values()), {"trunk"})
+        self.assertIn("Caleb Rackliffe", [p["name"] for p in c["already_reviewing"]])  # commented on the ticket
+
+    def test_huge_pr_is_bounded(self):
+        from cpr import context
+        b = context.build(load("4967-huge.json.gz"))["budget"]
+        self.assertEqual((b["hunks_blamed"], b["files_logged"]), (300, 25))
+        self.assertGreater(b["hunks_skipped"], 0)
+
+    def test_pr_opener_is_never_suggested(self):
+        from cpr import context
+        c = context.build(load("5228-stale-ci.json.gz"))  # opened by maedhroz for another author's patch
+        names = [p["name"] for p in c["suggested_reviewers"] + c["already_reviewing"]]
+        self.assertNotIn("Caleb Rackliffe", names)

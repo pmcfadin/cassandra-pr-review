@@ -1,0 +1,8 @@
+{
+  "name": "cassandra-pr-review-browser-tests",
+  "private": true,
+  "description": "Offline browser tests for the report template.",
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}
