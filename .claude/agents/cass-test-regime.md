@@ -85,6 +85,19 @@ Set `impact` to one of: `data-loss`, `crash`, `hang`, `mixed-version-break`,
 | performance | minor | minor | nit |
 | cosmetic | nit | nit | nit |
 
+Pick the impact of what actually happens when the trigger fires, not the worst thing nearby:
+`data-loss` means acknowledged data is lost or becomes unreadable (leaked files or wasted disk are
+not data loss); `crash` means a process dies or a node cannot start; `hang` means a thread or
+operation never completes; `mixed-version-break` means nodes on different versions cannot talk or
+read each other's data; `silent-wrong-result` means a wrong answer or wrong state with no error.
+
+A missing or weak test is not itself a defect in the running system, so it does not inherit the
+impact of the bug it would catch. For those findings leave out `impact` and `confidence` and set
+`severity` directly: `major` when a bug fix has no regression test that fails without the fix, or
+when the suite cannot reach the changed behaviour at all; `minor` for a missing edge case or a
+better-suited suite; `nit` for test hygiene. Use `impact` only when the test code itself is wrong
+in a way that hides a real failure (for example an assertion that can never fail).
+
 ## Output contract
 
 Return exactly one JSON object and no prose around it:

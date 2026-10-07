@@ -78,6 +78,12 @@ Set `impact` to one of: `data-loss`, `crash`, `hang`, `mixed-version-break`,
 | performance | minor | minor | nit |
 | cosmetic | nit | nit | nit |
 
+Pick the impact of what actually happens when the trigger fires, not the worst thing nearby:
+`data-loss` means acknowledged data is lost or becomes unreadable (leaked files or wasted disk are
+not data loss); `crash` means a process dies or a node cannot start; `hang` means a thread or
+operation never completes; `mixed-version-break` means nodes on different versions cannot talk or
+read each other's data; `silent-wrong-result` means a wrong answer or wrong state with no error.
+
 ## Output contract
 
 Return exactly one JSON object and no prose around it:

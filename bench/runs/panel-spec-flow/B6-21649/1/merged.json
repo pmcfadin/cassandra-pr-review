@@ -1,0 +1,339 @@
+{
+ "status": "ran",
+ "complete": true,
+ "approved": false,
+ "counts": {
+  "blocker": 1,
+  "major": 4,
+  "minor": 4,
+  "nit": 1
+ },
+ "issues": [
+  {
+   "id": "issue-1",
+   "severity": "blocker",
+   "severity_spread": [
+    "blocker",
+    "major",
+    "major",
+    "minor"
+   ],
+   "lenses": [
+    "cassandra-standards",
+    "correctness",
+    "test-rigor",
+    "observability"
+   ],
+   "rule": "observability",
+   "problem": "The loop now calls FileUtils.delete(String) for every component and ignores its boolean return. Before the patch, every component except SUMMARY went through FileUtils.deleteWithConfirm, which threw FSWriteError on failure. That error went to the disk failure policy and was logged with the cause. FileUtils.delete(String) is File.delete(). It returns false on failure, with no exception, no log and no metric. A DATA, INDEX or other component that fails to delete (permissions, I/O error, a busy file) now fails silently, and SSTable.delete() still returns true. The SSTable is left partially deleted. This is the same leaked-file and partial-delete state the ticket is trying to fix, and an operator would see no sign of it. It also disables the disk failure policy for these paths. The only message left is the 'Deleting sstable' info line, logged before any deletion happens.",
+   "fix": "Keep deleteWithConfirm for all components in the sorted loop, so FSWriteError and the failure policy still apply. If SUMMARY needs the old lenient treatment, keep it lenient but log a warn with the file path when delete() returns false. Do not discard the return value.",
+   "location": "src/java/org/apache/cassandra/io/sstable/SSTable.java:121",
+   "locations": [
+    "src/java/org/apache/cassandra/io/sstable/SSTable.java:120",
+    "src/java/org/apache/cassandra/io/sstable/SSTable.java:119",
+    "src/java/org/apache/cassandra/io/sstable/SSTable.java:121"
+   ],
+   "also_fixes": [
+    {
+     "lens": "cassandra-standards",
+     "fix": "Use FileUtils.deleteWithConfirm for all components, as before. Keep the old best-effort FileUtils.delete behaviour only for SUMMARY, and then only if the sort order still allows it."
+    },
+    {
+     "lens": "correctness",
+     "fix": "Keep the sorted order but use FileUtils.deleteWithConfirm(desc.filenameFor(component)) for every component except SUMMARY. Keep SUMMARY on the non-throwing FileUtils.delete."
+    },
+    {
+     "lens": "test-rigor",
+     "fix": "Add a small test with a mix of equal-mtime and missing components. Assert that delete completes, and that the newest file by mtime is the last one deleted. Decide the failure-handling contract deliberately and assert it."
+    }
+   ],
+   "members": [
+    {
+     "lens": "observability",
+     "id": "obs-1"
+    },
+    {
+     "lens": "cassandra-standards",
+     "id": "cs-1"
+    },
+    {
+     "lens": "correctness",
+     "id": "C1"
+    },
+    {
+     "lens": "test-rigor",
+     "id": "TR-2"
+    }
+   ],
+   "impact": null,
+   "confidence": null
+  },
+  {
+   "id": "issue-2",
+   "severity": "major",
+   "severity_spread": [
+    "major",
+    "minor",
+    "minor",
+    "minor"
+   ],
+   "lenses": [
+    "cassandra-standards",
+    "correctness",
+    "test-rigor",
+    "observability"
+   ],
+   "rule": "test-rigor",
+   "problem": "The new rule is that SSTable.delete() removes components in ascending last-modified order. This is the whole fix, and no test covers it. A revert to the old DATA-first order, or a bad comparator, would pass the suite. The ticket says it will add tests to LogTransactionTest, but the diff touches no test files. There is no test that gives components distinct mtimes, performs a partial delete, and then checks that the latest-timestamp check in LogFile.verifyRecord still matches. That crash-recovery case is the exact bug scenario.",
+   "fix": "Add a test in LogTransactionTest or SSTableTest. Create the components with explicitly set, distinct lastModified values, with DATA not the oldest and the newest file being a non-DATA one. Assert that the deletion order is ascending by mtime. Alternatively, simulate a partial delete by stopping after N files and assert that the LogRecord/verifyRecord timestamp check still passes.",
+   "location": "src/java/org/apache/cassandra/io/sstable/SSTable.java:113",
+   "locations": [
+    "src/java/org/apache/cassandra/io/sstable/SSTable.java:115",
+    "src/java/org/apache/cassandra/io/sstable/SSTable.java:113",
+    "src/java/org/apache/cassandra/io/sstable/SSTable.java:112"
+   ],
+   "also_fixes": [
+    {
+     "lens": "cassandra-standards",
+     "fix": "Optionally simplify by sorting the components by their lastModified value directly, for example with a small list of pairs. Add a short comment explaining why ties are safe."
+    },
+    {
+     "lens": "correctness",
+     "fix": "Add a tiebreaker such as the component name to make the order deterministic. Add a LogTransactionTest case that partially deletes an SSTable and checks that the REMOVE record still verifies."
+    },
+    {
+     "lens": "observability",
+     "fix": "Add a debug or trace log of the deletion order with the per-component timestamps, with the descriptor as context. This is optional and must stay off the info level."
+    }
+   ],
+   "members": [
+    {
+     "lens": "test-rigor",
+     "id": "TR-1"
+    },
+    {
+     "lens": "cassandra-standards",
+     "id": "cs-3"
+    },
+    {
+     "lens": "correctness",
+     "id": "C2"
+    },
+    {
+     "lens": "observability",
+     "id": "obs-2"
+    }
+   ],
+   "impact": null,
+   "confidence": null
+  },
+  {
+   "id": "issue-3",
+   "severity": "major",
+   "severity_spread": [
+    "major"
+   ],
+   "lenses": [
+    "cassandra-standards"
+   ],
+   "rule": "The test plan in the ticket requires additions to LogTransactionTest.",
+   "problem": "The diff touches only SSTable.java. No test covers partial deletion in timestamp order or the verifyRecord scenario, which is the regression this ticket is about.",
+   "fix": "Add a LogTransactionTest case. It should create an SSTable whose files have distinct lastModified values, delete it partway through, and assert that the REMOVE record still verifies.",
+   "location": "ticket",
+   "locations": [
+    "ticket"
+   ],
+   "also_fixes": [],
+   "members": [
+    {
+     "lens": "cassandra-standards",
+     "id": "cs-2"
+    }
+   ],
+   "impact": null,
+   "confidence": null
+  },
+  {
+   "id": "issue-4",
+   "severity": "nit",
+   "severity_spread": [
+    "nit"
+   ],
+   "lenses": [
+    "cassandra-standards"
+   ],
+   "rule": "Code style",
+   "problem": "The patch relies on the existing java.util.* wildcard import and does not add imports of its own. I did not find a CHANGES.txt entry in the diff. Cassandra normally requires one for a bug fix.",
+   "fix": "Add a CHANGES.txt line for CASSANDRA-21649 under the 4.0.x section.",
+   "location": "src/java/org/apache/cassandra/io/sstable/SSTable.java:22",
+   "locations": [
+    "src/java/org/apache/cassandra/io/sstable/SSTable.java:22"
+   ],
+   "also_fixes": [],
+   "members": [
+    {
+     "lens": "cassandra-standards",
+     "id": "cs-4"
+    }
+   ],
+   "impact": null,
+   "confidence": null
+  }
+ ],
+ "issue_counts": {
+  "blocker": 1,
+  "major": 2,
+  "minor": 0,
+  "nit": 1
+ },
+ "must_fix": 3,
+ "checklists": {
+  "sha": "617fd3b935a0dc869c4c33995a3be78e07bf638a"
+ },
+ "lenses": [
+  {
+   "name": "cassandra-standards",
+   "agent": "cassandra-standards-reviewer",
+   "status": "ran",
+   "approve": false,
+   "summary": "The patch changes SSTable.delete() in src/java/org/apache/cassandra/io/sstable/SSTable.java. It now reads each component's lastModified once, sorts the components by that value, and deletes them oldest first. The aim is to keep the SSTable's most-recent timestamp stable across a partial delete, so LogFile.verifyRecord() does not fail after a crash. This matches the core of CASSANDRA-21649. However, the patch also replaces FileUtils.deleteWithConfirm with FileUtils.delete for every component. The old code used deleteWithConfirm for everything except SUMMARY. The new FileUtils.delete(String) returns a boolean that is now ignored, so a failed delete no longer throws FSWriteError or reaches the JVMStabilityInspector path. The ticket's test plan calls for additions to LogTransactionTest, and the diff contains no test. This is a 4.0 backport, which is appropriate for a bug fix, and the change is small. Minor risks are the lack of a tie-breaker for equal timestamps and a missing-file lastModified of 0 that sorts first.",
+   "spec_conformance": "partial",
+   "tests_ran": "none",
+   "tests_detail": "not run: review-only lens",
+   "findings": [
+    {
+     "id": "cs-1",
+     "severity": "major",
+     "location": "src/java/org/apache/cassandra/io/sstable/SSTable.java:120",
+     "rule": "Error handling: do not swallow failures. Also scope: the ticket asks only for a change of deletion order.",
+     "problem": "The loop calls FileUtils.delete(String), which returns a boolean that is ignored. Before the patch, every component except SUMMARY went through FileUtils.deleteWithConfirm, which throws FSWriteError on failure. Failed deletes of DATA, INDEX and the other components are now silent, and the file system error is not reported to the failure policy. A leaked file is then not noticed until the next restart. The ticket does not ask for this behaviour change.",
+     "fix": "Use FileUtils.deleteWithConfirm for all components, as before. Keep the old best-effort FileUtils.delete behaviour only for SUMMARY, and then only if the sort order still allows it."
+    },
+    {
+     "id": "cs-2",
+     "severity": "major",
+     "location": "ticket",
+     "rule": "The test plan in the ticket requires additions to LogTransactionTest.",
+     "problem": "The diff touches only SSTable.java. No test covers partial deletion in timestamp order or the verifyRecord scenario, which is the regression this ticket is about.",
+     "fix": "Add a LogTransactionTest case. It should create an SSTable whose files have distinct lastModified values, delete it partway through, and assert that the REMOVE record still verifies."
+    },
+    {
+     "id": "cs-3",
+     "severity": "minor",
+     "location": "src/java/org/apache/cassandra/io/sstable/SSTable.java:115",
+     "rule": "Correctness of ordering, and the comment should say why.",
+     "problem": "Components with equal lastModified values (coarse filesystem timestamp resolution) keep set-iteration order, so the order is nondeterministic. That is harmless for verifyRecord, because the maximum timestamp stays the same. A missing file returns lastModified 0 and sorts first, which is also harmless. The HashMap plus comparator is more machinery than needed.",
+     "fix": "Optionally simplify by sorting the components by their lastModified value directly, for example with a small list of pairs. Add a short comment explaining why ties are safe."
+    },
+    {
+     "id": "cs-4",
+     "severity": "nit",
+     "location": "src/java/org/apache/cassandra/io/sstable/SSTable.java:22",
+     "rule": "Code style",
+     "problem": "The patch relies on the existing java.util.* wildcard import and does not add imports of its own. I did not find a CHANGES.txt entry in the diff. Cassandra normally requires one for a bug fix.",
+     "fix": "Add a CHANGES.txt line for CASSANDRA-21649 under the 4.0.x section."
+    }
+   ],
+   "error": null
+  },
+  {
+   "name": "correctness",
+   "agent": "spec-flow:code-reviewer",
+   "status": "ran",
+   "approve": false,
+   "summary": "SSTable.delete() now sorts components by lastModified and deletes oldest-first, which fixes the ordering bug in the ticket. One regression: it replaced FileUtils.deleteWithConfirm with FileUtils.delete for every component, so failed deletions are now silent. Imports compile (java.io.* and java.util.* are already imported). I did not review the tests: the diff contains none, although the ticket's test plan names LogTransactionTest additions.",
+   "spec_conformance": "full",
+   "tests_ran": "policy",
+   "tests_detail": "not run: review-only lens",
+   "findings": [
+    {
+     "id": "C1",
+     "severity": "major",
+     "location": "src/java/org/apache/cassandra/io/sstable/SSTable.java:120",
+     "rule": "correctness",
+     "problem": "The old code called FileUtils.deleteWithConfirm for every component except SUMMARY. That call throws FSWriteError when a delete fails, for example on a permissions problem. The new loop calls FileUtils.delete(String) for all components. That method only calls File.delete() and returns false on failure, and the return value is ignored. A failed delete of the DATA, INDEX or other component is now silent, and SSTable.delete() still returns true. The caller then treats the SSTable as removed, so files leak with no error. A leftover file can also cause the same REMOVE-record mismatch on restart that this patch is meant to prevent. Only SUMMARY was previously best-effort.",
+     "fix": "Keep the sorted order but use FileUtils.deleteWithConfirm(desc.filenameFor(component)) for every component except SUMMARY. Keep SUMMARY on the non-throwing FileUtils.delete."
+    },
+    {
+     "id": "C2",
+     "severity": "minor",
+     "location": "src/java/org/apache/cassandra/io/sstable/SSTable.java:115",
+     "rule": "correctness",
+     "problem": "lastModified is read with File.lastModified() once per component, and that call returns 0 for a missing file. A component that is already absent sorts first, which is harmless. Components with equal timestamps are ordered by the Set's iteration order. That is still safe, because the maximum timestamp is only lost once every file sharing it has been deleted. The ordering therefore relies on coarse filesystem timestamp granularity and is not deterministic. No test covers it.",
+     "fix": "Add a tiebreaker such as the component name to make the order deterministic. Add a LogTransactionTest case that partially deletes an SSTable and checks that the REMOVE record still verifies."
+    }
+   ],
+   "error": null
+  },
+  {
+   "name": "test-rigor",
+   "agent": "spec-flow:test-rigor-reviewer",
+   "status": "ran",
+   "approve": false,
+   "summary": "The diff changes SSTable.delete() ordering and adds no tests. The ticket's test plan promised additions to LogTransactionTest, but none were made. 0/1 changed behaviours has regression coverage.",
+   "spec_conformance": "full",
+   "tests_ran": "policy",
+   "tests_detail": "not run: review-only lens; this lens ran no tests.",
+   "findings": [
+    {
+     "id": "TR-1",
+     "severity": "major",
+     "location": "src/java/org/apache/cassandra/io/sstable/SSTable.java:113",
+     "rule": "test-rigor",
+     "problem": "The new rule is that SSTable.delete() removes components in ascending last-modified order. This is the whole fix, and no test covers it. A revert to the old DATA-first order, or a bad comparator, would pass the suite. The ticket says it will add tests to LogTransactionTest, but the diff touches no test files. There is no test that gives components distinct mtimes, performs a partial delete, and then checks that the latest-timestamp check in LogFile.verifyRecord still matches. That crash-recovery case is the exact bug scenario.",
+     "fix": "Add a test in LogTransactionTest or SSTableTest. Create the components with explicitly set, distinct lastModified values, with DATA not the oldest and the newest file being a non-DATA one. Assert that the deletion order is ascending by mtime. Alternatively, simulate a partial delete by stopping after N files and assert that the LogRecord/verifyRecord timestamp check still passes."
+    },
+    {
+     "id": "TR-2",
+     "severity": "minor",
+     "location": "src/java/org/apache/cassandra/io/sstable/SSTable.java:119",
+     "rule": "test-rigor",
+     "problem": "The edge cases of the new ordering are untested. These are equal mtimes, where the sort is stable and the iteration order of the Set decides; missing files, where lastModified() returns 0 and the file sorts first; and components with the same mtime as the newest file. The old code also used deleteWithConfirm for non-SUMMARY components, which threw on failure. The new code uses a plain FileUtils.delete for all of them, so a failed deletion is now silently ignored. No test pins either contract.",
+     "fix": "Add a small test with a mix of equal-mtime and missing components. Assert that delete completes, and that the newest file by mtime is the last one deleted. Decide the failure-handling contract deliberately and assert it."
+    }
+   ],
+   "error": null
+  },
+  {
+   "name": "observability",
+   "agent": "spec-flow:observability-reviewer",
+   "status": "ran",
+   "approve": false,
+   "summary": "0/1 new failure modes is diagnosable. The patch swaps deleteWithConfirm for FileUtils.delete in SSTable.delete(), which removes the only error signal for failed file deletions.",
+   "spec_conformance": "full",
+   "tests_ran": "policy",
+   "tests_detail": "not run: review-only lens",
+   "findings": [
+    {
+     "id": "obs-1",
+     "severity": "blocker",
+     "location": "src/java/org/apache/cassandra/io/sstable/SSTable.java:121",
+     "rule": "observability",
+     "problem": "The loop now calls FileUtils.delete(String) for every component and ignores its boolean return. Before the patch, every component except SUMMARY went through FileUtils.deleteWithConfirm, which threw FSWriteError on failure. That error went to the disk failure policy and was logged with the cause. FileUtils.delete(String) is File.delete(). It returns false on failure, with no exception, no log and no metric. A DATA, INDEX or other component that fails to delete (permissions, I/O error, a busy file) now fails silently, and SSTable.delete() still returns true. The SSTable is left partially deleted. This is the same leaked-file and partial-delete state the ticket is trying to fix, and an operator would see no sign of it. It also disables the disk failure policy for these paths. The only message left is the 'Deleting sstable' info line, logged before any deletion happens.",
+     "fix": "Keep deleteWithConfirm for all components in the sorted loop, so FSWriteError and the failure policy still apply. If SUMMARY needs the old lenient treatment, keep it lenient but log a warn with the file path when delete() returns false. Do not discard the return value."
+    },
+    {
+     "id": "obs-2",
+     "severity": "minor",
+     "location": "src/java/org/apache/cassandra/io/sstable/SSTable.java:112",
+     "rule": "observability",
+     "problem": "The new ordering is not visible in telemetry. A component with a missing file reports lastModified()==0, so it sorts first. That is harmless, but nothing logs or traces the order or the timestamps used, so a later REMOVE-record timestamp mismatch at LogFile.verifyRecord cannot be matched against the actual deletion order.",
+     "fix": "Add a debug or trace log of the deletion order with the per-component timestamps, with the descriptor as context. This is optional and must stay off the info level."
+    }
+   ],
+   "error": null
+  },
+  {
+   "name": "security",
+   "agent": "spec-flow:security-reviewer",
+   "status": "ran",
+   "approve": true,
+   "summary": "Self-gated: the change reorders SSTable component file deletion in SSTable.delete() by last-modified timestamp. It adds no input parsing, tenant isolation, authn/authz, network endpoint, or secrets handling. File paths still come from the internal Descriptor and Component set, with no new untrusted input. No security findings. (Behavior notes outside this lens: FileUtils.delete replaces deleteWithConfirm, and a missing file reports lastModified 0. The spec and correctness lenses should weigh these.)",
+   "spec_conformance": "full",
+   "tests_ran": "policy",
+   "tests_detail": "not run: review-only lens (security lens runs no tests)",
+   "findings": [],
+   "error": null
+  }
+ ]
+}

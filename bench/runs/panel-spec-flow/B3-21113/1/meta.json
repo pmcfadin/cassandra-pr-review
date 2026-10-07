@@ -1,0 +1,27 @@
+{
+ "tokens": 146839,
+ "seconds": 86,
+ "per_lens": {
+  "correctness": {
+   "tokens": 51250,
+   "seconds": 57
+  },
+  "cassandra-standards": {
+   "tokens": 14663,
+   "seconds": 25
+  },
+  "security": {
+   "tokens": 48597,
+   "seconds": 19
+  },
+  "observability": {
+   "tokens": 14386,
+   "seconds": 24
+  },
+  "test-rigor": {
+   "tokens": 17943,
+   "seconds": 86
+  }
+ },
+ "model": "sonnet"
+}

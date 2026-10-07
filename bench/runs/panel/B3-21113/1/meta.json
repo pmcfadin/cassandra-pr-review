@@ -1,0 +1,31 @@
+{
+ "tokens": 366025,
+ "seconds": 74,
+ "per_lens": {
+  "cass-concurrency-lifecycle": {
+   "tokens": 54423,
+   "seconds": 12
+  },
+  "cass-persistence-compat": {
+   "tokens": 57088,
+   "seconds": 19
+  },
+  "cass-test-regime": {
+   "tokens": 76527,
+   "seconds": 34
+  },
+  "cassandra-standards": {
+   "tokens": 55502,
+   "seconds": 55
+  },
+  "cass-logic-boundary": {
+   "tokens": 60021,
+   "seconds": 74
+  },
+  "cass-completeness-symmetry": {
+   "tokens": 62464,
+   "seconds": 40
+  }
+ },
+ "model": "sonnet"
+}

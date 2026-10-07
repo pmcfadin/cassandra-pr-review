@@ -1,0 +1,244 @@
+{
+ "status": "ran",
+ "complete": false,
+ "approved": false,
+ "counts": {
+  "blocker": 0,
+  "major": 3,
+  "minor": 2,
+  "nit": 0
+ },
+ "issues": [
+  {
+   "id": "issue-1",
+   "severity": "major",
+   "severity_spread": [
+    "major",
+    "major"
+   ],
+   "lenses": [
+    "correctness",
+    "security"
+   ],
+   "rule": "correctness",
+   "problem": "The pattern is always built from the quote-doubled password (' to ''). CQL also accepts $$...$$ string literals, in which a single quote is stored verbatim and not doubled. For `CREATE ROLE r WITH PASSWORD = $$it's$$`, RoleOptions holds `it's`, the query contains `it's`, and the pattern looks for `it''s`. The pattern does not match, replaceAll returns the query unchanged, and the password is logged in clear text. The old code matched this case when the password had no regex metacharacters, so this is a regression for passwords with quotes in $$ literals. A single obfuscate() call that misses leaks the password, and nothing signals the miss. The tests cover only the single-quote-doubled form.",
+   "fix": "Match either representation. Build the pattern as Pattern.quote(raw) + \"|\" + Pattern.quote(escaped), for example as `(?:\\Q..\\E|\\Q..\\E)`, with each part passed through Pattern.quote separately. Prefer the longer alternative first, or skip the alternation when the two forms are equal. Also add a test with a $$-quoted password that contains a single quote.",
+   "location": "src/java/org/apache/cassandra/cql3/PasswordObfuscator.java:71",
+   "locations": [
+    "src/java/org/apache/cassandra/cql3/PasswordObfuscator.java:71"
+   ],
+   "also_fixes": [
+    {
+     "lens": "security",
+     "fix": "Try both the raw and the quote-escaped forms, for example by replacing with an alternation of Pattern.quote(raw) and Pattern.quote(escaped), longest first. Alternatively, if the result equals the input after replacement, fall back to the position-based obfuscate(String) that masks everything after the password token. Add a test for a $$-quoted password containing a single quote."
+    }
+   ],
+   "members": [
+    {
+     "lens": "correctness",
+     "id": "C1"
+    },
+    {
+     "lens": "security",
+     "id": "SEC-1"
+    }
+   ],
+   "impact": null,
+   "confidence": null
+  },
+  {
+   "id": "issue-2",
+   "severity": "major",
+   "severity_spread": [
+    "major"
+   ],
+   "lenses": [
+    "test-rigor"
+   ],
+   "rule": "test-rigor",
+   "problem": "The patch now assumes the query always holds the password in its '' -escaped form, because it replaces ' with '' before matching. Every new test builds the query with the same escaping, via assertPasswordObfuscated and the loop. CQL also accepts $$it's$$ literals, which have no quote doubling. A password containing ' written that way no longer matches, and it would be logged in clear text. No test pins this behaviour either way. The change also adds a new mismatch path for the escaped form. The tests never cover a query where the literal and the escaped password differ, or a password that is simply absent from the query.",
+   "fix": "Add a test with a password containing ' written as a $$...$$ literal. It should assert either that the password is obfuscated (which may mean the fix needs a fallback that also tries the raw form) or that the leak is a documented limitation. Add a case where the query does not contain the password, and assert that the query comes back unchanged without throwing.",
+   "location": "test/unit/org/apache/cassandra/cql3/PasswordObfuscatorTest.java:300",
+   "locations": [
+    "test/unit/org/apache/cassandra/cql3/PasswordObfuscatorTest.java:300"
+   ],
+   "also_fixes": [],
+   "members": [
+    {
+     "lens": "test-rigor",
+     "id": "tr-1"
+    }
+   ],
+   "impact": null,
+   "confidence": null
+  },
+  {
+   "id": "issue-3",
+   "severity": "minor",
+   "severity_spread": [
+    "minor"
+   ],
+   "lenses": [
+    "cassandra-standards"
+   ],
+   "rule": "Correctness of the fix versus the ticket's goal of never logging passwords in clear text",
+   "problem": "The password is always rewritten with '' before matching. CQL also allows $$-quoted string literals, where a ' in the password appears unescaped in the query text. In that case the pattern does not match and the password is logged in clear text. This is not a regression, and the ticket does not ask for it. I have not checked whether the test covers it.",
+   "fix": "Either fall back to a match on the raw password when the escaped form does not match, or note the limitation in a comment. A test with a $$-quoted password containing ' would document the behavior.",
+   "location": "src/java/org/apache/cassandra/cql3/PasswordObfuscator.java:71",
+   "locations": [
+    "src/java/org/apache/cassandra/cql3/PasswordObfuscator.java:71"
+   ],
+   "also_fixes": [],
+   "members": [
+    {
+     "lens": "cassandra-standards",
+     "id": "cs-1"
+    }
+   ],
+   "impact": null,
+   "confidence": null
+  },
+  {
+   "id": "issue-4",
+   "severity": "minor",
+   "severity_spread": [
+    "minor"
+   ],
+   "lenses": [
+    "correctness"
+   ],
+   "rule": "correctness",
+   "problem": "The replacement string is \"$1\" + OBFUSCATION_TOKEN, which the regex engine parses for `$` and `\\`. The current token `*******` is safe, so this is not a bug today. It would break silently if the token ever changed to something containing those characters.",
+   "fix": "Optional hardening: use Matcher.quoteReplacement(OBFUSCATION_TOKEN) for the token part.",
+   "location": "src/java/org/apache/cassandra/cql3/PasswordObfuscator.java:72",
+   "locations": [
+    "src/java/org/apache/cassandra/cql3/PasswordObfuscator.java:72"
+   ],
+   "also_fixes": [],
+   "members": [
+    {
+     "lens": "correctness",
+     "id": "C2"
+    }
+   ],
+   "impact": null,
+   "confidence": null
+  }
+ ],
+ "issue_counts": {
+  "blocker": 0,
+  "major": 2,
+  "minor": 2,
+  "nit": 0
+ },
+ "must_fix": 2,
+ "checklists": {
+  "sha": "617fd3b935a0dc869c4c33995a3be78e07bf638a"
+ },
+ "lenses": [
+  {
+   "name": "cassandra-standards",
+   "agent": "cassandra-standards-reviewer",
+   "status": "ran",
+   "approve": true,
+   "summary": "The patch targets cassandra-4.0. It fixes PasswordObfuscator.obfuscate(String, RoleOptions) by wrapping the password in Pattern.quote(). That stops regex metacharacters and \\E from leaking the password or throwing PatternSyntaxException. It also CQL-escapes single quotes in the password before matching, because the logged query holds the escaped form. This matches the ticket, and the single-quote case appears in the ticket's failing-test output. It is a minimal bug fix suited to a release branch. The CHANGES.txt entry is present and correctly placed under 4.0.21. No NEWS.txt entry is needed, and there is no API, config, or compatibility surface. Pattern.quote handles embedded \\E correctly, and the replacement string is constant, so there is no $ or backslash issue. The one residual risk is that the new quote-doubling assumes single-quoted CQL string literals. A password written as a $$-quoted literal would contain a raw ' in the query, so the escaped pattern would not match and the password would not be obfuscated. Before the patch this case already leaked whenever the password held regex characters, so it is not a regression. I did not review the test diff in depth.",
+   "spec_conformance": "full",
+   "tests_ran": "none",
+   "tests_detail": "not run: review-only lens",
+   "findings": [
+    {
+     "id": "cs-1",
+     "severity": "minor",
+     "location": "src/java/org/apache/cassandra/cql3/PasswordObfuscator.java:71",
+     "rule": "Correctness of the fix versus the ticket's goal of never logging passwords in clear text",
+     "problem": "The password is always rewritten with '' before matching. CQL also allows $$-quoted string literals, where a ' in the password appears unescaped in the query text. In that case the pattern does not match and the password is logged in clear text. This is not a regression, and the ticket does not ask for it. I have not checked whether the test covers it.",
+     "fix": "Either fall back to a match on the raw password when the escaped form does not match, or note the limitation in a comment. A test with a $$-quoted password containing ' would document the behavior."
+    }
+   ],
+   "error": null
+  },
+  {
+   "name": "correctness",
+   "agent": "spec-flow:code-reviewer",
+   "status": "ran",
+   "approve": false,
+   "summary": "The fix replaces the raw regex with Pattern.quote(), which handles regex metacharacters and \\E correctly. It also CQL-escapes the password (' becomes ''), and that introduces a regression. A password containing a single quote written as a $$-quoted string literal is no longer matched, so it can appear in clear text in the audit log. I read the diff only and did not build or run anything.",
+   "spec_conformance": "full",
+   "tests_ran": "policy",
+   "tests_detail": "not run: review-only lens",
+   "findings": [
+    {
+     "id": "C1",
+     "severity": "major",
+     "location": "src/java/org/apache/cassandra/cql3/PasswordObfuscator.java:71",
+     "rule": "correctness",
+     "problem": "The pattern is always built from the quote-doubled password (' to ''). CQL also accepts $$...$$ string literals, in which a single quote is stored verbatim and not doubled. For `CREATE ROLE r WITH PASSWORD = $$it's$$`, RoleOptions holds `it's`, the query contains `it's`, and the pattern looks for `it''s`. The pattern does not match, replaceAll returns the query unchanged, and the password is logged in clear text. The old code matched this case when the password had no regex metacharacters, so this is a regression for passwords with quotes in $$ literals. A single obfuscate() call that misses leaks the password, and nothing signals the miss. The tests cover only the single-quote-doubled form.",
+     "fix": "Match either representation. Build the pattern as Pattern.quote(raw) + \"|\" + Pattern.quote(escaped), for example as `(?:\\Q..\\E|\\Q..\\E)`, with each part passed through Pattern.quote separately. Prefer the longer alternative first, or skip the alternation when the two forms are equal. Also add a test with a $$-quoted password that contains a single quote."
+    },
+    {
+     "id": "C2",
+     "severity": "minor",
+     "location": "src/java/org/apache/cassandra/cql3/PasswordObfuscator.java:72",
+     "rule": "correctness",
+     "problem": "The replacement string is \"$1\" + OBFUSCATION_TOKEN, which the regex engine parses for `$` and `\\`. The current token `*******` is safe, so this is not a bug today. It would break silently if the token ever changed to something containing those characters.",
+     "fix": "Optional hardening: use Matcher.quoteReplacement(OBFUSCATION_TOKEN) for the token part."
+    }
+   ],
+   "error": null
+  },
+  {
+   "name": "test-rigor",
+   "agent": "spec-flow:test-rigor-reviewer",
+   "status": "ran",
+   "approve": false,
+   "summary": "The patch makes two changes: it quotes the password with Pattern.quote(), and it CQL-escapes ' to ''. The new tests cover the regex-metacharacter and \\E cases well. The loop test puts every printable non-alphanumeric ASCII character at the start, middle and end of a password, and the \\E test covers five placements. Both would fail on a regression to the old code. One gap remains: the new quote-doubling step is only tested against queries that use '...' literals, and CQL also allows $$...$$ literals. I found no over-built tests and no test-practicality issues.",
+   "spec_conformance": "full",
+   "tests_ran": "policy",
+   "tests_detail": "Not run: review-only lens. This lens ran no tests.",
+   "findings": [
+    {
+     "id": "tr-1",
+     "severity": "major",
+     "location": "test/unit/org/apache/cassandra/cql3/PasswordObfuscatorTest.java:300",
+     "rule": "test-rigor",
+     "problem": "The patch now assumes the query always holds the password in its '' -escaped form, because it replaces ' with '' before matching. Every new test builds the query with the same escaping, via assertPasswordObfuscated and the loop. CQL also accepts $$it's$$ literals, which have no quote doubling. A password containing ' written that way no longer matches, and it would be logged in clear text. No test pins this behaviour either way. The change also adds a new mismatch path for the escaped form. The tests never cover a query where the literal and the escaped password differ, or a password that is simply absent from the query.",
+     "fix": "Add a test with a password containing ' written as a $$...$$ literal. It should assert either that the password is obfuscated (which may mean the fix needs a fallback that also tries the raw form) or that the leak is a documented limitation. Add a case where the query does not contain the password, and assert that the query comes back unchanged without throwing."
+    }
+   ],
+   "error": null
+  },
+  {
+   "name": "observability",
+   "agent": "spec-flow:observability-reviewer",
+   "status": "invalid",
+   "approve": false,
+   "summary": "",
+   "spec_conformance": null,
+   "tests_ran": null,
+   "tests_detail": null,
+   "findings": [],
+   "error": "findings[0].rule missing or not a string"
+  },
+  {
+   "name": "security",
+   "agent": "spec-flow:security-reviewer",
+   "status": "ran",
+   "approve": false,
+   "summary": "The change touches secrets exposure: it stops DCL passwords from leaking in plaintext into audit logs. Pattern.quote() correctly neutralises regex metacharacters and \\E, and the replacement string is a constant with no group references, so there is no injection. The fix is a clear improvement. It introduces one regression. The password is now always CQL-escaped by doubling single quotes before matching. A password written as a $$...$$ string literal is not escaped in the query text. A password containing a single quote in that form no longer matches the pattern, so it passes through to the audit log unobfuscated. The old code matched this case. There is also no fail-safe fallback when the replacement makes no change.",
+   "spec_conformance": "full",
+   "tests_ran": "none",
+   "tests_detail": "not run: review-only lens",
+   "findings": [
+    {
+     "id": "SEC-1",
+     "severity": "major",
+     "location": "src/java/org/apache/cassandra/cql3/PasswordObfuscator.java:71",
+     "rule": "security",
+     "problem": "The password is always escaped with replace(\"'\", \"''\") before matching. CQL also accepts $$...$$ string literals, where a single quote is written raw and not doubled. For `CREATE ROLE r WITH PASSWORD = $$a'b$$` the query text contains `a'b`, but the pattern searches for `a''b`. There is no match, so the plaintext password stays in the audit log. This is a regression for that input, because the old unescaped match would have found it. The same silent no-op happens whenever the query text differs from the escaped form for any other reason, and nothing guards against it.",
+     "fix": "Try both the raw and the quote-escaped forms, for example by replacing with an alternation of Pattern.quote(raw) and Pattern.quote(escaped), longest first. Alternatively, if the result equals the input after replacement, fall back to the position-based obfuscate(String) that masks everything after the password token. Add a test for a $$-quoted password containing a single quote."
+    }
+   ],
+   "error": null
+  }
+ ]
+}
