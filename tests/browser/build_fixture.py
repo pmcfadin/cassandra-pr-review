@@ -38,12 +38,27 @@ def hostile(model):
     return m
 
 
+def lens_status(model):
+    """5201 with one lens missing, one approved with no findings, and a pinned checklist sha."""
+    m = copy.deepcopy(model)
+    rv = m["review"]
+    rv["checklists"] = {"sha": "0123456789abcdef0123456789abcdef01234567"}
+    by_name = {l["name"]: l for l in rv["lenses"]}
+    by_name["observability"].update(status="missing", approve=False, findings=[], error="the lens produced no output",
+                                    summary="")
+    by_name["security"].update(status="ran", approve=True, findings=[])
+    rv["complete"] = False
+    return m
+
+
 def main(out_dir):
     os.makedirs(out_dir, exist_ok=True)
     model = load_model()
     render.write(model, os.path.join(out_dir, "report.html"))
     render.write(hostile(model), os.path.join(out_dir, "hostile.html"))
+    render.write(lens_status(model), os.path.join(out_dir, "lens-status.html"))
     print(json.dumps({"report": os.path.join(out_dir, "report.html"), "hostile": os.path.join(out_dir, "hostile.html"),
+                      "lens_status": os.path.join(out_dir, "lens-status.html"),
                       "hostile_title": HOSTILE_TITLE, "hostile_evidence": HOSTILE_EVIDENCE}))
 
 

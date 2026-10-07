@@ -725,6 +725,14 @@ body.no-data #no-data { display: block; }
     var glyph = h("span", "v-glyph", STATUS[st(verdictStatus)].g);
     glyph.setAttribute("aria-hidden", "true");
     append(v, h("div", "v-label", [glyph, h("span", "v-text", rec.label || rec.verdict || "No recommendation")]));
+    var headline = reviewHeadline();
+    if (headline) {
+      var hl = h("p", "v-note review-headline", [headline, " "]);
+      var hla = h("a", null, "Code review");
+      hla.href = "#review";
+      append(hl, hla);
+      append(v, hl);
+    }
     if (rec.verdict === "requirements-met-unreviewed")
       append(v, h("p", "v-note", "Code review has not run yet. The merge requirements below pass, but no review lens has read the code, so this is not a ready-to-merge verdict."));
     if (rec.verdict === "draft" || pr.draft)
@@ -1103,6 +1111,38 @@ body.no-data #no-data { display: block; }
 
   var SEV_ORDER = { blocker: 0, major: 1, minor: 2, nit: 3 };
   var SEV_STATUS = { blocker: "fail", major: "fail", minor: "warn", nit: "info" };
+  function impactTags(x) {
+    var tags = [];
+    if (x.impact) tags.push(h("span", "tag impact", "impact: " + x.impact));
+    if (x.confidence) tags.push(h("span", "tag confidence", "confidence: " + x.confidence));
+    if (x.severity_corrected) tags.push(h("span", "tag corrected", "was " + x.severity_corrected.from));
+    return tags;
+  }
+  function issueCard(i) {
+    var card = h("article", "check issue s-" + (SEV_STATUS[i.severity] || "unknown"));
+    card.setAttribute("data-issue", i.id);
+    append(card, h("div", "check-head", [badge(SEV_STATUS[i.severity] || "unknown", i.severity), h("span", "ct", i.rule), h("span", "cid", i.id),
+      h("span", "spacer"), (i.lenses || []).map(function (l) { return h("span", "tag lens-chip", l); })]));
+    var meta = impactTags(i);
+    if (meta.length) append(card, h("div", "check-head", meta));
+    var locs = i.locations && i.locations.length ? i.locations : [i.location];
+    append(card, h("p", "muted", locs.map(function (l, n) { return [n ? ", " : "", h("span", "mono", l)]; })));
+    append(card, mdInline("p", i.problem, "csum"));
+    append(card, h("div", "next", [h("span", "lead", "Fix"), mdInline("span", i.fix)]));
+    (i.also_fixes || []).forEach(function (a) {
+      append(card, h("div", "next also-fix", [h("span", "lead", "Also suggested by " + a.lens), mdInline("span", a.fix)]));
+    });
+    return card;
+  }
+  function reviewHeadline() {
+    var rv = M.review || {};
+    if (rv.status !== "ran" || !rv.issues) return null;
+    var c = rv.counts || {};
+    var findings = (c.blocker || 0) + (c.major || 0) + (c.minor || 0) + (c.nit || 0);
+    var reporting = (rv.lenses || []).filter(function (l) { return (l.findings || []).length; }).length;
+    return plural(rv.issues.length, "issue") + " (" + plural(findings, "finding") + " from " + plural(reporting, "lens").replace(/lenss$/, "lenses") + ")";
+  }
+
   function renderReview() {
     var rv = M.review || {};
     var out = [];
@@ -1118,6 +1158,14 @@ body.no-data #no-data { display: block; }
         : (rv.approved ? "Every lens approved with no blocker or major findings." : "At least one lens did not approve, or a blocker/major finding was reported.");
       out.push(h("div", "notice s-" + panelState, [badge(panelState, !rv.complete ? "incomplete" : (rv.approved ? "approved" : "not approved")), " ", panelText,
         h("span", "muted", " Findings: " + ["blocker", "major", "minor", "nit"].map(function (k) { return (counts[k] || 0) + " " + k; }).join(", ") + ".")]));
+      if (rv.checklists && rv.checklists.sha)
+        out.push(h("p", "muted checklists", "checklists: apache/cassandra trunk @ " + short(rv.checklists.sha, 10)));
+      var issues = rv.issues || [];
+      if (rv.issues) {
+        out.push(block("Issues", issues.length ? [h("div", "checks issues", issues.map(issueCard))]
+          : [empty("No issues reported.")], issues.length));
+      }
+      var detail = [];
       lenses.forEach(function (lens) {
         var fs = (lens.findings || []).slice().sort(function (a, b) { return (SEV_ORDER[a.severity] - SEV_ORDER[b.severity]); });
         var lst = lens.status !== "ran" ? "unknown" : (lens.approve ? "pass" : "fail");
@@ -1127,16 +1175,18 @@ body.no-data #no-data { display: block; }
         if (lens.error) intro.push(h("p", "csum", "Error: " + lens.error));
         if (lens.summary) intro.push(mdInline("p", lens.summary, "csum"));
         if (lens.status === "ran" && lens.tests_detail) intro.push(h("p", "muted", "Tests: " + (lens.tests_ran || "") + " — " + lens.tests_detail));
-        if (lens.status !== "ran") { out.push(block(lens.name, intro, 0)); return; }
-        out.push(block(lens.name, intro.concat([fs.length ? h("div", "checks", fs.map(function (f) {
+        if (lens.status !== "ran") { detail.push(block(lens.name, intro, 0)); return; }
+        detail.push(block(lens.name, intro.concat([fs.length ? h("div", "checks", fs.map(function (f) {
           return h("article", "check s-" + (SEV_STATUS[f.severity] || "unknown"), [
             h("div", "check-head", [badge(SEV_STATUS[f.severity] || "unknown", f.severity), h("span", "ct", f.rule), h("span", "cid", f.id),
-              h("span", "spacer"), h("span", "mono muted", f.location)]),
+              impactTags(f), h("span", "spacer"), h("span", "mono muted", f.location)]),
             mdInline("p", f.problem, "csum"),
             h("div", "next", [h("span", "lead", "Fix"), mdInline("span", f.fix)])
           ]);
         })) : empty("No findings from this lens.")]), fs.length));
       });
+      out.push(h("h3", "lens-detail-title", "Per-lens detail"));
+      out = out.concat(detail);
     }
     out.push(docsBlock(sectionById.review));
     return out;
