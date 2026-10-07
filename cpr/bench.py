@@ -6,11 +6,14 @@ This module holds what a benchmark run needs before any lens executes:
 * `cutoff_ticket` / `write_case_context`: the JIRA context as it stood at the case's cut-off date,
   so lenses cannot read the later comments or links that name the bug.
 
-Seams for later tasks (5.3, run and score): a runner calls `write_case_context` to get the context
-file for a case and checks out only `case["head_sha"]`; a scorer reads `case["known_issues"]`
-(see `KNOWN_ISSUE_DOC` for the field meanings). Nothing here runs a lens or scores a finding.
+* `run`: per case and repeat, a detached worktree at the case head, the cut-off context, the trusted
+  checklists and tier plan, and an empty lens directory; it prints the same JSON shape as
+  `cpr prepare`, and the /review-pr flow runs the lenses into each `lens_dir`.
+* `score`: merges each run's lens outputs, matches merged issues to known issues, and prints
+  recall, counts, duplicate rate, per-lens unique share and cost, optionally against another panel.
 """
 
+import hashlib
 import json
 import os
 import re
@@ -107,13 +110,16 @@ def load_cases(directory=CASES_DIR):
 
 
 def find_cases(selector, directory=CASES_DIR):
-    """Cases for `all`, an exact id (`B3-21113`), or a short id (`B3`)."""
+    """Cases for `all`, an exact id (`B3-21113`), a short id (`B3`), or a comma list of either."""
     cases = load_cases(directory)
     if selector == "all":
         return cases
-    hits = [c for c in cases if c["id"] == selector or c["id"].split("-")[0] == selector]
-    if not hits:
-        raise CaseError(f"no case matches {selector!r}; known: {', '.join(c['id'] for c in cases)}")
+    hits = []
+    for sel in selector.split(","):
+        found = [c for c in cases if c["id"] == sel or c["id"].split("-")[0] == sel]
+        if not found:
+            raise CaseError(f"no case matches {sel!r}; known: {', '.join(c['id'] for c in cases)}")
+        hits += [c for c in found if c not in hits]
     return hits
 
 
@@ -258,3 +264,263 @@ def write_case_context(case, bundle_like, path, checks=None):
     with open(path, "w") as f:
         f.write(text)
     return t
+
+
+# --- run ------------------------------------------------------------------------------------------
+
+ROOT = os.path.dirname(os.path.dirname(CASES_DIR))
+RUNS_DIR = os.path.join(ROOT, "bench", "runs")
+LABELS = os.path.join(ROOT, "bench", "labels.json")
+LINE_MARGIN = 15
+
+
+def panel_name(panel_path):
+    return os.path.splitext(os.path.basename(panel_path))[0]
+
+
+def run_dir(panel, case_id, n, runs_dir=RUNS_DIR):
+    return os.path.join(runs_dir, panel, case_id, str(n))
+
+
+def prepare_run(case, panel_path, n, work_dir, runs_dir=RUNS_DIR, offline=False, log=print):
+    """Set up one run of a case: worktree at head, cut-off context, refdir, plan. Returns the prompt inputs."""
+    from cpr import lenses as lenses_mod, review
+    from cpr.ingest import clone, github
+    from cpr.net import Recorder
+
+    if not case.get("head_sha") or not case.get("base_sha"):
+        raise CaseError(f"{case['id']}: no head or base sha; the case cannot be run")
+    repo = os.path.join(work_dir, "cassandra")
+    clone.ensure_commit(repo, case["head_sha"], case.get("pr"))
+    clone.ensure_commit(repo, case["base_sha"], None)
+    wt = os.path.join(work_dir, "bench", "wt", case["id"])
+    clone.worktree(repo, wt, case.get("pr"), case["head_sha"])
+
+    d = run_dir(panel_name(panel_path), case["id"], n, runs_dir)
+    lens_dir = os.path.join(d, "lenses")
+    os.makedirs(lens_dir, exist_ok=True)
+    for name in os.listdir(lens_dir):
+        if name.endswith(".json"):
+            os.remove(os.path.join(lens_dir, name))
+
+    recorder = Recorder(os.path.join(work_dir, "bench", "http"), offline=offline)
+    pr = github.fetch_pr(case["pr"], recorder) if case.get("pr") else {}
+    pr = dict(pr, head_sha=case["head_sha"])
+    ticket = jira.fetch_ticket(case["ticket"], recorder) if case.get("ticket") else {"status": "none", "ticket": None}
+    changelog = fetch_changelog(case["ticket"], recorder) if ticket.get("ticket") else None
+    context = os.path.join(d, "context.md")
+    write_case_context(case, {"pr": pr, "git": {"merge_base": case["base_sha"]},
+                              "jira": dict(ticket, changelog=changelog)}, context)
+
+    bundle_like = {"files": clone.changed_files(repo, case["base_sha"], None, head=case["head_sha"]),
+                   "diff": clone.diff(repo, case["base_sha"], None, head=case["head_sha"])}
+    cfg = lenses_mod.load_config()
+    if not offline:
+        clone.fetch_trunk(repo)
+    sha = lenses_mod.resolve(repo, cfg.get("lens_ref"))
+    manifest = lenses_mod.extract(repo, sha, os.path.join(d, "refdir"), cfg)
+    plan = lenses_mod.plan(bundle_like, manifest, cfg)
+    plan["checklists"] = {"sha": sha, "refdir": manifest["refdir"], "missing": manifest["missing"]}
+    with open(os.path.join(d, "lens-plan.json"), "w") as f:
+        json.dump(plan, f, indent=1)
+    with open(panel_path) as f:
+        panel = json.load(f)["lenses"]
+    log(f"{case['id']} run {n}: tier {plan['tier']}, {len(bundle_like['files'])} files")
+    return {"case": case["id"], "run": n, "pr": case.get("pr"), "jira_key": case.get("ticket"),
+            "worktree": wt, "base": case["base_sha"], "head": case["head_sha"], "context_file": context,
+            "lens_dir": lens_dir, "panel": panel, "checklists": plan["checklists"], "tier": plan["tier"],
+            "bundle": {k: {f: v[f] for f in ("status", "files", "categories", "focus", "not_reviewed", "error")}
+                       for k, v in plan["lenses"].items()}}
+
+
+# --- score ----------------------------------------------------------------------------------------
+
+def _loc(loc):
+    """(path, line or None) for a file location, else (None, None)."""
+    m = re.match(r"\s*([\w./-]+\.\w+)(?::(\d+))?", loc or "")
+    if not m or "/" not in m.group(1) and "." not in m.group(1):
+        return None, None
+    return m.group(1), int(m.group(2)) if m.group(2) else None
+
+
+def _in_place(issue, known):
+    if not known["files"]:
+        return True
+    for loc in issue.get("locations") or [issue.get("location")]:
+        path, line = _loc(loc)
+        if not path or not any(path.endswith(f) or f.endswith(path) for f in known["files"]):
+            continue
+        if not known["lines"] or line is None:
+            return True
+        start, end = known["lines"]
+        if start - LINE_MARGIN <= line <= end + LINE_MARGIN:
+            return True
+    return False
+
+
+def issue_text(issue, findings_by_ref):
+    """All text of an issue: its own fields and every member finding's rule, problem and fix."""
+    parts = [issue.get("rule", ""), issue.get("problem", ""), issue.get("fix", "")]
+    parts += [a["fix"] for a in issue.get("also_fixes", [])]
+    for m in issue.get("members", []):
+        f = findings_by_ref.get((m["lens"], m["id"]))
+        if f:
+            parts += [f.get("rule", ""), f.get("problem", ""), f.get("fix", "")]
+    return " ".join(parts).lower()
+
+
+def matches(issue, known, text):
+    if not _in_place(issue, known):
+        return False
+    if not all(t.lower() in text for t in known["match_terms"]):
+        return False
+    return not known.get("match_any") or any(t.lower() in text for t in known["match_any"])
+
+
+def label_key(case_id, issue):
+    raw = f"{case_id}|{issue.get('location', '')}|{issue.get('problem', '')[:200]}"
+    return hashlib.sha1(raw.encode()).hexdigest()[:16]
+
+
+def load_labels(path=LABELS):
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def score_run(case, lens_dir, panel):
+    """Merge one run's lens outputs and match them to the case's known issues."""
+    from cpr import review
+    merged = review.merge(lens_dir, panel)
+    by_ref = {(l["name"], f["id"]): f for l in merged["lenses"] for f in l["findings"]}
+    issues = merged["issues"]
+    found, matched_issues = {}, set()
+    for issue in issues:
+        text = issue_text(issue, by_ref)
+        for k in case["known_issues"]:
+            if matches(issue, k, text):
+                found.setdefault(k["id"], []).append(issue["id"])
+                matched_issues.add(issue["id"])
+    meta = {}
+    meta_path = os.path.join(os.path.dirname(lens_dir), "meta.json")
+    if os.path.exists(meta_path):
+        with open(meta_path) as f:
+            meta = json.load(f)
+    return {"merged": merged, "found": found,
+            "unmatched": [i for i in issues if i["id"] not in matched_issues],
+            "raw": sum(len(l["findings"]) for l in merged["lenses"]), "issues": len(issues),
+            "must_fix": sum(1 for i in issues if i["severity"] in ("blocker", "major")),
+            "lenses_ran": sum(1 for l in merged["lenses"] if l["status"] == "ran"),
+            "tokens": meta.get("tokens"), "seconds": meta.get("seconds")}
+
+
+def _recall(cases_runs, pick):
+    hit = total = 0
+    for case, runs in cases_runs:
+        for k in case["known_issues"]:
+            if not pick(k):
+                continue
+            for r in runs:
+                total += 1
+                hit += k["id"] in r["found"]
+    return (hit / total) if total else None, hit, total
+
+
+def score_panel(panel_path, cases, runs_dir=RUNS_DIR, labels=None):
+    """Score every recorded run of `panel_path` on `cases`. Returns a summary dict."""
+    labels = load_labels() if labels is None else labels
+    with open(panel_path) as f:
+        panel = json.load(f)["lenses"]
+    name = panel_name(panel_path)
+    per_case, cases_runs, unlabelled, unique = [], [], [], {}
+    for case in cases:
+        base = os.path.join(runs_dir, name, case["id"])
+        runs = []
+        if os.path.isdir(base):
+            for n in sorted(os.listdir(base), key=lambda x: (len(x), x)):
+                lens_dir = os.path.join(base, n, "lenses")
+                if os.path.isdir(lens_dir) and any(x.endswith(".json") for x in os.listdir(lens_dir)):
+                    r = score_run(case, lens_dir, panel)
+                    with open(os.path.join(base, n, "merged.json"), "w") as f:
+                        json.dump(r["merged"], f, indent=1)
+                    r["run"] = n
+                    runs.append(r)
+        cases_runs.append((case, runs))
+        for r in runs:
+            for issue in r["merged"]["issues"]:
+                for lens in issue["lenses"]:
+                    u = unique.setdefault(lens, [0, 0])
+                    u[1] += 1
+                    u[0] += len(issue["lenses"]) == 1
+            for issue in r["unmatched"]:
+                key = label_key(case["id"], issue)
+                if key not in labels:
+                    unlabelled.append({"key": key, "case": case["id"], "run": r["run"], "severity": issue["severity"],
+                                       "lenses": issue["lenses"], "location": issue["location"],
+                                       "problem": issue["problem"]})
+        per_case.append({"case": case["id"], "runs": len(runs),
+                         "found": {k["id"]: sum(k["id"] in r["found"] for r in runs) for k in case["known_issues"]},
+                         "raw": [r["raw"] for r in runs], "issues": [r["issues"] for r in runs],
+                         "must_fix": [r["must_fix"] for r in runs],
+                         "tokens": [r["tokens"] for r in runs], "seconds": [r["seconds"] for r in runs]})
+    raw = sum(sum(c["raw"]) for c in per_case)
+    merged = sum(sum(c["issues"]) for c in per_case)
+    wrong = [labels[k] for k in labels if labels[k] == "wrong"]
+    return {"panel": name, "cases": per_case,
+            "recall_hard": _recall(cases_runs, lambda k: k["hard"]),
+            "recall_soft": _recall(cases_runs, lambda k: not k["hard"]),
+            "recall_major": _recall(cases_runs, lambda k: k["severity"] in ("blocker", "major")),
+            "raw": raw, "merged": merged, "duplicate_rate": (1 - merged / raw) if raw else None,
+            "unique_share": {l: (u[0] / u[1]) for l, u in sorted(unique.items())},
+            "unlabelled": unlabelled, "labelled_wrong": len(wrong)}
+
+
+def compare(a, b):
+    """Known issues found (in any run) by one panel and not the other: {a_only, b_only}."""
+    def hits(s):
+        return {(c["case"], k) for c in s["cases"] for k, n in c["found"].items() if n}
+    return {"a_only": sorted(hits(a) - hits(b)), "b_only": sorted(hits(b) - hits(a))}
+
+
+def _pct(r):
+    value, hit, total = r
+    return "-" if value is None else f"{value:.0%} ({hit}/{total})"
+
+
+def format_scores(scores, diff=None):
+    """One markdown table for one or two panels, then per-case detail and the comparison."""
+    lines = ["| metric | " + " | ".join(s["panel"] for s in scores) + " |",
+             "|---|" + "---|" * len(scores)]
+    rows = [("hard recall", lambda s: _pct(s["recall_hard"])),
+            ("soft recall", lambda s: _pct(s["recall_soft"])),
+            ("major+ recall", lambda s: _pct(s["recall_major"])),
+            ("raw findings", lambda s: str(s["raw"])),
+            ("merged issues", lambda s: str(s["merged"])),
+            ("duplicate rate", lambda s: "-" if s["duplicate_rate"] is None else f"{s['duplicate_rate']:.0%}"),
+            ("unlabelled extra issues", lambda s: str(len(s["unlabelled"])))]
+    lines += [f"| {label} | " + " | ".join(fn(s) for s in scores) + " |" for label, fn in rows]
+    for s in scores:
+        lines += ["", f"**{s['panel']}** per case:", "",
+                  "| case | runs | known issues found (runs) | raw | issues | must-fix | tokens | seconds |",
+                  "|---|---|---|---|---|---|---|---|"]
+        for c in s["cases"]:
+            found = ", ".join(f"{k} {n}/{c['runs']}" for k, n in c["found"].items()) or "-"
+            fmt = lambda xs: "/".join("-" if x is None else str(x) for x in xs) or "-"  # noqa: E731
+            lines.append(f"| {c['case']} | {c['runs']} | {found} | {fmt(c['raw'])} | {fmt(c['issues'])} | "
+                         f"{fmt(c['must_fix'])} | {fmt(c['tokens'])} | {fmt(c['seconds'])} |")
+        lines += ["", "Unique-lens share: " + (", ".join(f"{l} {v:.0%}" for l, v in s["unique_share"].items()) or "-")]
+    if diff:
+        lines += ["", f"Found only by {scores[0]['panel']}: " + (", ".join(f"{c} {k}" for c, k in diff["a_only"]) or "none"),
+                  f"Found only by {scores[1]['panel']}: " + (", ".join(f"{c} {k}" for c, k in diff["b_only"]) or "none")]
+    return "\n".join(lines)
+
+
+def set_label(key, value, path=LABELS):
+    if value not in ("real", "nit", "wrong"):
+        raise ValueError("label must be real, nit, or wrong")
+    labels = load_labels(path)
+    labels[key] = value
+    with open(path, "w") as f:
+        json.dump(labels, f, indent=1, sort_keys=True)

@@ -178,6 +178,37 @@ def cmd_review(args):
     return 0
 
 
+def cmd_bench(args):
+    from cpr import bench
+    if args.action == "label":
+        bench.set_label(args.key, args.value)
+        return 0
+    cases = bench.find_cases(args.case)
+    if args.action == "run":
+        work_dir = os.path.abspath(args.work_dir)
+        log = lambda m: print(f"  {m}", file=sys.stderr)  # noqa: E731
+        out = []
+        for case in cases:
+            for n in range(1, args.repeat + 1):
+                try:
+                    out.append(bench.prepare_run(case, args.panel, n, work_dir, offline=args.offline, log=log))
+                except (bench.CaseError, CloneError, NetError) as e:
+                    print(f"error: {e}", file=sys.stderr)
+        print(json.dumps(out, indent=1))
+        return 0 if out else 1
+    scores = [bench.score_panel(args.panel, cases)]
+    if args.against:
+        scores.append(bench.score_panel(args.against, cases))
+    print(bench.format_scores(scores, bench.compare(*scores) if args.against else None))
+    unlabelled = [u for s in scores for u in s["unlabelled"]]
+    if unlabelled:
+        print("\nUnlabelled issues that matched no known issue (label with `cpr bench label <key> real|nit|wrong`):")
+        for u in unlabelled:
+            print(f"- {u['key']} [{u['severity']}] {u['case']} run {u['run']} {', '.join(u['lenses'])} "
+                  f"@ {u['location']}: {u['problem'][:160]}")
+    return 3 if unlabelled and args.strict else 0
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="cpr", description="Review an apache/cassandra pull request.")
     parser.add_argument("--version", action="version", version=f"cpr {VERSION}")
@@ -199,6 +230,23 @@ def main(argv=None):
     pp.add_argument("--offline", action="store_true", help="use the cached ingest")
     pp.add_argument("--work-dir", default=default_work)
     pp.set_defaults(func=cmd_prepare)
+
+    bn = sub.add_parser("bench", help="benchmark a lens panel on known-issue cases")
+    bsub = bn.add_subparsers(dest="action", required=True)
+    br = bsub.add_parser("run", help="prepare runs (worktree, cut-off context, checklists); prints lens inputs")
+    bs = bsub.add_parser("score", help="merge recorded lens outputs and score them against known issues")
+    for p in (br, bs):
+        p.add_argument("--panel", required=True, help="panel file, e.g. cpr/config/panel.json")
+        p.add_argument("--case", default="all", help="case id (or prefix such as B3), or all")
+    br.add_argument("--repeat", type=int, default=1)
+    br.add_argument("--work-dir", default=default_work)
+    br.add_argument("--offline", action="store_true", help="use recorded HTTP and the existing origin/trunk")
+    bs.add_argument("--against", help="a second panel file to compare with")
+    bs.add_argument("--strict", action="store_true", help="exit 3 while extra issues remain unlabelled")
+    bl = bsub.add_parser("label", help="label an extra issue for the spot check")
+    bl.add_argument("key")
+    bl.add_argument("value", choices=("real", "nit", "wrong"))
+    bn.set_defaults(func=cmd_bench)
 
     args = parser.parse_args(argv)
     return args.func(args)

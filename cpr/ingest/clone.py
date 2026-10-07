@@ -60,6 +60,18 @@ def fetch_trunk(path):
     _git(path, "fetch", "--no-tags", "--quiet", "origin", f"+refs/heads/trunk:{base_ref('trunk')}")
 
 
+def ensure_commit(path, sha, number=None):
+    """Make `sha` present in the clone: fetch it directly, else via the PR's head ref."""
+    present = lambda: subprocess.run(["git", "-C", path, "cat-file", "-e", f"{sha}^{{commit}}"],  # noqa: E731
+                                     capture_output=True).returncode == 0
+    if present() or subprocess.run(["git", "-C", path, "fetch", "--quiet", "origin", sha],
+                                   capture_output=True).returncode == 0:
+        return
+    if number:
+        _git(path, "fetch", "--quiet", "origin", f"+refs/pull/{number}/head:{pr_ref(number)}")
+    _git(path, "cat-file", "-e", f"{sha}^{{commit}}")
+
+
 def has_refs(path, number, base):
     for ref in (pr_ref(number), base_ref(base)):
         if subprocess.run(["git", "-C", path, "rev-parse", "--verify", "--quiet", ref],
@@ -72,14 +84,15 @@ def merge_base(path, number, base):
     return _git(path, "merge-base", base_ref(base), pr_ref(number)).strip()
 
 
-def diff(path, merge_base_sha, number):
-    return _git(path, "diff", "-M", "--no-color", merge_base_sha, pr_ref(number))
+def diff(path, merge_base_sha, number, head=None):
+    return _git(path, "diff", "-M", "--no-color", merge_base_sha, head or pr_ref(number))
 
 
-def changed_files(path, merge_base_sha, number):
-    """[{path, previous_path, status, additions, deletions, binary}] for the PR's changes."""
-    status_raw = _git(path, "diff", "-M", "-z", "--name-status", merge_base_sha, pr_ref(number))
-    numstat_raw = _git(path, "diff", "-M", "-z", "--numstat", merge_base_sha, pr_ref(number))
+def changed_files(path, merge_base_sha, number, head=None):
+    """[{path, previous_path, status, additions, deletions, binary}] for the PR's changes (or base..head)."""
+    head = head or pr_ref(number)
+    status_raw = _git(path, "diff", "-M", "-z", "--name-status", merge_base_sha, head)
+    numstat_raw = _git(path, "diff", "-M", "-z", "--numstat", merge_base_sha, head)
 
     files = {}
     parts = status_raw.split("\0")

@@ -219,3 +219,65 @@ class CaseContext(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Score(unittest.TestCase):
+    """cpr bench score on recorded lens outputs (spec: lens-benchmark, Run and score)."""
+
+    FIXTURE = os.path.join(os.path.dirname(__file__), "fixtures", "lenses", "5201")
+    OLD = {"lenses": [{"name": n, "agent": n} for n in
+                      ("cassandra-standards", "correctness", "test-rigor", "observability", "security")]}
+
+    def setUp(self):
+        import shutil
+        import tempfile
+        self.tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmp)
+        self.case = bench.find_cases("B6")[0]
+        self.runs = os.path.join(self.tmp, "runs")
+
+    def panel(self, name, drop=()):
+        import shutil
+        path = os.path.join(self.tmp, f"{name}.json")
+        with open(path, "w") as f:
+            json.dump(self.OLD, f)
+        lens_dir = os.path.join(bench.run_dir(name, self.case["id"], 1, self.runs), "lenses")
+        os.makedirs(lens_dir)
+        for fn in os.listdir(self.FIXTURE):
+            src = os.path.join(self.FIXTURE, fn)
+            if fn[:-5] in drop:
+                with open(src) as f:
+                    data = json.load(f)
+                data.update(findings=[], approve=True)
+                with open(os.path.join(lens_dir, fn), "w") as f:
+                    json.dump(data, f)
+            else:
+                shutil.copy(src, lens_dir)
+        return path
+
+    def test_recorded_5201_finds_known_issues(self):
+        s = bench.score_panel(self.panel("old"), [self.case], runs_dir=self.runs, labels={})
+        c = s["cases"][0]
+        self.assertEqual((c["raw"], c["issues"], c["must_fix"]), ([11], [5], [3]))
+        self.assertEqual(c["found"], {"K1": 1, "K2": 1, "K3": 1})
+        self.assertEqual(s["recall_soft"][0], 1.0)
+        self.assertAlmostEqual(s["duplicate_rate"], 1 - 5 / 11)
+        self.assertTrue(os.path.exists(os.path.join(bench.run_dir("old", self.case["id"], 1, self.runs), "merged.json")))
+
+    def test_comparing_panels(self):
+        old = bench.score_panel(self.panel("old"), [self.case], runs_dir=self.runs, labels={})
+        new = bench.score_panel(self.panel("new", drop=("cassandra-standards", "correctness", "test-rigor")),
+                                [self.case], runs_dir=self.runs, labels={})
+        diff = bench.compare(new, old)
+        self.assertIn((self.case["id"], "K2"), diff["b_only"])
+        self.assertEqual(diff["a_only"], [])
+        table = bench.format_scores([new, old], diff)
+        self.assertIn("| hard recall | ", table)
+        self.assertIn("Found only by old: B6-21649 K2", table)
+
+    def test_labels_cached(self):
+        s = bench.score_panel(self.panel("old"), [self.case], runs_dir=self.runs, labels={})
+        keys = {u["key"] for u in s["unlabelled"]}
+        labels = {k: "real" for k in keys}
+        again = bench.score_panel(os.path.join(self.tmp, "old.json"), [self.case], runs_dir=self.runs, labels=labels)
+        self.assertEqual(again["unlabelled"], [])
