@@ -1,0 +1,10 @@
+# Generated reports and per-PR working data
+reports/
+.work/
+.spec-flow/
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
