@@ -1,0 +1,175 @@
+## ADDED Requirements
+
+### Requirement: Check result shape
+Every requirement check SHALL produce a result with: an id, a title, a category (ticket, ci,
+commit, changelog, tests, static, compatibility, governance), a status (pass, fail, warn, unknown,
+not-applicable), a one-line summary, the evidence it used (with links where one exists), and, when
+not passing, what the contributor must do. Each check SHALL be either blocking or advisory.
+
+#### Scenario: Failing check explains itself
+- **WHEN** a blocking check fails
+- **THEN** its result names the evidence it saw and the action the contributor must take
+
+#### Scenario: Missing input is unknown, not fail
+- **WHEN** a check's input could not be fetched (for example, JIRA unavailable)
+- **THEN** its status is unknown and its summary names the missing input
+
+### Requirement: JIRA ticket checks
+The system SHALL check that a JIRA key exists, the ticket exists, the keys in title and branch
+agree, the ticket is not already resolved, and Fix Version(s) are set and consistent with the PR's
+base branch. A missing ticket SHALL be blocking. Feature branches (base not `trunk` and not
+`cassandra-X.Y`) SHALL relax the ticket requirement to advisory.
+
+#### Scenario: No ticket
+- **WHEN** no JIRA key was resolved and the base is trunk
+- **THEN** the ticket check fails and is blocking
+
+#### Scenario: Ticket already resolved
+- **WHEN** the ticket status is Resolved with resolution Fixed
+- **THEN** the check warns that the patch may already have landed or been superseded
+
+#### Scenario: Feature-branch PR without ticket
+- **WHEN** the base branch is `cep-45-mutation-tracking` and there is no key
+- **THEN** the ticket check is warn, not fail
+
+#### Scenario: Fix version mismatch
+- **WHEN** the base is cassandra-5.0 and Fix Versions list only 6.x and 7.x
+- **THEN** the fix-version check warns that the base branch is not among the fix versions
+
+### Requirement: CI evidence checks
+The system SHALL check, for every branch the patch targets (this PR plus siblings), that a CI
+summary exists, that its sha matches that branch's PR head sha, that its profile is at least
+`pre-commit` (and `pre-commit w/ upgrades` when the diff touches messaging, serialization,
+sstable, commitlog, hints, or system-table code), and SHALL report its failure count. Missing CI
+SHALL be reported as "not yet run", never as a test failure.
+
+#### Scenario: CI matches head
+- **WHEN** the cassandra-5.0 summary's sha equals the PR head sha and it shows 0 failures
+- **THEN** the CI check for cassandra-5.0 passes
+
+#### Scenario: Stale CI
+- **WHEN** the summary's sha differs from the PR head sha
+- **THEN** the check warns "CI ran on an older commit" and shows both shas
+
+#### Scenario: No CI yet
+- **WHEN** no summary exists for a targeted branch
+- **THEN** the check fails as blocking with summary "CI not yet run for <branch>"
+
+#### Scenario: Upgrade profile needed
+- **WHEN** the diff modifies a class implementing `IVersionedSerializer` and the CI profile is plain `pre-commit`
+- **THEN** the profile check fails, naming the touched file and the required profile
+
+#### Scenario: Failures present
+- **WHEN** the summary shows 3 failed tests
+- **THEN** the check warns, lists the failure count, and states that triage against known flaky tests is not done in this version
+
+### Requirement: Commit and changelog checks
+The system SHALL check each commit message for a summary first line without the JIRA key and a
+`patch by …; reviewed by … for CASSANDRA-N` line (reviewer "TBD" accepted before review); SHALL
+report `Co-authored-by:` and `Assisted-by:`/`Generated-by:` trailers; SHALL check for a CHANGES.txt
+entry in the format ` * <summary> (CASSANDRA-N)` when non-test source changed; and SHALL note the
+commit count without failing on it.
+
+#### Scenario: Good commit message
+- **WHEN** a commit reads "Fix NPE in compaction\n\npatch by Alice; reviewed by Bob for CASSANDRA-21649"
+- **THEN** the commit-format check passes
+
+#### Scenario: Missing patch-by line
+- **WHEN** no commit contains a `patch by` line
+- **THEN** the commit-format check warns (advisory; committers often rewrite it)
+
+#### Scenario: Missing CHANGES.txt
+- **WHEN** files under `src/java/` changed and CHANGES.txt did not
+- **THEN** the changelog check warns with the expected entry format
+
+#### Scenario: Test-only change
+- **WHEN** only files under `test/` changed
+- **THEN** the changelog check is not-applicable
+
+### Requirement: Test presence check
+The system SHALL check that a PR changing production code also changes or adds test code, and
+SHALL report the production-to-test lines ratio and which test suites were touched (unit,
+distributed, burn, long, microbench, simulator).
+
+#### Scenario: No tests
+- **WHEN** `src/java/` changed and nothing under `test/` changed
+- **THEN** the test-presence check fails as blocking
+
+#### Scenario: Docs-only change
+- **WHEN** only `doc/` files changed
+- **THEN** the test-presence check is not-applicable
+
+### Requirement: Static diff checks
+The system SHALL scan added lines in the diff for checkstyle-banned APIs (as listed in
+`.build/checkstyle.xml` on the PR's base branch), missing ALv2 headers in new files, edits under
+`src/gen-java/` or `lib/`, and `@Deprecated` without `since`. Results SHALL cite file and line.
+These checks SHALL be advisory, because `ant check` (not run here) is authoritative.
+
+#### Scenario: Banned API added
+- **WHEN** an added line calls `System.currentTimeMillis()` in `src/java/`
+- **THEN** the static check warns, citing file:line and the checkstyle rule
+
+#### Scenario: New file without licence header
+- **WHEN** a new `.java` file lacks the Apache licence header
+- **THEN** the static check warns, citing the file
+
+### Requirement: Compatibility surface detection
+The system SHALL detect when the diff touches config (`Config.java`, `cassandra*.yaml`), system
+properties, native protocol, CQL grammar, nodetool commands, JMX/metrics, or virtual tables, and
+SHALL check the deterministic pairings: config changes touch both `cassandra.yaml` and
+`cassandra_latest.yaml`; new system properties go through `CassandraRelevantProperties`; nodetool
+changes update help fixtures. Detected surfaces SHALL be listed for human attention even when no
+pairing rule applies.
+
+#### Scenario: Config pairing missing
+- **WHEN** `conf/cassandra.yaml` changed and `conf/cassandra_latest.yaml` did not
+- **THEN** the pairing check fails as blocking
+
+#### Scenario: Protocol touched
+- **WHEN** the diff modifies files under `src/java/org/apache/cassandra/transport/`
+- **THEN** the report lists "native protocol" as a touched compatibility surface
+
+### Requirement: Branch coverage check
+The system SHALL compare the set of targeted base branches (this PR plus siblings) against the
+ticket's Fix Versions and SHALL list missing branches. For bug tickets it SHALL warn when trunk has
+no PR and no sibling explains why.
+
+#### Scenario: Missing branch
+- **WHEN** Fix Versions are 5.0.x, 6.0 and 7.0 and PRs exist only for cassandra-5.0 and trunk
+- **THEN** the check warns that cassandra-6.0 has no PR
+
+### Requirement: Committer votes check
+The system SHALL count +1 votes from committers, from GitHub reviews in state APPROVED with author
+association MEMBER/OWNER/COLLABORATOR and from JIRA comments containing "+1" by a known committer.
+Two votes SHALL be required (one for test-only changes). The committer roster SHALL come from a
+checked-in data file, and votes from people not on it SHALL be listed separately.
+
+#### Scenario: Two votes
+- **WHEN** two distinct committers have +1'd
+- **THEN** the votes check passes and names both
+
+#### Scenario: No votes yet
+- **WHEN** no committer has +1'd
+- **THEN** the votes check is fail, blocking, with summary "needs 2 committer +1s (has 0)"
+
+### Requirement: Recommendation
+The system SHALL compute one recommendation from the check results and the review state:
+- `blocked`: any blocking check fails;
+- `needs-work`: no blocking failure, but there are warnings needing contributor action;
+- `requirements-met-unreviewed`: all blocking checks pass and no code review findings exist yet;
+- `ready`: all blocking checks pass and code review has run with no blocker/major findings;
+- `insufficient-evidence`: blocking checks are unknown because inputs were unavailable.
+Draft PRs SHALL get `draft` and no merge recommendation. The recommendation SHALL list the reasons
+that produced it, each linked to its check.
+
+#### Scenario: Without code review the best outcome is unreviewed
+- **WHEN** every blocking check passes and no review lens has run
+- **THEN** the recommendation is `requirements-met-unreviewed`, never `ready`
+
+#### Scenario: Unknown dominates pass
+- **WHEN** the CI check is unknown because JIRA was unavailable and nothing has failed
+- **THEN** the recommendation is `insufficient-evidence`
+
+#### Scenario: Draft
+- **WHEN** the PR is a draft
+- **THEN** the recommendation is `draft` and the checks are still shown as early feedback
