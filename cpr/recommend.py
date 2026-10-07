@@ -4,6 +4,8 @@ Who must act decides the verdict: contributor items come first because they are 
 contributor can move; `awaiting-review` means the contributor's part is done.
 """
 
+from cpr.merge import issues_of
+
 LABELS = {
     "draft": "Draft — early feedback only",
     "needs-contributor-work": "Needs contributor work",
@@ -21,10 +23,11 @@ def _reason(c):
             "action": c.get("action"), "owner": c.get("owner"), "blocking": c["blocking"]}
 
 
-def _finding_reason(lens, f):
-    return {"check": None, "finding": f["id"], "title": f"[{f['severity']}] {lens}: {f['rule']}", "status": "fail",
-            "summary": f"{f['location']} — {f['problem']}", "action": f.get("fix"), "owner": "contributor",
-            "blocking": True}
+def _issue_reason(issue):
+    return {"check": None, "finding": issue["members"][0]["id"],
+            "title": f"[{issue['severity']}] {', '.join(issue['lenses'])}: {issue['rule']}", "status": "fail",
+            "summary": f"{issue['location']} — {issue['problem']}", "action": issue.get("fix"),
+            "owner": "contributor", "blocking": True}
 
 
 def _note(title, summary, owner, status="info"):
@@ -52,10 +55,7 @@ def recommend(pr, checks, review=None):
     others_warn = [c for c in actionable if c.get("owner") != "contributor"]
     must_fix = []
     if review:
-        for lens in review.get("lenses", []):
-            for f in lens.get("findings", []):
-                if f.get("severity") in ("blocker", "major"):
-                    must_fix.append(_finding_reason(lens["name"], f))
+        must_fix = [_issue_reason(i) for i in issues_of(review) if i["severity"] in ("blocker", "major")]
 
     if pr.get("draft"):
         verdict = "draft"

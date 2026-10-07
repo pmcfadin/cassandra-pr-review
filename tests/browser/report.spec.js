@@ -205,3 +205,42 @@ test("summary shows the suggested reviewers card", async ({ page }) => {
   for (const p of m.context.suggested_reviewers) await expect(card).toContainText(p.name);
   await expect(card.getByRole("link", { name: "Context details" })).toHaveAttribute("href", "#context");
 });
+
+test("5201 summary headline counts issues, findings and reporting lenses", async ({ page }) => {
+  await page.goto(fileUrl(fixtures().report, "#summary"));
+  await expect(sectionLocator(page, "summary").locator(".review-headline")).toContainText("5 issues (11 findings from 4 lenses)");
+});
+
+test("5201 code review leads with merged issues and lens chips", async ({ page }) => {
+  const m = model();
+  await page.goto(fileUrl(fixtures().report, "#review"));
+  const sec = sectionLocator(page, "review");
+  const issues = sec.locator("article.issue");
+  await expect(issues).toHaveCount(m.review.issues.length);
+  await expect(issues).toHaveCount(5);
+  // The silent-delete issue is first and names the four lenses that reported it.
+  const first = issues.first();
+  await expect(first.locator(".lens-chip")).toHaveText(["cassandra-standards", "correctness", "test-rigor", "observability"]);
+  await expect(first).toContainText("SSTable.java:121");
+  await expect(first.locator(".badge").first()).toContainText("blocker");
+  // Issues come before the per-lens detail.
+  const order = await sec.evaluate((el) => {
+    const issue = el.querySelector("article.issue");
+    const detail = el.querySelector(".lens-detail-title");
+    return issue.compareDocumentPosition(detail) & Node.DOCUMENT_POSITION_FOLLOWING;
+  });
+  expect(order).toBeTruthy();
+  // Raw findings are still listed under each lens.
+  for (const lens of m.review.lenses) await expect(sec).toContainText(lens.name);
+});
+
+test("code review shows lens status and the checklist version", async ({ page }) => {
+  await page.goto(fileUrl(fixtures().lens_status, "#review"));
+  const sec = sectionLocator(page, "review");
+  await expect(sec.locator(".checklists")).toHaveText("checklists: apache/cassandra trunk @ 0123456789");
+  const observability = sec.locator(".block").filter({ has: page.locator("h3", { hasText: /^observability/ }) });
+  await expect(observability).toContainText("missing");
+  const security = sec.locator(".block").filter({ has: page.locator("h3", { hasText: /^security/ }) });
+  await expect(security).toContainText("approved");
+  await expect(security).toContainText("No findings from this lens.");
+});

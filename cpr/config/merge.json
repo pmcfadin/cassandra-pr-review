@@ -1,0 +1,9 @@
+{
+  "_comment": "Constants for merging duplicate findings across lenses (cpr/merge.py). Edit here, not in code. Rationale and scoring: docs/research/lens-findings-merge-and-eval.md.",
+  "weights": {"problem_identifiers": 0.4, "problem_words": 0.3, "fix_identifiers": 0.3},
+  "location_bonus": {"same_file_near": 0.30, "same_file_mid": 0.15, "non_file": 0.10},
+  "near_lines": 3,
+  "mid_lines": 10,
+  "text_floor": 0.18,
+  "merge_threshold": 0.40
+}

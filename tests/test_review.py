@@ -81,7 +81,76 @@ class Merge(unittest.TestCase):
         self.assertTrue(r["approved"])
 
 
+class SeverityFromImpact(unittest.TestCase):
+    def merged(self, **extra):
+        with tempfile.TemporaryDirectory() as d:
+            for name in ("correctness", "security"):
+                data = lens_out(approve=name != "correctness",
+                                findings=[dict(finding("blocker"), **extra)] if name == "correctness" else [])
+                with open(os.path.join(d, f"{name}.json"), "w") as fh:
+                    json.dump(data, fh)
+            return review.merge(d, PANEL)
+
+    def test_severity_follows_the_table(self):
+        r = self.merged(impact="data-loss", confidence="medium")
+        f = r["lenses"][0]["findings"][0]
+        self.assertEqual(f["severity"], "major")
+        self.assertEqual(f["severity_corrected"], {"from": "blocker", "to": "major"})
+
+    def test_whole_table(self):
+        expect = {"data-loss": "blocker major minor", "crash": "blocker major minor", "hang": "blocker major minor",
+                  "mixed-version-break": "blocker major minor", "silent-wrong-result": "major major minor",
+                  "performance": "minor minor nit", "cosmetic": "nit nit nit"}
+        for impact, sevs in expect.items():
+            for conf, sev in zip(("high", "medium", "low"), sevs.split()):
+                got = review.derive_severity(dict(finding("major"), impact=impact, confidence=conf))
+                self.assertEqual(got["severity"], sev, (impact, conf))
+
+    def test_agreeing_severity_is_not_marked_and_no_impact_keeps_severity(self):
+        f = review.derive_severity(dict(finding("blocker"), impact="crash", confidence="high"))
+        self.assertNotIn("severity_corrected", f)
+        self.assertEqual(review.derive_severity(finding("nit"))["severity"], "nit")
+
+    def test_invalid_impact_or_confidence_rejected(self):
+        self.assertIn("impact", review.validate_output(lens_out(findings=[dict(finding(), impact="meh")])))
+        self.assertIn("confidence", review.validate_output(lens_out(findings=[dict(finding(), confidence="sure")])))
+        self.assertIsNone(review.validate_output(lens_out(findings=[dict(finding(), impact="crash", confidence="low")])))
+
+
+class Issues(unittest.TestCase):
+    def test_merge_adds_issues_counts_and_checklists(self):
+        with tempfile.TemporaryDirectory() as d:
+            lens_dir = os.path.join(d, "lenses")
+            os.makedirs(lens_dir)
+            same = dict(problem="FileUtils.delete swallows failedDeletions silently", fix="Use deleteWithConfirm")
+            for name, sev in (("correctness", "major"), ("security", "blocker")):
+                with open(os.path.join(lens_dir, f"{name}.json"), "w") as fh:
+                    json.dump(lens_out(approve=False, findings=[dict(finding(sev, "src/java/A.java:5", name), **same)]), fh)
+            self.assertIsNone(review.merge(lens_dir, PANEL)["checklists"])
+            with open(os.path.join(d, "lens-plan.json"), "w") as fh:
+                json.dump({"checklists": {"sha": "0123456789abcdef"}}, fh)
+            r = review.merge(lens_dir, PANEL)
+        self.assertEqual(r["counts"]["blocker"] + r["counts"]["major"], 2)  # per finding
+        self.assertEqual(len(r["issues"]), 1)
+        self.assertEqual((r["must_fix"], r["issue_counts"]["blocker"]), (1, 1))
+        self.assertEqual(r["checklists"], {"sha": "0123456789abcdef"})
+        self.assertFalse(r["approved"])
+
+
 class FindingsInDiffView(unittest.TestCase):
+    def test_issue_reported_by_two_lenses_appears_once(self):
+        loc = "src/java/org/apache/cassandra/io/sstable/SSTable.java:121"
+        same = dict(problem="FileUtils.delete swallows failedDeletions silently", fix="Use deleteWithConfirm")
+        r = {"lenses": [
+            {"name": "cass-logic-boundary", "findings": [dict(finding("major", loc, "a"), **same)]},
+            {"name": "cass-persistence-compat", "findings": [dict(finding("major", loc, "b"), **same)]}]}
+        notes = review.explain_notes(r)
+        lines = notes["src/java/org/apache/cassandra/io/sstable/SSTable.java"]
+        self.assertEqual(len(lines), 1)
+        self.assertIn("cass-logic-boundary, cass-persistence-compat", lines[0])
+        self.assertIn(loc, lines[0])
+        self.assertTrue(lines[0].startswith("- **[major] cass-logic-boundary, cass-persistence-compat: r**"))
+
     def test_locations_reach_explain_map(self):
         r = {"lenses": [{"name": "correctness", "findings": [
             finding("major", "src/java/org/apache/cassandra/io/sstable/SSTable.java:113"),

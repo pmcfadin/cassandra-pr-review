@@ -5,6 +5,7 @@ import time
 from cpr import VERSION, paths
 from cpr.checks import STATUSES
 from cpr.checks.compat import touched_surfaces
+from cpr.merge import issues_of
 from cpr.recommend import VERDICTS, recommend
 
 MODEL_SCHEMA = 1
@@ -120,7 +121,7 @@ def build(bundle, checks, triage, docs, diffview, review=None, context=None):
         elif sid == "review":
             if review is None or not review.get("complete"):
                 status = "unknown"
-            elif any(f["severity"] in ("blocker", "major") for l in review["lenses"] for f in l["findings"]):
+            elif any(i["severity"] in ("blocker", "major") for i in issues_of(review)):
                 status = "fail"
             elif any(l["findings"] for l in review["lenses"]):
                 status = "warn"
@@ -215,6 +216,20 @@ def validate(model):
             for k in ("id", "severity", "location", "rule", "problem", "fix"):
                 need(isinstance(f.get(k), str), f"review.lenses[{i}].findings[{j}].{k}")
             need(f["severity"] in SEVERITIES, f"review.lenses[{i}].findings[{j}].severity")
+            for k in ("impact", "confidence"):
+                need(f.get(k) is None or isinstance(f[k], str), f"review.lenses[{i}].findings[{j}].{k}")
+    issues = model["review"].get("issues")
+    need(issues is None or isinstance(issues, list), "review.issues")
+    for i, issue in enumerate(issues or []):
+        for k in ("id", "rule", "problem", "fix", "location"):
+            need(isinstance(issue.get(k), str), f"review.issues[{i}].{k}")
+        need(issue.get("severity") in SEVERITIES, f"review.issues[{i}].severity")
+        need(isinstance(issue.get("lenses"), list) and issue["lenses"], f"review.issues[{i}].lenses")
+        need(isinstance(issue.get("locations"), list), f"review.issues[{i}].locations")
+        need(isinstance(issue.get("members"), list) and issue["members"], f"review.issues[{i}].members")
+        need(isinstance(issue.get("also_fixes", []), list), f"review.issues[{i}].also_fixes")
+        for k in ("impact", "confidence"):
+            need(issue.get(k) is None or isinstance(issue[k], str), f"review.issues[{i}].{k}")
     for s in model.get("sections", []):
         for a in s["docs"]:
             need(isinstance(model["docs"].get(a), str), f"docs.{a}")

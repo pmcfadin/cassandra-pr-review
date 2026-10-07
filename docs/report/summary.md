@@ -19,7 +19,7 @@ The recommendation applies these rules in order. The first rule that matches win
 | Order | Condition | Recommendation |
 |---|---|---|
 | 1 | The PR is a GitHub draft. | **Draft**: checks are early feedback only; blocking failures are still listed. |
-| 2 | A blocking check owned by the contributor failed, or a code review lens reported a blocker or major finding. | **Needs contributor work** |
+| 2 | A blocking check owned by the contributor failed, or a code review issue (findings from all lenses, merged) is a blocker or major. | **Needs contributor work** |
 | 3 | An advisory warning owned by the contributor needs action. | **Needs work**: contributor fixes requested |
 | 4 | A blocking check is unknown (an input such as JIRA or the committer roster could not be read). | **Insufficient evidence** |
 | 5 | What remains is owned by reviewers or committers: committer +1s, CI that a committer runs, explaining CI failures. | **Awaiting review**: the contributor's part is done |

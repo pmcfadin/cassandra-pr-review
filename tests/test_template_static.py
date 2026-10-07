@@ -17,6 +17,7 @@ class TemplateStaticTest(unittest.TestCase):
     def setUpClass(cls):
         with open(MODEL) as f:
             model = json.load(f)
+        cls.model = model
         with tempfile.TemporaryDirectory() as d:
             path = render.write(model, os.path.join(d, "index.html"))
             with open(path) as f:
@@ -38,6 +39,30 @@ class TemplateStaticTest(unittest.TestCase):
         lowered = (self.html[:start] + self.html[end:]).lower()
         for ref in NETWORK_REFS:
             self.assertNotIn(ref, lowered, ref)
+
+    def test_code_review_leads_with_issues_then_lens_detail(self):
+        with open(render.TEMPLATE) as f:
+            tpl = f.read()
+        body = tpl[tpl.index("function renderReview()"):]
+        self.assertLess(body.index('block("Issues"'), body.index("Per-lens detail"))
+        # Data-driven: lenses, chips and statuses come from the model, not from names in the template.
+        for name in ("cassandra-standards", "cass-logic-boundary", "cass-test-regime"):
+            self.assertNotIn(name, tpl)
+
+    def test_template_names_the_checklist_version_and_headline(self):
+        with open(render.TEMPLATE) as f:
+            tpl = f.read()
+        self.assertIn("checklists: apache/cassandra trunk @ ", tpl)
+        self.assertIn('plural(findings, "finding")', tpl)
+
+    def test_model_with_issues_validates_and_a_bad_issue_does_not(self):
+        from cpr import model as model_mod
+        m = json.loads(json.dumps(self.model))
+        self.assertEqual(len(m["review"]["issues"]), 5)
+        model_mod.validate(m)
+        m["review"]["issues"][0]["severity"] = "huge"
+        with self.assertRaises(model_mod.ModelError):
+            model_mod.validate(m)
 
     def test_template_has_one_marker(self):
         with open(render.TEMPLATE) as f:

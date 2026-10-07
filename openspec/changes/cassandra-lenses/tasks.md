@@ -14,14 +14,14 @@
 
 ## 3. Severity and merge
 
-- [ ] 3.1 Severity derivation from impact and confidence with `severity_corrected` (test: severity follows the table)
-- [ ] 3.2 `cpr/merge.py` and `cpr/config/merge.json` (tests: PR 5201 regression golden, same line different issue, same-lens never merged)
-- [ ] 3.3 Wire merged issues into `review.merge`, the model, explain notes, and must-fix counts (test: findings in the diff view)
+- [x] 3.1 Severity derivation from impact and confidence with `severity_corrected` (test: severity follows the table)
+- [x] 3.2 `cpr/merge.py` and `cpr/config/merge.json` (tests: PR 5201 regression golden, same line different issue, same-lens never merged)
+- [x] 3.3 Wire merged issues into `review.merge`, the model, explain notes, and must-fix counts (test: findings in the diff view)
 
 ## 4. Report
 
-- [ ] 4.1 Template: issues first with lens chips, impact/confidence, per-lens detail below, checklist sha; summary headline "N issues (M findings from K lenses)" (tests: issues lead, lens status shown, report names the checklist version)
-- [ ] 4.2 Update docs/report/code-review.md (panel, tiers, trusted loading, severity table, merging, limits)
+- [x] 4.1 Template: issues first with lens chips, impact/confidence, per-lens detail below, checklist sha; summary headline "N issues (M findings from K lenses)" (tests: issues lead, lens status shown, report names the checklist version)
+- [x] 4.2 Update docs/report/code-review.md (panel, tiers, trusted loading, severity table, merging, limits)
 
 ## 5. Benchmark
 
