@@ -1,10 +1,10 @@
 ## 1. Trusted checklists and tiers
 
-- [ ] 1.1 `cpr/config/lenses.json`: allow-listed trunk paths, per-lens bundles per tier, size cap, optional `lens_ref`
-- [ ] 1.2 `cpr/lenses.py`: resolve ref to sha, extract allow-listed files to refdir, validate, manifest (tests: PR edits the skills, upstream renamed a checklist)
-- [ ] 1.3 Tier selection and INDEX diff-signal pre-filter with the 8-category cap (tests: small patch, medium patch with serialization changes, large patch, docs-only)
-- [ ] 1.4 Smoke test against the real clone: every allow-listed path exists at origin/trunk and INDEX parses
-- [ ] 1.5 `cpr prepare` fetches trunk, builds refdir, prints per-lens bundles and tier
+- [x] 1.1 `cpr/config/lenses.json`: allow-listed trunk paths, per-lens bundles per tier, size cap, optional `lens_ref`
+- [x] 1.2 `cpr/lenses.py`: resolve ref to sha, extract allow-listed files to refdir, validate, manifest (tests: PR edits the skills, upstream renamed a checklist)
+- [x] 1.3 Tier selection and INDEX diff-signal pre-filter with the 8-category cap (tests: small patch, medium patch with serialization changes, large patch, docs-only)
+- [x] 1.4 Smoke test against the real clone: every allow-listed path exists at origin/trunk and INDEX parses
+- [x] 1.5 `cpr prepare` fetches trunk, builds refdir, prints per-lens bundles and tier
 
 ## 2. Lenses
 

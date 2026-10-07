@@ -5,8 +5,8 @@ import json
 import os
 import sys
 
-from cpr import VERSION, checks as checks_mod, context as context_mod, diffview, model as model_mod, render, \
-    review as review_mod
+from cpr import VERSION, checks as checks_mod, context as context_mod, diffview, lenses as lenses_mod, model as model_mod, \
+    render, review as review_mod
 from cpr.ingest import bundle as bundle_mod, clone
 from cpr.ingest.clone import CloneError
 from cpr.ingest.github import PRNotFound
@@ -78,6 +78,23 @@ def write_context(bundle, path):
         f.write("\n".join(lines) + "\n")
 
 
+def prepare_lenses(bundle, d, offline, log):
+    """Fetch trunk, extract the trusted checklists into <sha_dir>/refdir, plan each lens's bundle by tier."""
+    cfg = lenses_mod.load_config()
+    repo = bundle["git"]["clone"]
+    if not offline:
+        clone.fetch_trunk(repo)
+    sha = lenses_mod.resolve(repo, cfg.get("lens_ref"))
+    refdir = os.path.join(d, "refdir")
+    manifest = lenses_mod.extract(repo, sha, refdir, cfg)
+    log(f"checklists: apache/cassandra trunk @ {sha[:12]} ({len(manifest['missing'])} missing)")
+    plan = lenses_mod.plan(bundle, manifest, cfg)
+    plan["checklists"] = {"sha": sha, "refdir": refdir, "missing": manifest["missing"]}
+    with open(os.path.join(d, "lens-plan.json"), "w") as f:
+        json.dump(plan, f, indent=1)
+    return plan
+
+
 def cmd_prepare(args):
     work_dir = os.path.abspath(args.work_dir)
     log = lambda m: print(f"  {m}", file=sys.stderr)  # noqa: E731
@@ -100,6 +117,11 @@ def cmd_prepare(args):
     os.makedirs(lens_dir, exist_ok=True)
     context = os.path.join(d, "context.md")
     write_context(bundle, context)
+    try:
+        plan = prepare_lenses(bundle, d, args.offline, log)
+    except CloneError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
     print(json.dumps({
         "pr": args.pr,
         "title": bundle["pr"]["title"],
@@ -110,6 +132,10 @@ def cmd_prepare(args):
         "context_file": context,
         "lens_dir": lens_dir,
         "panel": review_mod.load_panel(),
+        "checklists": plan["checklists"],
+        "tier": plan["tier"],
+        "bundle": {n: {k: l[k] for k in ("status", "files", "categories", "focus", "not_reviewed", "missing", "error")}
+                   for n, l in plan["lenses"].items()},
     }, indent=1))
     return 0
 

@@ -55,6 +55,11 @@ def fetch(path, number, base):
     _git(path, "fetch", "--no-tags", "--quiet", "origin", *refspecs)
 
 
+def fetch_trunk(path):
+    """Refresh origin/trunk, the source of trusted lens checklists."""
+    _git(path, "fetch", "--no-tags", "--quiet", "origin", f"+refs/heads/trunk:{base_ref('trunk')}")
+
+
 def has_refs(path, number, base):
     for ref in (pr_ref(number), base_ref(base)):
         if subprocess.run(["git", "-C", path, "rev-parse", "--verify", "--quiet", ref],
