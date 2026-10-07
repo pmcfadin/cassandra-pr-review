@@ -89,19 +89,26 @@ def derive_severity(f):
     return dict(f, severity=to, severity_corrected={"from": f["severity"], "to": to})
 
 
-def read_checklists(lens_dir):
-    """{sha} from `<lens_dir>/../lens-plan.json` (written by `cpr prepare`), or None."""
+def read_plan(lens_dir):
+    """`<lens_dir>/../lens-plan.json` (written by `cpr prepare`), or {}."""
     try:
         with open(os.path.join(os.path.dirname(os.path.abspath(lens_dir)), "lens-plan.json")) as f:
-            sha = json.load(f)["checklists"]["sha"]
-    except (OSError, ValueError, KeyError, TypeError):
-        return None
+            plan = json.load(f)
+    except (OSError, ValueError):
+        return {}
+    return plan if isinstance(plan, dict) else {}
+
+
+def read_checklists(lens_dir):
+    """{sha} from the lens plan, or None."""
+    sha = (read_plan(lens_dir).get("checklists") or {}).get("sha")
     return {"sha": sha} if isinstance(sha, str) and sha else None
 
 
 def merge(lens_dir, panel=None):
     """Read `<lens_dir>/<name>.json` for every lens in the panel and merge them."""
     panel = panel or load_panel()
+    planned = read_plan(lens_dir).get("lenses") or {}
     lenses = []
     for spec in panel:
         name, agent = spec["name"], spec["agent"]
@@ -109,7 +116,7 @@ def merge(lens_dir, panel=None):
                  "spec_conformance": None, "tests_ran": None, "tests_detail": None, "findings": [], "error": None}
         path = os.path.join(lens_dir, f"{name}.json")
         if not os.path.exists(path):
-            entry["error"] = "the lens produced no output"
+            entry["error"] = (planned.get(name) or {}).get("error") or "the lens produced no output"
             lenses.append(entry)
             continue
         try:

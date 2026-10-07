@@ -192,3 +192,21 @@ class Worktree(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PlanMissing(unittest.TestCase):
+    def test_missing_checklist_named(self):
+        with tempfile.TemporaryDirectory() as d:
+            lens_dir = os.path.join(d, "lenses")
+            os.makedirs(lens_dir)
+            with open(os.path.join(d, "lens-plan.json"), "w") as f:
+                json.dump({"checklists": {"sha": "abc123"}, "lenses": {"security": {
+                    "status": "missing", "error": "checklist missing at trunk: x/logic.md"}}}, f)
+            with open(os.path.join(lens_dir, "correctness.json"), "w") as f:
+                json.dump(lens_out(), f)
+            r = review.merge(lens_dir, PANEL)
+        sec = r["lenses"][1]
+        self.assertEqual(sec["status"], "missing")
+        self.assertIn("x/logic.md", sec["error"])
+        self.assertFalse(r["approved"])
+        self.assertEqual(r["checklists"], {"sha": "abc123"})
