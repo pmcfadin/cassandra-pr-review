@@ -75,13 +75,18 @@ to its section.
 - **THEN** the About section lists checks that need a human (for example design acceptability) and checks not run (for example `ant check`, tests)
 
 ### Requirement: Findings slot uses the review schema
-The report model SHALL accept code review findings in the rustyrazorblade review schema (id,
-severity blocker|major|minor|nit, location, rule, problem, fix), grouped by lens, so later lenses
-plug in without a template change.
+The report model SHALL accept code review results in the rustyrazorblade review schema, grouped by
+lens: per lens its name, agent, status (ran, missing, invalid), approval, summary, and findings (id,
+severity blocker|major|minor|nit, location, rule, problem, fix), plus whether the panel as a whole
+approved. New lenses SHALL plug in without a template change.
 
 #### Scenario: Findings present
 - **WHEN** the model contains two findings from a lens named "correctness"
 - **THEN** the Code review section lists them under "correctness", ordered by severity
+
+#### Scenario: Lens status shown
+- **WHEN** one lens is missing and another approved with no findings
+- **THEN** the Code review section shows the missing lens as missing and the other as approved
 
 ### Requirement: Embedded diff view from ide-explain
 The Changes section SHALL embed the page produced by the installed `dev-skills` ide-explain
@@ -131,4 +136,18 @@ Each report section SHALL embed its aspect doc as a collapsed "How this is judge
 #### Scenario: Doc missing
 - **WHEN** an aspect document is missing at render time
 - **THEN** rendering fails with a message naming the missing document
+
+### Requirement: Context section
+The report SHALL include a Context section after Triage with related tickets (from blame and from
+issue links), commits without a ticket, per-file experts, and suggested reviewers, and SHALL embed
+`docs/report/context.md` as its "How this is judged" panel. The summary page SHALL show a
+"Suggested reviewers" card listing the suggestions and anyone already involved.
+
+#### Scenario: Summary card
+- **WHEN** the report is generated for a PR with prior history
+- **THEN** the summary shows up to 5 suggested reviewers, each linking to the Context section
+
+#### Scenario: No history
+- **WHEN** the changed code has no prior history
+- **THEN** the Context section and the card say so instead of showing empty tables
 

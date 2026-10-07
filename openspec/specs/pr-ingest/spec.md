@@ -90,8 +90,9 @@ downloaded in this change.
 
 ### Requirement: Local clone for diffs
 The system SHALL keep a full clone of apache/cassandra in the work directory and SHALL fetch the
-PR's head (`refs/pull/<N>/head`) and base branch into it, so the diff view (including its blame
-context) and diff-based checks run against local git objects.
+PR's head (`refs/pull/<N>/head`) and base branch into it, plus `trunk` when the base is another
+branch (expert history reads trunk), so the diff view (including its blame context), diff-based
+checks, and reviewer context run against local git objects.
 
 #### Scenario: First run
 - **WHEN** no clone exists
@@ -99,7 +100,7 @@ context) and diff-based checks run against local git objects.
 
 #### Scenario: Subsequent run
 - **WHEN** the clone exists
-- **THEN** only the PR head and base are fetched; the clone is not re-created
+- **THEN** only the PR head, the base, and (for a non-trunk base) trunk are fetched; the clone is not re-created
 
 ### Requirement: Cached, replayable ingest
 The system SHALL store every raw API response for a PR in the work directory, keyed by PR number
