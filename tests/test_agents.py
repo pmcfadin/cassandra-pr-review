@@ -86,3 +86,33 @@ class AgentPromptsTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Panel(unittest.TestCase):
+    """The default panel is data and needs no spec-flow plugin (spec: code-review-lenses, Lens panel)."""
+
+    def setUp(self):
+        from cpr import review
+        self.panel = review.load_panel()
+
+    def test_six_cassandra_lenses(self):
+        self.assertEqual([l["name"] for l in self.panel],
+                         ["cassandra-standards", "cass-logic-boundary", "cass-concurrency-lifecycle",
+                          "cass-persistence-compat", "cass-completeness-symmetry", "cass-test-regime"])
+
+    def test_no_spec_flow_dependency(self):
+        for lens in self.panel:
+            self.assertNotIn(":", lens["agent"], f"{lens['name']} uses a plugin agent")
+            self.assertTrue(os.path.exists(os.path.join(AGENTS, lens["agent"] + ".md")),
+                            f"no project agent file for {lens['agent']}")
+        skill = read(os.path.join(ROOT, ".claude", "skills", "review-pr", "SKILL.md"))
+        self.assertNotIn("spec-flow:", skill)
+
+    def test_panel_is_data(self):
+        skill = read(os.path.join(ROOT, ".claude", "skills", "review-pr", "SKILL.md"))
+        for key in ("refdir", "bundle", "tier", "panel.json"):
+            self.assertIn(key, skill)
+        from cpr import lenses
+        configured = set(lenses.load_config()["lenses"])
+        for lens in self.panel:
+            self.assertIn(lens["name"], configured, f"{lens['name']} has no checklist bundle in lenses.json")

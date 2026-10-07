@@ -10,7 +10,7 @@
 
 - [x] 2.1 Agent prompts `.claude/agents/cass-{logic-boundary,concurrency-lifecycle,persistence-compat,completeness-symmetry,test-regime}.md`: inputs, trust, method, impact/confidence/severity table, JSON contract
 - [x] 2.2 `cassandra-standards-reviewer`: self-gating security check and reporting PR edits to `.claude/`/AGENTS.md (test: `tests/test_agents.py` checks the prompt text; the password-in-a-virtual-table behaviour is runtime and covered by benchmark case B4)
-- [ ] 2.3 `cpr/config/panel.json` swap and `/review-pr` skill update (refdir, bundle, tier; no spec-flow) (tests: panel is data, no spec-flow dependency)
+- [x] 2.3 `cpr/config/panel.json` swap and `/review-pr` skill update (refdir, bundle, tier; no spec-flow) (tests: panel is data, no spec-flow dependency)
 
 ## 3. Severity and merge
 

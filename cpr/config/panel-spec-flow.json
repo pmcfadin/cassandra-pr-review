@@ -1,0 +1,30 @@
+{
+ "_comment": "The previous panel (cassandra-standards plus four spec-flow lenses). Kept only for the benchmark quick loop (cpr bench --panel); not used by /review-pr.",
+ "lenses": [
+  {
+   "name": "cassandra-standards",
+   "agent": "cassandra-standards-reviewer",
+   "focus": "patch vs its JIRA ticket and Cassandra contribution standards"
+  },
+  {
+   "name": "correctness",
+   "agent": "spec-flow:code-reviewer",
+   "focus": "logic, boundaries, error paths, concurrency, resource leaks"
+  },
+  {
+   "name": "test-rigor",
+   "agent": "spec-flow:test-rigor-reviewer",
+   "focus": "regression-catching tests for the changed behaviour"
+  },
+  {
+   "name": "observability",
+   "agent": "spec-flow:observability-reviewer",
+   "focus": "logging, metrics, and diagnosable failure modes"
+  },
+  {
+   "name": "security",
+   "agent": "spec-flow:security-reviewer",
+   "focus": "input validation, auth, injection, secrets (self-gating)"
+  }
+ ]
+}

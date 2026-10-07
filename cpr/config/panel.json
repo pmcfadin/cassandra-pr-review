@@ -1,15 +1,35 @@
 {
-  "_comment": "The code review panel. /review-pr runs every lens in parallel; the report shows each. Add a lens here to add it to the panel.",
-  "lenses": [
-    {"name": "cassandra-standards", "agent": "cassandra-standards-reviewer",
-     "focus": "patch vs its JIRA ticket and Cassandra contribution standards"},
-    {"name": "correctness", "agent": "spec-flow:code-reviewer",
-     "focus": "logic, boundaries, error paths, concurrency, resource leaks"},
-    {"name": "test-rigor", "agent": "spec-flow:test-rigor-reviewer",
-     "focus": "regression-catching tests for the changed behaviour"},
-    {"name": "observability", "agent": "spec-flow:observability-reviewer",
-     "focus": "logging, metrics, and diagnosable failure modes"},
-    {"name": "security", "agent": "spec-flow:security-reviewer",
-     "focus": "input validation, auth, injection, secrets (self-gating)"}
-  ]
+ "_comment": "The code review panel. /review-pr runs every lens in parallel; the report shows each. Add a lens here to add it to the panel. Checklist bundles per lens and tier live in lenses.json.",
+ "lenses": [
+  {
+   "name": "cassandra-standards",
+   "agent": "cassandra-standards-reviewer",
+   "focus": "patch vs its JIRA ticket, Cassandra contribution standards, security (self-gating), edits to .claude/ or AGENTS.md"
+  },
+  {
+   "name": "cass-logic-boundary",
+   "agent": "cass-logic-boundary",
+   "focus": "conditions, boundaries and numbers, null and type safety, input validation"
+  },
+  {
+   "name": "cass-concurrency-lifecycle",
+   "agent": "cass-concurrency-lifecycle",
+   "focus": "races, locking, lifecycle and ordering, resource cleanup"
+  },
+  {
+   "name": "cass-persistence-compat",
+   "agent": "cass-persistence-compat",
+   "focus": "serialization and versioning, mixed-version clusters, IO and crash safety, logging and metrics"
+  },
+  {
+   "name": "cass-completeness-symmetry",
+   "agent": "cass-completeness-symmetry",
+   "focus": "missing counterpart changes, API contracts, refactor aftermath"
+  },
+  {
+   "name": "cass-test-regime",
+   "agent": "cass-test-regime",
+   "focus": "right test suite, regression test fails without the fix, repeated runs"
+  }
+ ]
 }
