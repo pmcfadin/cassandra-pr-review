@@ -31,8 +31,11 @@ class TemplateStaticTest(unittest.TestCase):
         self.assertNotIn(render.MARKER, self.html)
 
     def test_no_network_references(self):
-        # The embedded diff view is base64, so a plain substring search over the whole file is exact.
-        lowered = self.html.lower()
+        # Search the markup outside the model payload. The payload is JSON data (docs may mention
+        # `@import` as text, which is harmless) and the embedded diff view inside it is base64.
+        start = self.html.index('<script id="report-model">')
+        end = self.html.index("</script>", start)
+        lowered = (self.html[:start] + self.html[end:]).lower()
         for ref in NETWORK_REFS:
             self.assertNotIn(ref, lowered, ref)
 

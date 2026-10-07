@@ -58,5 +58,5 @@
 
 ## 7. End-to-end
 
-- [ ] 7.1 Run `cpr review` against five live PRs covering the fixture cases; review the reports with the owner
+- [x] 7.1 Run `cpr review` against five live PRs covering the fixture cases; review the reports with the owner
 - [x] 7.2 Write README usage and document what the report does not check yet

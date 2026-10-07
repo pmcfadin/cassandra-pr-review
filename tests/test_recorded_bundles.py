@@ -29,7 +29,7 @@ class RecordedBundles(unittest.TestCase):
                          {"cassandra-4.0", "cassandra-4.1", "cassandra-5.0", "cassandra-6.0", "trunk"})
         self.assertEqual(status(res, "ci.evidence"), "fail")  # only 5.0 has CI attached
         self.assertEqual(status(res, "static.banned-api"), "not-applicable")  # 4.0 has no checkstyle.xml
-        self.assertEqual(recommend(b["pr"], res)["verdict"], "blocked")
+        self.assertEqual(recommend(b["pr"], res)["verdict"], "needs-contributor-work")  # no tests
 
     def test_no_jira(self):
         b = load("5212-no-jira.json.gz")

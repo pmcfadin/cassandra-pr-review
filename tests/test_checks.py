@@ -365,7 +365,25 @@ class Recommendation(unittest.TestCase):
         b = bundle()
         self.assertEqual(recommend(b["pr"], run(b), [])["verdict"], "ready")
         must = [{"id": "x", "severity": "major", "location": "a", "rule": "r", "problem": "p", "fix": "f"}]
-        self.assertEqual(recommend(b["pr"], run(b), must)["verdict"], "needs-work")
+        self.assertEqual(recommend(b["pr"], run(b), must)["verdict"], "needs-contributor-work")
+
+    def test_incomplete_panel_cannot_be_ready(self):
+        b = bundle()
+        review = {"status": "ran", "complete": False, "approved": False, "lenses": [
+            {"name": "correctness", "status": "ran", "approve": True, "findings": []},
+            {"name": "security", "status": "missing", "approve": False, "findings": []}]}
+        rec = recommend(b["pr"], run(b), review)
+        self.assertEqual(rec["verdict"], "requirements-met-unreviewed")
+        self.assertIn("security", rec["reasons"][0]["summary"])
+
+    def test_review_findings_need_contributor_work(self):
+        b = bundle()
+        review = {"status": "ran", "complete": True, "approved": False, "lenses": [
+            {"name": "correctness", "status": "ran", "approve": False, "findings": [
+                {"id": "c1", "severity": "major", "location": "a.java:1", "rule": "r", "problem": "p", "fix": "f"}]}]}
+        rec = recommend(b["pr"], run(b), review)
+        self.assertEqual(rec["verdict"], "needs-contributor-work")
+        self.assertEqual(rec["reasons"][0]["finding"], "c1")
 
     def test_unknown_dominates_pass(self):
         b = bundle(jira={"status": "unavailable", "error": "down", "ticket": None})
@@ -373,12 +391,23 @@ class Recommendation(unittest.TestCase):
         res = [r for r in run(b) if not (r["blocking"] and r["status"] == "fail")]
         self.assertEqual(recommend(b["pr"], res)["verdict"], "insufficient-evidence")
 
-    def test_blocked(self):
+    def test_only_reviewers_and_committers_left(self):
         b = bundle()
         b["jira"]["ticket"]["comments"] = []
+        b["ci"]["summaries"] = [ci_summary("cassandra-5.0", SHA)]  # trunk CI not yet run
         rec = recommend(b["pr"], run(b))
-        self.assertEqual(rec["verdict"], "blocked")
-        self.assertEqual(rec["reasons"][0]["check"], "votes.committer-plus-ones")
+        self.assertEqual(rec["verdict"], "awaiting-review")
+        self.assertEqual({r["check"] for r in rec["reasons"]}, {"votes.committer-plus-ones", "ci.evidence"})
+        self.assertEqual(rec["waiting_on"], ["committer", "reviewer"])
+
+    def test_contributor_work_outranks_waiting_on_reviewers(self):
+        b = with_files(bundle(), [("src/java/org/apache/cassandra/db/Foo.java", ["x"], False),
+                                  ("CHANGES.txt", [" * Fix things (CASSANDRA-21649)"], False)])
+        b["jira"]["ticket"]["comments"] = []
+        rec = recommend(b["pr"], run(b))
+        self.assertEqual(rec["verdict"], "needs-contributor-work")
+        self.assertEqual(rec["reasons"][0]["check"], "tests.present")
+        self.assertIn("votes.committer-plus-ones", [r["check"] for r in rec["reasons"]])
 
     def test_draft_keeps_blocking_failures(self):
         b = bundle()

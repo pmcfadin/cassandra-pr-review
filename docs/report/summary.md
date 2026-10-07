@@ -14,23 +14,23 @@ The project's merge preconditions are spread over several pages: a ticket ([CONT
 
 Every check has a status (pass, fail, warn, unknown, not-applicable), is either **blocking** or **advisory**, and names an owner: contributor, reviewer, or committer. A warn either needs action or is informational; each aspect page says which.
 
-The recommendation applies these rules in order. The first rule that matches wins.
+The recommendation applies these rules in order. The first rule that matches wins. Who acts decides the result: contributor items come first, because they are the only ones the contributor can move.
 
 | Order | Condition | Recommendation |
 |---|---|---|
-| 1 | The PR is a GitHub draft. | **Draft**: checks are early feedback only. |
-| 2 | Any blocking check failed. | **Blocked**: merge requirements not met. |
-| 3 | Any blocking check is unknown (an input such as JIRA or the committer roster could not be read). | **Insufficient evidence** |
-| 4 | Any check is warn or fail and needs action. | **Needs work** |
-| 5 | No code review has run. | **Requirements met, code not yet reviewed** |
-| 6 | Code review found a blocker or major issue. | **Needs work** |
-| 7 | Otherwise. | **Ready to merge** |
+| 1 | The PR is a GitHub draft. | **Draft**: checks are early feedback only; blocking failures are still listed. |
+| 2 | A blocking check owned by the contributor failed, or a code review lens reported a blocker or major finding. | **Needs contributor work** |
+| 3 | An advisory warning owned by the contributor needs action. | **Needs work**: contributor fixes requested |
+| 4 | A blocking check is unknown (an input such as JIRA or the committer roster could not be read). | **Insufficient evidence** |
+| 5 | What remains is owned by reviewers or committers: committer +1s, CI that a committer runs, explaining CI failures. | **Awaiting review**: the contributor's part is done |
+| 6 | Every blocking check passes, but the code review panel has not run or did not complete. | **Requirements met, code not yet reviewed** |
+| 7 | Every blocking check passes and every lens ran and approved with no blocker or major finding. | **Ready to merge** |
 
-The reasons listed are the checks (or findings) that triggered the rule. "Waiting on" is the set of owners of those reasons.
+The reasons listed are the checks or findings that triggered the rule, plus anything owned by others that is still open. "Waiting on" is the set of owners of those reasons.
 
-This version has no code review lenses, so rule 5 always applies once rules 1 to 4 pass. **Ready to merge is never shown in this version.**
+**Ready to merge** needs the full code review panel (`/review-pr`). A report made with `cpr review` alone stops at rule 6.
 
-The summary's navigation badge follows the recommendation: blocked is fail, needs work is warn, insufficient evidence is unknown, requirements met and ready are pass, draft is info.
+The summary's navigation badge follows the recommendation: needs contributor work is fail, needs work is warn, insufficient evidence is unknown, awaiting review and draft are info, requirements met and ready are pass.
 
 Other sections take the worst status of their checks, ignoring not-applicable, in the order fail, unknown, warn, pass. A section with no applicable checks shows info.
 
@@ -40,7 +40,7 @@ Work through the reasons from the top. Blocking failures stop everything else, s
 
 ## Limits
 
-- Rule 4 counts every advisory warn that needs action, so one small issue (for example a missing `CHANGES.txt` line) gives "needs work" even when all blocking checks pass.
+- Rule 3 counts every contributor-owned warning that needs action, so one small issue (for example a missing `CHANGES.txt` line) gives "needs work" even when all blocking checks pass.
 - A check that crashes reports unknown. When that check is blocking, the result is "insufficient evidence", not a pass.
 - The recommendation knows only what the checks can see. Design, scope, backport choices, and dev@ consensus are left to people; the About section lists them.
 - Data is a snapshot from the fetch time shown in About.

@@ -117,3 +117,14 @@ def release_branches(path):
     out = _git(path, "for-each-ref", "--format=%(refname:short)", "refs/remotes/origin/", check=False)
     names = [line.split("/", 1)[1] for line in out.splitlines() if "/" in line]
     return sorted(n for n in names if n.startswith("cassandra-") or n == "trunk")
+
+
+def worktree(path, wt_path, number, head_sha):
+    """Check the PR head out into `wt_path` (detached). Reuses and moves an existing worktree."""
+    if os.path.exists(os.path.join(wt_path, ".git")):
+        _git(wt_path, "checkout", "--quiet", "--detach", "--force", head_sha)
+        _git(wt_path, "clean", "-fdq")
+        return False
+    _git(path, "worktree", "prune")
+    _git(path, "worktree", "add", "--quiet", "--detach", "--force", os.path.abspath(wt_path), head_sha)
+    return True

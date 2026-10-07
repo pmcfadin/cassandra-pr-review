@@ -724,6 +724,12 @@ body.no-data #no-data { display: block; }
       append(v, h("p", "v-note", "Code review has not run yet. The merge requirements below pass, but no review lens has read the code, so this is not a ready-to-merge verdict."));
     if (rec.verdict === "draft" || pr.draft)
       append(v, h("p", "v-note", "This PR is a draft. Treat everything here as early feedback, not a merge decision."));
+    if (rec.verdict === "awaiting-review")
+      append(v, h("p", "v-note", "The contributor's part is done. What remains is owned by reviewers or committers: votes, CI runs, or both."));
+    if (rec.verdict === "needs-contributor-work")
+      append(v, h("p", "v-note", "The contributor has blocking items to fix before this can move forward. They are listed first below."));
+    if (rec.verdict === "ready")
+      append(v, h("p", "v-note", "Every blocking requirement passes and every code review lens approved. A committer makes the final call."));
     if (rec.verdict === "insufficient-evidence")
       append(v, h("p", "v-note", "Some required inputs could not be read, so the tool cannot say whether the requirements are met."));
     if (Array.isArray(rec.waiting_on) && rec.waiting_on.length) {
@@ -732,15 +738,9 @@ body.no-data #no-data { display: block; }
       append(v, w);
     }
     var reasons = (Array.isArray(rec.reasons) ? rec.reasons : []).slice();
-    // In a draft the recommendation carries only the draft reason; still surface blocking failures.
-    if (rec.verdict === "draft") {
-      checks.filter(function (c) { return c.blocking && c.status === "fail"; }).forEach(function (c) {
-        reasons.push({ check: c.id, title: c.title, status: c.status, summary: c.summary, action: c.action, owner: c.owner });
-      });
-    }
     function rank(r) {
       var c = r.check ? checkById[r.check] : null;
-      var blocking = c ? !!c.blocking : false;
+      var blocking = typeof r.blocking === "boolean" ? r.blocking : (c ? !!c.blocking : false);
       var s = { "fail": 0, "unknown": 1, "warn": 2 }[r.status];
       return (blocking ? 0 : 10) + (s === undefined ? 5 : s);
     }
@@ -751,9 +751,9 @@ body.no-data #no-data { display: block; }
       ol.setAttribute("aria-label", "Reasons");
       reasons.forEach(function (r) {
         var c = r.check ? checkById[r.check] : null;
-        var sec = r.check ? sectionOfCheck[r.check] : null;
+        var sec = r.check ? sectionOfCheck[r.check] : (r.finding ? "review" : null);
         var title = sec ? h("a", null, r.title || r.check) : h("span", null, r.title || "");
-        if (sec) { title.href = "#" + sec; title.setAttribute("data-check", r.check); }
+        if (sec) { title.href = "#" + sec; if (r.check) title.setAttribute("data-check", r.check); }
         var li = h("li", null, [badge(r.status), h("div", "r-title", [title, c ? kindTag(c.blocking) : null, r.check ? h("span", "cid mono muted", r.check) : null])]);
         if (r.summary) append(li, mdInline("div", r.summary, "r-body"));
         if (r.action) append(li, nextStep(r.action, r.owner));
@@ -772,6 +772,7 @@ body.no-data #no-data { display: block; }
     append(tc, h("div", "eyebrow", "Review difficulty"));
     append(tc, h("div", null, [h("span", "rating", tr.rating || "unknown"), h("span", "pts", plural(tr.points || 0, "point"))]));
     if (tr.forced_by) append(tc, h("p", null, [h("strong", null, "Rated hard because it "), tr.forced_by + "."]));
+    if (tr.capped_by) append(tc, h("p", null, [h("strong", null, "Capped: "), tr.capped_by + "."]));
     var sig = h("ul", "sig");
     (tr.signals || []).forEach(function (s) {
       var pts = Number(s.points) || 0;
@@ -1021,16 +1022,30 @@ body.no-data #no-data { display: block; }
     } else {
       var lenses = rv.lenses || [];
       if (!lenses.length) out.push(empty("No lenses reported."));
+      var counts = rv.counts || {};
+      var panelState = !rv.complete ? "unknown" : (rv.approved ? "pass" : "fail");
+      var panelText = !rv.complete ? "Panel incomplete: a lens is missing or returned invalid output, so this cannot count as an approval."
+        : (rv.approved ? "Every lens approved with no blocker or major findings." : "At least one lens did not approve, or a blocker/major finding was reported.");
+      out.push(h("div", "notice s-" + panelState, [badge(panelState, !rv.complete ? "incomplete" : (rv.approved ? "approved" : "not approved")), " ", panelText,
+        h("span", "muted", " Findings: " + ["blocker", "major", "minor", "nit"].map(function (k) { return (counts[k] || 0) + " " + k; }).join(", ") + ".")]));
       lenses.forEach(function (lens) {
         var fs = (lens.findings || []).slice().sort(function (a, b) { return (SEV_ORDER[a.severity] - SEV_ORDER[b.severity]); });
-        out.push(block(lens.name, [fs.length ? h("div", "checks", fs.map(function (f) {
+        var lst = lens.status !== "ran" ? "unknown" : (lens.approve ? "pass" : "fail");
+        var lword = lens.status !== "ran" ? lens.status : (lens.approve ? "approved" : "declined");
+        var head = h("div", "lens-head", [badge(lst, lword), h("span", "mono muted", " " + (lens.agent || ""))]);
+        var intro = [head];
+        if (lens.error) intro.push(h("p", "csum", "Error: " + lens.error));
+        if (lens.summary) intro.push(mdInline("p", lens.summary, "csum"));
+        if (lens.status === "ran" && lens.tests_detail) intro.push(h("p", "muted", "Tests: " + (lens.tests_ran || "") + " — " + lens.tests_detail));
+        if (lens.status !== "ran") { out.push(block(lens.name, intro, 0)); return; }
+        out.push(block(lens.name, intro.concat([fs.length ? h("div", "checks", fs.map(function (f) {
           return h("article", "check s-" + (SEV_STATUS[f.severity] || "unknown"), [
             h("div", "check-head", [badge(SEV_STATUS[f.severity] || "unknown", f.severity), h("span", "ct", f.rule), h("span", "cid", f.id),
               h("span", "spacer"), h("span", "mono muted", f.location)]),
             mdInline("p", f.problem, "csum"),
             h("div", "next", [h("span", "lead", "Fix"), mdInline("span", f.fix)])
           ]);
-        })) : empty("No findings from this lens.")], fs.length));
+        })) : empty("No findings from this lens.")]), fs.length));
       });
     }
     out.push(docsBlock(sectionById.review));

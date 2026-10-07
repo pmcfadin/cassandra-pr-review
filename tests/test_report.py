@@ -12,7 +12,9 @@ from cpr import checks, cli, diffview, model, render
 from cpr.triage import triage
 from tests.helpers import bundle
 
-FINDINGS = {"status": "ran", "lenses": [{"name": "correctness", "summary": "", "approve": False, "findings": [
+FINDINGS = {"status": "ran", "complete": True, "approved": False, "lenses": [
+    {"name": "correctness", "agent": "spec-flow:code-reviewer", "status": "ran", "summary": "", "approve": False,
+     "findings": [
     {"id": "c2", "severity": "minor", "location": "a.java:3", "rule": "r", "problem": "p", "fix": "f"},
     {"id": "c1", "severity": "blocker", "location": "a.java:1", "rule": "r", "problem": "p", "fix": "f"},
 ]}]}
@@ -44,8 +46,8 @@ class Model(unittest.TestCase):
     def test_findings_present_grouped_by_lens(self):
         m = build(review=FINDINGS)
         self.assertEqual(m["review"]["lenses"][0]["name"], "correctness")
-        self.assertEqual(m["recommendation"]["verdict"], "needs-work")
-        self.assertEqual(next(s for s in m["sections"] if s["id"] == "review")["status"], "warn")
+        self.assertEqual(m["recommendation"]["verdict"], "needs-contributor-work")
+        self.assertEqual(next(s for s in m["sections"] if s["id"] == "review")["status"], "fail")
 
     def test_bad_finding_severity_rejected(self):
         bad = json.loads(json.dumps(FINDINGS))

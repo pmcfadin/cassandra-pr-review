@@ -5,7 +5,7 @@ import time
 from cpr import VERSION, paths
 from cpr.checks import STATUSES
 from cpr.checks.compat import touched_surfaces
-from cpr.recommend import recommend
+from cpr.recommend import VERDICTS, recommend
 
 MODEL_SCHEMA = 1
 SEVERITIES = ("blocker", "major", "minor", "nit")
@@ -32,7 +32,7 @@ NOT_CHECKED = [
     "`ant check` (checkstyle and RAT) was not run; the static checks here approximate it from the diff.",
     "No tests were built or run; CI evidence comes only from summaries attached to JIRA.",
     "CI failures are counted, not compared against known flaky tests (Butler) yet.",
-    "Code review lenses (correctness, test rigor, compatibility, performance) are not part of this version.",
+    "Code review lenses read the diff; they do not build or run tests.",
 ]
 HUMAN_ONLY = [
     "Whether the design and approach are acceptable.",
@@ -105,10 +105,7 @@ def build(bundle, checks, triage, docs, diffview, review=None):
     """Assemble the report model. `review` is None until review lenses exist."""
     pr = bundle["pr"]
     ticket = (bundle.get("jira") or {}).get("ticket")
-    findings = None
-    if review is not None:
-        findings = [f for lens in review.get("lenses", []) for f in lens.get("findings", [])]
-    rec = recommend(pr, checks, findings)
+    rec = recommend(pr, checks, review)
     branches, unmapped = _branch_rows(bundle)
 
     sections = []
@@ -116,10 +113,18 @@ def build(bundle, checks, triage, docs, diffview, review=None):
         sec_checks = [c for c in checks if c["aspect"] in check_aspects]
         status = section_status(sec_checks)
         if sid == "summary":
-            status = {"blocked": "fail", "needs-work": "warn", "insufficient-evidence": "unknown",
-                      "requirements-met-unreviewed": "pass", "ready": "pass", "draft": "info"}[rec["verdict"]]
+            status = {"needs-contributor-work": "fail", "needs-work": "warn", "insufficient-evidence": "unknown",
+                      "awaiting-review": "info", "requirements-met-unreviewed": "pass", "ready": "pass",
+                      "draft": "info"}[rec["verdict"]]
         elif sid == "review":
-            status = "unknown" if review is None else ("pass" if not findings else "warn")
+            if review is None or not review.get("complete"):
+                status = "unknown"
+            elif any(f["severity"] in ("blocker", "major") for l in review["lenses"] for f in l["findings"]):
+                status = "fail"
+            elif any(l["findings"] for l in review["lenses"]):
+                status = "warn"
+            else:
+                status = "pass"
         elif sid == "changes":
             status = "info" if diffview.get("status") == "ok" else "unknown"
         sections.append({"id": sid, "title": title, "status": status, "docs": doc_aspects,
@@ -197,11 +202,11 @@ def validate(model):
         need(isinstance(c.get("id"), str), f"checks[{i}].id")
         need(isinstance(c.get("evidence"), list), f"checks[{i}].evidence")
     rec = model.get("recommendation") or {}
-    need(rec.get("verdict") in ("draft", "blocked", "insufficient-evidence", "needs-work",
-                                "requirements-met-unreviewed", "ready"), "recommendation.verdict")
+    need(rec.get("verdict") in VERDICTS, "recommendation.verdict")
     need((model.get("triage") or {}).get("rating") in ("easy", "moderate", "hard"), "triage.rating")
     for i, lens in enumerate(model["review"].get("lenses", [])):
         need(isinstance(lens.get("name"), str), f"review.lenses[{i}].name")
+        need(lens.get("status") in ("ran", "missing", "invalid"), f"review.lenses[{i}].status")
         for j, f in enumerate(lens.get("findings", [])):
             for k in ("id", "severity", "location", "rule", "problem", "fix"):
                 need(isinstance(f.get(k), str), f"review.lenses[{i}].findings[{j}].{k}")

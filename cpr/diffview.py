@@ -39,9 +39,9 @@ def unavailable(reason, version=None):
     return {"status": "unavailable", "reason": reason, "version": version, "html_b64": None, "omitted": []}
 
 
-def explain_map(checks):
-    """Per-file notes for the explanation pane, built from check evidence that names a file."""
-    notes = {}
+def explain_map(checks, review_notes=None):
+    """Per-file notes for the explanation pane, from check evidence and review findings that name a file."""
+    notes = {p: list(lines) for p, lines in (review_notes or {}).items()}
     for c in checks:
         if c["status"] not in ("fail", "warn"):
             continue
@@ -54,7 +54,7 @@ def explain_map(checks):
     return {p: "Flagged by cassandra-pr-review:\n\n" + "\n".join(lines) for p, lines in notes.items()}
 
 
-def render(bundle, checks, runner=subprocess.run, env=os.environ, scope_paths=None):
+def render(bundle, checks, runner=subprocess.run, env=os.environ, scope_paths=None, review_notes=None):
     gen, version = find_generator(env)
     if not gen:
         return unavailable("The rustyrazorblade dev-skills plugin (ide-explain) is not installed.")
@@ -65,7 +65,7 @@ def render(bundle, checks, runner=subprocess.run, env=os.environ, scope_paths=No
         emap = os.path.join(tmp, "explain-map.json")
         import json
         with open(emap, "w") as f:
-            json.dump(explain_map(checks), f)
+            json.dump(explain_map(checks, review_notes), f)
         cmd = ["python3", gen, "--diff", "--base", bundle["git"]["merge_base"], "--head", bundle["git"]["head_ref"],
                "--pr", str(pr["number"]), "--explain-map", emap,
                "--title", f"#{pr['number']} {pr['title']}"[:200], "--subtitle", f"{pr['head_ref']} → {pr['base']}",
@@ -78,7 +78,7 @@ def render(bundle, checks, runner=subprocess.run, env=os.environ, scope_paths=No
         with open(out, "rb") as f:
             data = f.read()
     if len(data) > SIZE_BUDGET and not scope_paths:
-        scoped = render(bundle, checks, runner, env, scope_paths=["src/"])
+        scoped = render(bundle, checks, runner, env, scope_paths=["src/"], review_notes=review_notes)
         if scoped["status"] == "ok":
             scoped["omitted"] = ["Diff view limited to src/ because the full view exceeded "
                                  f"{SIZE_BUDGET // (1024 * 1024)} MB; tests and other files are listed in the file table."]
