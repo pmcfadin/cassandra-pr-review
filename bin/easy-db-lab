@@ -1,0 +1,15 @@
+#!/bin/sh
+# Run easy-db-lab on Java 21 (it is compiled for class file version 65) without changing the
+# shell's JAVA_HOME, which Cassandra builds need at 11/17. The easy-db-lab plugin's skills use
+# bin/easy-db-lab from the current directory before the one on PATH.
+JDK21="${EASY_DB_LAB_JAVA_HOME:-$(brew --prefix openjdk@21 2>/dev/null)}"
+if [ -z "$JDK21" ] || [ ! -x "$JDK21/bin/java" ]; then
+  echo "easy-db-lab needs Java 21: brew install openjdk@21, or set EASY_DB_LAB_JAVA_HOME" >&2
+  exit 1
+fi
+# Its bundled OpenTelemetry agent exports to localhost:4318 by default; with no local collector that
+# only prints connection errors. Exporters default to off here; set the OTEL_* variables to override.
+export OTEL_TRACES_EXPORTER="${OTEL_TRACES_EXPORTER:-none}"
+export OTEL_METRICS_EXPORTER="${OTEL_METRICS_EXPORTER:-none}"
+export OTEL_LOGS_EXPORTER="${OTEL_LOGS_EXPORTER:-none}"
+JAVA_HOME="$JDK21" exec "${EASY_DB_LAB_BIN:-/opt/homebrew/bin/easy-db-lab}" "$@"
