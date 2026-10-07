@@ -1,0 +1,7 @@
+{
+  "enabledPlugins": {
+    "dev-skills@rustyrazorblade-plugins": true,
+    "spec-flow@rustyrazorblade-plugins": true,
+    "cassandra-expert@rustyrazorblade-plugins": true
+  }
+}
