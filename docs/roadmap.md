@@ -1,17 +1,29 @@
 # Roadmap
 
-The full pipeline the owner wants, split into OpenSpec changes, in order.
+The full pipeline the owner wants, split into OpenSpec changes, in order. Items 3–8 came from
+reviewer feedback on the first published reports (2026-10-07).
 
-1. **review-report-foundation** (in progress): run `cpr review <PR>` locally. It fetches the PR,
-   its sibling PRs, the JIRA ticket and the CI summaries; checks the merge requirements; rates how
-   hard the PR is to review; and renders one HTML report with left-hand navigation, the
-   recommendation on the first page, and the ide-explain diff view embedded.
-2. **review-lenses**: AI review lenses (from the rustyrazorblade spec-flow reviewers, plus
-   Cassandra-specific ones for compatibility, test regime and performance) run locally. Their
-   findings fill the report's Code review section and let a PR reach `ready`.
-3. **deeper-tests**: a further set of tests, still to be defined, which adds new check categories
-   to the report.
-4. **publish-and-comment**: commit reports to the public repo pmcfadin/cassandra-pr-review, serve
-   them through GitHub Pages, and post the link as a comment on the PR from the owner's account.
-5. **pr-polling**: a scheduled GitHub Action in our repo finds new or updated apache/cassandra PRs
-   and runs the pipeline.
+1. **review-report-foundation** (done): `cpr review <PR>` fetches the PR, sibling PRs, JIRA ticket,
+   and CI summaries; checks merge requirements; rates review difficulty; renders one HTML report.
+2. **review-lenses** (done): `/review-pr` runs a parallel panel of AI review lenses and renders
+   their findings; verdicts split by who must act.
+3. **reviewer-context** (next): related tickets from `git blame` of the changed lines, suggested
+   reviewers, and the people most experienced with each file, from `patch by` / `reviewed by` history.
+4. **cassandra-lenses**: replace the generic spec-flow lenses with Cassandra-native lenses built from
+   apache/cassandra's own `.claude/skills` review methods and bug-pattern catalog (concurrency,
+   serialization and versioning, lifecycle and ordering, IO and crash safety); dedupe overlapping
+   findings into one list. Removes the spec-flow dependency.
+5. **static-analysis**: PMD (cognitive complexity, copy-paste) and the project's real checkstyle on
+   changed files, split into introduced-by-this-PR vs already-there; perf commit-structure check
+   (benchmark commit first, then the change).
+6. **build-and-coverage**: build the branch and run the tests the PR touches or affects with JaCoCo
+   (`ant jacoco-run`); report coverage of changed lines.
+7. **perf-ab**: for core-path changes, run JMH (`test/microbench`) on the benchmark commit and the
+   PR head so reviewers can A/B.
+8. **easy-db-lab-plan**: auto-generate an easy-db-lab `plan.md` per PR (branch built with
+   rustyrazorblade/cassandra-builds, a workload matched to the change, compared against the base
+   branch), embedded in the report.
+9. **publish-and-comment**: publishing to GitHub Pages exists (`bin/publish-pages`); add posting the
+   report link as a PR comment from the owner's account.
+10. **pr-polling**: a scheduled GitHub Action in our repo finds new or updated apache/cassandra PRs
+    and runs the pipeline.
