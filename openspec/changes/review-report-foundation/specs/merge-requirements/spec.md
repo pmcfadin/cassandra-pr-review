@@ -76,7 +76,8 @@ commit count without failing on it.
 
 #### Scenario: Missing patch-by line
 - **WHEN** no commit contains a `patch by` line
-- **THEN** the commit-format check warns (advisory; committers often rewrite it)
+- **THEN** the commit-format check is a warning, never a failure, because committers often rewrite
+  the message at commit time; this warning alone does not move the recommendation to `needs-work`
 
 #### Scenario: Missing CHANGES.txt
 - **WHEN** files under `src/java/` changed and CHANGES.txt did not
@@ -139,18 +140,31 @@ no PR and no sibling explains why.
 - **THEN** the check warns that cassandra-6.0 has no PR
 
 ### Requirement: Committer votes check
-The system SHALL count +1 votes from committers, from GitHub reviews in state APPROVED with author
-association MEMBER/OWNER/COLLABORATOR and from JIRA comments containing "+1" by a known committer.
-Two votes SHALL be required (one for test-only changes). The committer roster SHALL come from a
-checked-in data file, and votes from people not on it SHALL be listed separately.
+The system SHALL count +1 votes from Cassandra committers, from GitHub reviews in state APPROVED and
+from JIRA comments containing "+1". Two votes SHALL be required (one for test-only changes). The
+committer roster SHALL be derived at runtime from the public ASF roster
+(`whimsy.apache.org/public/public_ldap_projects.json`, project `cassandra`, plus names from
+`public_ldap_people.json`), cached for 24 hours. A voter SHALL be identified as a committer by, in
+order: JIRA username equal to an ASF id on the roster; GitHub `author_association` of MEMBER or
+OWNER; a GitHub login whose commits on apache/cassandra use an `<asf-id>@apache.org` email on the
+roster. Each counted vote SHALL record which rule matched. A checked-in overrides file MAY correct
+individual mappings. Votes from people not matched SHALL be listed separately.
 
 #### Scenario: Two votes
 - **WHEN** two distinct committers have +1'd
-- **THEN** the votes check passes and names both
+- **THEN** the votes check passes, names both, and shows how each was identified as a committer
 
 #### Scenario: No votes yet
 - **WHEN** no committer has +1'd
 - **THEN** the votes check is fail, blocking, with summary "needs 2 committer +1s (has 0)"
+
+#### Scenario: Non-committer vote
+- **WHEN** a JIRA user not on the roster comments "+1"
+- **THEN** the vote is listed as "non-committer +1" and not counted
+
+#### Scenario: Roster unavailable
+- **WHEN** the ASF roster cannot be fetched and no cached copy exists
+- **THEN** the votes check is unknown and lists the raw +1s it found
 
 ### Requirement: Recommendation
 The system SHALL compute one recommendation from the check results and the review state:

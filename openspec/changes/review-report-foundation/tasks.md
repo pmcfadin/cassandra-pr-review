@@ -27,7 +27,7 @@
 - [ ] 3.6 Static diff checks reading banned APIs from the base branch's `.build/checkstyle.xml` (tests: banned API added, missing licence header)
 - [ ] 3.7 Compatibility surface detection and pairing rules (tests: config pairing missing, protocol touched)
 - [ ] 3.8 Branch coverage check (test: missing branch)
-- [ ] 3.9 Committer roster file and votes check (tests: two votes, no votes)
+- [ ] 3.9 Derived committer roster from ASF whimsy data with 24h cache and overrides file; votes check with per-vote match rule (tests: two votes, no votes, non-committer vote, roster unavailable)
 - [ ] 3.10 Recommendation rules (tests: unreviewed is best without review, unknown dominates pass, draft)
 
 ## 4. Triage (spec: review-triage)
@@ -49,7 +49,14 @@
 - [ ] 5.9 Output to `reports/<N>/index.html` and print path (test: default output)
 - [ ] 5.10 Self-containment test: no network references; open with networking disabled renders all sections (tests: no network references, opens from disk, print)
 
-## 6. End-to-end
+## 6. Aspect docs (spec: review-report, Aspect documentation)
 
-- [ ] 6.1 Run `cpr review` against five live PRs covering the fixture cases; review the reports with the owner
-- [ ] 6.2 Write README usage and document what the report does not check yet
+- [ ] 6.1 Write `docs/report/README.md` defining the aspect doc outline and listing every aspect
+- [ ] 6.2 Write aspect docs: summary, jira, ci, commits, testing, static, compatibility, branches, votes, triage, code-review, changes, each citing docs/research sources
+- [ ] 6.3 Embed each aspect doc as a collapsed "How this is judged" panel in its report section (tests: contributor reads the standard, doc missing)
+- [ ] 6.4 Doc coverage test: every registered check id appears in its aspect doc (test: every check is documented)
+
+## 7. End-to-end
+
+- [ ] 7.1 Run `cpr review` against five live PRs covering the fixture cases; review the reports with the owner
+- [ ] 7.2 Write README usage and document what the report does not check yet

@@ -106,3 +106,22 @@ earlier report for the same PR, and SHALL print the absolute path.
 #### Scenario: Default output
 - **WHEN** `cpr review 5226` completes
 - **THEN** `reports/5226/index.html` exists and its path is printed
+
+### Requirement: Aspect documentation
+The system SHALL ship one document per report aspect (summary and recommendation, JIRA ticket, CI,
+commits and changelog, testing, static checks, compatibility, branches, votes, triage, code review,
+changes view), each at `docs/report/<aspect>.md`, with the sections: What is checked, Why (citing the Cassandra
+project source), How each status is decided (one entry per check id), How to fix, and Limits.
+Each report section SHALL embed its aspect doc as a collapsed "How this is judged" panel.
+
+#### Scenario: Every check is documented
+- **WHEN** the test suite runs
+- **THEN** it fails if any registered check id has no entry in its aspect document
+
+#### Scenario: Contributor reads the standard
+- **WHEN** a contributor expands "How this is judged" in the Testing section
+- **THEN** they see the content of `docs/report/testing.md`, rendered, with no network access
+
+#### Scenario: Doc missing
+- **WHEN** an aspect document is missing at render time
+- **THEN** rendering fails with a message naming the missing document

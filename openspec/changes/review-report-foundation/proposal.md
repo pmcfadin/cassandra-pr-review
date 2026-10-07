@@ -25,6 +25,9 @@ change defines.
 - The HTML report: a left-hand navigation, a first page with the merge recommendation, the
   requirement results and the triage rating, then detail sections. The "Changes" section embeds
   the diff view rendered by the rustyrazorblade `dev-skills:ide-explain` generator.
+- One document per report aspect (testing, CI, JIRA, compatibility, and so on) under
+  `docs/report/`, explaining what is checked, why, and how to fix it. Each is embedded in its report
+  section, and a test keeps the docs in step with the checks.
 - A recommendation that never claims more than the evidence supports. Without code review, the
   best possible outcome is "requirements met, code not yet reviewed".
 
@@ -67,6 +70,7 @@ None. There are no existing specs.
 
 ## Impact
 
+- New `docs/report/` aspect documents.
 - New Python package (`cpr/`, standard library only) and its unit tests with recorded fixtures.
 - Runtime dependencies: `gh` (authenticated), `git`, network read access to api.github.com and
   issues.apache.org, and the installed `dev-skills` plugin (for the diff view only).

@@ -94,17 +94,32 @@ supplied → `requirements-met-unreviewed`; findings with no blocker/major → `
 `needs-work`. `ready` is unreachable in this change by construction (no lenses), which the spec
 requires.
 
-### D9. Committer roster
-A checked-in `cpr/data/committers.json` mapping GitHub login and JIRA username to a display name.
-Seeded from the Cassandra PMC/committer list; votes from unlisted people are shown separately as
-"non-committer +1". Alternative: query ASF LDAP/Whimsy at runtime. Rejected for now: no reliable
-GitHub-to-ASF-id mapping is public, and a reviewable file is easier to correct.
+### D9. Committer roster: derived from ASF, not hand-maintained
+The owner chose to derive the roster. The public ASF data gives committer ASF ids
+(`public_ldap_projects.json` → `cassandra.members`, 101 as of 2026-10-07; `owners` = PMC, 49) and
+names (`public_ldap_people.json`), but no GitHub usernames. So committer status is matched per
+source: JIRA username = ASF id; GitHub `author_association` MEMBER/OWNER (ASF-linked accounts are
+apache org members); or `<asf-id>@apache.org` commit emails in the clone. The roster is cached for
+24 hours under `.work/`. `cpr/data/committer-overrides.json` (empty to start) corrects individual
+mappings found to be wrong. Every counted vote shows the rule that matched, so a human can audit it.
+
+### D10. Aspect docs: one document per report aspect, embedded in the report
+Each aspect of the report (summary and recommendation, JIRA ticket, CI, commits and changelog,
+testing, static checks, compatibility, branches, votes, triage, code review, changes view) gets
+`docs/report/<aspect>.md`, following a fixed outline: what is checked, why (with the project-standard
+source), how each status is decided (per check id), what the contributor does to fix it, and known
+limits. The docs are the single source for this explanation: at render time each section's doc is
+embedded in its section as a collapsible "How this is judged" panel, rendered by the template's
+escaped markdown renderer. A test fails if any registered check id is not documented in its aspect
+doc, so the docs and the checks cannot drift apart.
 
 ## Risks / Trade-offs
 
 - [ci_summary HTML format changes or varies by era] → parse defensively, keep fixtures from several
   tickets, report "unparsed" instead of failing.
 - [JIRA anonymous rate limits or outages] → cache, retry with backoff, degrade to unknown.
+- [JIRA usernames that differ from ASF ids miss committer matches] → fall back to GitHub signals;
+  list unmatched +1s; correct via the overrides file.
 - [Heuristic +1 detection in JIRA comments misreads "+1 to the idea"] → show every counted vote
   with a link to its comment so a human can verify; votes never move the recommendation past
   `requirements-met-unreviewed`.
@@ -121,7 +136,7 @@ Not applicable; new project.
 
 ## Open Questions
 
-1. Committer roster source of truth: is a hand-maintained JSON acceptable, or should we derive it
-   from the ASF roster plus a GitHub mapping?
-2. Should a missing `patch by` line stay advisory? Committers often rewrite the message at commit time.
-3. "Deeper tests" will need their own section and check category; their shape is left to that change.
+Resolved by the owner (2026-10-07): roster is derived (D9); a missing `patch by` line is a warning;
+reports are per PR.
+
+1. "Deeper tests" will need their own section and check category; their shape is left to that change.
