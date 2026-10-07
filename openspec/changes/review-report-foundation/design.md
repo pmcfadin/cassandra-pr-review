@@ -55,8 +55,11 @@ set, a no-JIRA PR, a draft, a huge PR, a stale-CI PR). `--offline` starts from t
 responses.
 
 ### D4. Work directory and clone
-`.work/cassandra.git`: a blobless partial clone (`--filter=blob:none`) of apache/cassandra, fetching
-`refs/pull/<N>/head` and the base branch per review. `.work/pr/<N>/<head-sha>/` holds raw API
+`.work/cassandra`: a full clone of apache/cassandra, fetching `refs/pull/<N>/head` and the base
+branch per review. A blobless partial clone was tried first and rejected during implementation:
+ide-explain's per-hunk `git blame` then fetches historical blobs one at a time, and a single blame
+of `DatabaseDescriptor.java` ran for over 8 minutes. The full clone costs about 480 MB and 3 minutes
+once; the same blame takes 0.5 s. `.work/pr/<N>/<head-sha>/` holds raw API
 responses and stage outputs. Both are gitignored.
 
 ### D5. Diff view: call the installed ide-explain, embed it in a sandboxed iframe

@@ -1,0 +1,1254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Cassandra PR review</title>
+<style>
+/* ---------------------------------------------------------------------------
+   Tokens. Light is the default; dark follows the system unless the reader
+   picked light, and is forced when the reader picked dark.
+   --------------------------------------------------------------------------- */
+:root {
+  --bg: #e9edf1;
+  --panel: #ffffff;
+  --panel-2: #f4f6f8;
+  --ink: #16202a;
+  --ink-2: #44525f;
+  --ink-3: #6f7c88;
+  --rule: #d3d9df;
+  --rule-strong: #b7c0c8;
+  --accent: #245a8c;
+  --accent-soft: #e2ecf5;
+  --focus: #1f6fd1;
+  --nav-bg: #f7f8fa;
+  --self-row: #eef4fb;
+
+  --pass: #17663f; --pass-bg: #e2f1e8;
+  --warn: #855600; --warn-bg: #fbefd6;
+  --fail: #b0251d; --fail-bg: #fbe5e2;
+  --unknown: #5c4799; --unknown-bg: #ebe6f6;
+  --info: #2c5d7f; --info-bg: #e2edf5;
+  --na: #66717c; --na-bg: #eceff2;
+
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --radius: 6px;
+  --nav-w: 264px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1217; --panel: #151c23; --panel-2: #1b232b;
+    --ink: #e3e8ed; --ink-2: #a7b2bd; --ink-3: #7b8793;
+    --rule: #28323c; --rule-strong: #3a4652;
+    --accent: #84b6e6; --accent-soft: #1a2a3a; --focus: #6aa8f0;
+    --nav-bg: #11171d; --self-row: #172535;
+    --pass: #5cc98e; --pass-bg: #132a1e;
+    --warn: #e5b04a; --warn-bg: #2d2310;
+    --fail: #ff7d73; --fail-bg: #3a1715;
+    --unknown: #b8a5f3; --unknown-bg: #241d3b;
+    --info: #80b8de; --info-bg: #132635;
+    --na: #95a0ab; --na-bg: #1d242c;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1217; --panel: #151c23; --panel-2: #1b232b;
+  --ink: #e3e8ed; --ink-2: #a7b2bd; --ink-3: #7b8793;
+  --rule: #28323c; --rule-strong: #3a4652;
+  --accent: #84b6e6; --accent-soft: #1a2a3a; --focus: #6aa8f0;
+  --nav-bg: #11171d; --self-row: #172535;
+  --pass: #5cc98e; --pass-bg: #132a1e;
+  --warn: #e5b04a; --warn-bg: #2d2310;
+  --fail: #ff7d73; --fail-bg: #3a1715;
+  --unknown: #b8a5f3; --unknown-bg: #241d3b;
+  --info: #80b8de; --info-bg: #132635;
+  --na: #95a0ab; --na-bg: #1d242c;
+}
+
+/* ---------------------------------------------------------------------------
+   Base
+   --------------------------------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 14.5px/1.55 var(--sans);
+  font-feature-settings: "tnum" 1;
+}
+a { color: var(--accent); text-underline-offset: 2px; text-decoration-thickness: 1px; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 3px; }
+code, .mono { font-family: var(--mono); font-size: 0.9em; }
+code { background: var(--panel-2); border: 1px solid var(--rule); border-radius: 4px; padding: 0 4px; overflow-wrap: anywhere; }
+pre { font-family: var(--mono); font-size: 12.5px; line-height: 1.5; background: var(--panel-2); border: 1px solid var(--rule);
+  border-radius: var(--radius); padding: 12px 14px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; margin: 8px 0; }
+pre code { background: none; border: 0; padding: 0; }
+h1, h2, h3, h4 { line-height: 1.25; margin: 0; letter-spacing: -0.01em; }
+p { margin: 6px 0; }
+ul, ol { margin: 6px 0; padding-left: 22px; }
+li { margin: 2px 0; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+.muted { color: var(--ink-3); }
+.eyebrow { font: 600 11px/1.3 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+
+/* ---------------------------------------------------------------------------
+   Shell: nav + main
+   --------------------------------------------------------------------------- */
+.shell { display: grid; grid-template-columns: var(--nav-w) minmax(0, 1fr); min-height: 100vh;
+  background: linear-gradient(90deg, var(--nav-bg) calc(var(--nav-w) - 1px), var(--rule) calc(var(--nav-w) - 1px), var(--rule) var(--nav-w), transparent var(--nav-w)); }
+#nav {
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  background: var(--nav-bg); border-right: 1px solid var(--rule);
+  padding: 18px 12px 18px 14px; display: flex; flex-direction: column; gap: 14px;
+}
+.nav-head { padding: 0 6px; }
+.nav-head .pr-num { font: 700 20px/1.2 var(--sans); letter-spacing: -0.02em; margin-top: 4px; }
+.nav-head .pr-num a { color: var(--ink); text-decoration: none; }
+.nav-head .pr-num a:hover { text-decoration: underline; }
+.nav-verdict { margin-top: 6px; }
+#nav ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
+#nav li { margin: 0; }
+#nav ol a {
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px;
+  padding: 7px 8px 7px 10px; border-radius: var(--radius); color: var(--ink-2); text-decoration: none;
+  border-left: 3px solid transparent; font-weight: 500;
+}
+#nav ol a:hover { background: var(--panel-2); color: var(--ink); }
+#nav ol a[aria-current="page"] { background: var(--panel); color: var(--ink); border-left-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--rule); font-weight: 650; }
+.nav-foot { margin-top: auto; padding: 0 6px; font-size: 12px; color: var(--ink-3); }
+
+main { min-width: 0; }
+.toolbar {
+  position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 12px;
+  padding: 10px 40px; background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(6px); border-bottom: 1px solid var(--rule);
+}
+.toolbar .crumb { flex: 1; min-width: 0; color: var(--ink-3); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.toolbar .crumb strong { color: var(--ink); font-weight: 600; }
+button.tool {
+  font: 500 13px/1 var(--sans); color: var(--ink); background: var(--panel); border: 1px solid var(--rule-strong);
+  border-radius: var(--radius); padding: 7px 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+}
+button.tool:hover { border-color: var(--accent); }
+#nav-toggle { display: none; }
+.content { padding: 28px 40px 64px; max-width: 1120px; }
+
+/* ---------------------------------------------------------------------------
+   Sections
+   --------------------------------------------------------------------------- */
+.report-section { display: none; }
+.report-section.active { display: block; }
+.sec-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 2px solid var(--ink); }
+.sec-head h2 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+.sec-head h2:focus { outline: none; }
+.block { margin: 22px 0; }
+.block > h3 { font-size: 15px; font-weight: 650; margin-bottom: 10px; display: flex; align-items: baseline; gap: 8px; }
+.block > h3 .count { font: 500 12px var(--mono); color: var(--ink-3); }
+.panel { background: var(--panel); border: 1px solid var(--rule); border-radius: var(--radius); padding: 14px 16px; }
+.empty { color: var(--ink-3); font-style: italic; }
+.notice { border: 1px solid var(--rule-strong); border-left-width: 4px; border-radius: var(--radius); padding: 10px 14px; background: var(--panel); margin: 10px 0; }
+.notice.s-fail { border-left-color: var(--fail); }
+.notice.s-warn { border-left-color: var(--warn); }
+.notice.s-unknown { border-left-color: var(--unknown); }
+.notice.s-info { border-left-color: var(--info); }
+
+/* Status badge: color is never the only signal; each badge carries a glyph and a word. */
+.badge {
+  display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+  font: 600 11.5px/1 var(--mono); letter-spacing: 0.02em; padding: 3px 7px 3px 4px; border-radius: 999px;
+  color: var(--c); background: var(--cb); border: 1px solid color-mix(in srgb, var(--c) 35%, transparent);
+}
+.badge .g { display: inline-grid; place-items: center; width: 15px; height: 15px; border-radius: 50%;
+  background: var(--c); color: var(--panel); font: 800 10px/1 var(--sans); }
+.s-pass { --c: var(--pass); --cb: var(--pass-bg); }
+.s-warn { --c: var(--warn); --cb: var(--warn-bg); }
+.s-fail { --c: var(--fail); --cb: var(--fail-bg); }
+.s-unknown { --c: var(--unknown); --cb: var(--unknown-bg); }
+.s-info { --c: var(--info); --cb: var(--info-bg); }
+.s-not-applicable { --c: var(--na); --cb: var(--na-bg); }
+.tag { display: inline-block; font: 600 10.5px/1 var(--mono); letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 3px 6px; border-radius: 3px; border: 1px solid var(--rule-strong); color: var(--ink-2); white-space: nowrap; }
+.tag.blocking { color: var(--ink); border-color: var(--ink); background: var(--panel); }
+.tag.owner { border-style: dashed; }
+
+/* ---------------------------------------------------------------------------
+   Summary
+   --------------------------------------------------------------------------- */
+.pr-head h1 { font-size: 23px; font-weight: 700; letter-spacing: -0.02em; margin: 6px 0 8px; overflow-wrap: anywhere; }
+.pr-head h1 a { color: var(--ink); text-decoration: none; }
+.pr-head h1 a:hover { text-decoration: underline; }
+.meta-row { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--ink-2); font-size: 13.5px; }
+.meta-row > span { white-space: nowrap; }
+.meta-row .k { color: var(--ink-3); margin-right: 4px; }
+
+.verdict {
+  margin-top: 20px; background: var(--panel); border: 1px solid var(--rule); border-radius: var(--radius);
+  border-left: 8px solid var(--c); padding: 16px 20px 14px;
+}
+.verdict .v-label { display: flex; align-items: center; gap: 12px; margin-top: 6px; font-size: 26px; font-weight: 750; letter-spacing: -0.025em; line-height: 1.15; color: var(--ink); }
+.verdict .v-glyph { flex: none; display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--c); color: var(--panel); font-size: 18px; font-weight: 800; }
+.verdict .v-note { margin: 10px 0 0; font-size: 15px; font-weight: 600; color: var(--ink); }
+.verdict .waiting { margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-2); }
+.reasons { list-style: none; padding: 0; margin: 14px 0 0; border-top: 1px solid var(--rule); }
+.reasons > li { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; padding: 12px 0; border-bottom: 1px solid var(--rule); margin: 0; }
+.reasons > li:last-child { border-bottom: 0; padding-bottom: 2px; }
+.reasons > li > .badge { align-self: start; justify-self: start; margin-top: 1px; }
+.reasons .r-title { font-weight: 650; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.reasons .r-title a { color: var(--ink); }
+.reasons .r-body { grid-column: 2; color: var(--ink-2); }
+.next { grid-column: 2; margin-top: 4px; background: var(--panel-2); border-radius: 4px; padding: 7px 10px; border: 1px solid var(--rule); }
+.next .lead { font: 700 11px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink); margin-right: 6px; }
+
+.summary-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.9fr); gap: 18px; margin-top: 18px; align-items: start; }
+.triage-card .rating { font-size: 22px; font-weight: 750; letter-spacing: -0.02em; text-transform: capitalize; }
+.triage-card .pts { font: 500 12.5px var(--mono); color: var(--ink-3); margin-left: 6px; }
+.sig { list-style: none; padding: 0; margin: 10px 0 0; font-size: 13px; }
+.sig li { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 4px 0; border-top: 1px dotted var(--rule); margin: 0; }
+.sig li .sv { color: var(--ink-3); }
+.sig li.scored { color: var(--ink); font-weight: 600; }
+.sig li .pp { font: 600 12px var(--mono); }
+
+/* The gate matrix: every check, grouped by section, one row each. */
+.matrix { display: flex; flex-direction: column; gap: 12px; }
+.matrix-group h4 { font: 600 11px/1.3 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 4px; }
+.matrix-group ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 4px; }
+.matrix-group li { margin: 0; }
+.gate { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 4px;
+  background: var(--panel); border: 1px solid var(--rule); color: var(--ink); text-decoration: none; font-size: 13px; line-height: 1.3; }
+.gate:hover { border-color: var(--c); }
+.gate.blocking { box-shadow: inset 3px 0 0 var(--ink); }
+.gate .gk { font: 600 10px/1 var(--mono); letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-3); }
+.gate.blocking .gk { color: var(--ink); }
+.gate .badge { padding: 2px; }
+.gate .badge .w { display: none; }
+
+/* ---------------------------------------------------------------------------
+   Checks
+   --------------------------------------------------------------------------- */
+.checks { display: flex; flex-direction: column; gap: 10px; }
+.check { background: var(--panel); border: 1px solid var(--rule); border-left: 4px solid var(--c); border-radius: var(--radius); padding: 12px 14px; scroll-margin-top: 70px; }
+.check.flash { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent); }
+.check-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.check-head .ct { font-weight: 650; font-size: 15px; }
+.check-head .cid { font: 12px var(--mono); color: var(--ink-3); }
+.check-head .spacer { flex: 1; }
+.check .csum { margin: 6px 0 0; }
+.evidence { margin: 8px 0 0; padding-left: 18px; color: var(--ink-2); font-size: 13.5px; }
+.check .next { margin-top: 10px; }
+
+/* ---------------------------------------------------------------------------
+   Tables, field lists, details
+   --------------------------------------------------------------------------- */
+.table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--panel); }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font: 600 11px/1.3 var(--mono); letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-3); background: var(--panel-2); white-space: nowrap; }
+tbody tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; font-family: var(--mono); white-space: nowrap; }
+.nowrap { white-space: nowrap; }
+tr.self td { background: var(--self-row); }
+tr.self td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+.add { color: var(--pass); } .del { color: var(--fail); }
+dl.fields { display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; margin: 0; }
+dl.fields dt { color: var(--ink-3); font-size: 13px; }
+dl.fields dd { margin: 0; overflow-wrap: anywhere; }
+details { border: 1px solid var(--rule); border-radius: var(--radius); background: var(--panel); margin: 8px 0; }
+details > summary { cursor: pointer; padding: 8px 12px; font-weight: 600; font-size: 13.5px; list-style-position: inside; }
+details > summary:hover { background: var(--panel-2); }
+details[open] > summary { border-bottom: 1px solid var(--rule); }
+details > .d-body { padding: 10px 14px; }
+details.inline { border: 0; background: none; margin: 0; }
+details.inline > summary { padding: 0; font-weight: 500; color: var(--accent); }
+details.inline[open] > summary { border: 0; }
+details.inline > .d-body { padding: 6px 0 0; }
+details.howto > summary { color: var(--ink-2); }
+details.howto > summary::after { content: " — scoring rules and sources"; font-weight: 400; color: var(--ink-3); }
+.comment { border-top: 1px solid var(--rule); padding: 10px 0; }
+.comment:first-child { border-top: 0; padding-top: 0; }
+.comment .who { font-size: 13px; color: var(--ink-2); margin-bottom: 4px; }
+
+/* Markdown output */
+.md h1 { font-size: 19px; margin: 14px 0 8px; } .md h2 { font-size: 16px; margin: 14px 0 6px; }
+.md h3, .md h4, .md h5, .md h6 { font-size: 14px; margin: 12px 0 4px; }
+.md > :first-child { margin-top: 0; }
+.md table { margin: 8px 0; border: 1px solid var(--rule); }
+
+/* Changes */
+.diff-frame { display: block; width: 100%; height: calc(100vh - 190px); min-height: 480px; border: 1px solid var(--rule-strong); border-radius: var(--radius); background: #fff; }
+.print-only { display: none; }
+
+/* Missing-data banner */
+#no-data { display: none; margin: 40px auto; max-width: 640px; padding: 20px 24px; border: 2px solid var(--fail); border-radius: var(--radius); background: var(--panel); }
+#no-data h1 { font-size: 20px; color: var(--fail); margin-bottom: 8px; }
+body.no-data .shell { display: none; }
+body.no-data #no-data { display: block; }
+
+/* ---------------------------------------------------------------------------
+   Narrow screens: nav slides in from the left behind a toggle.
+   --------------------------------------------------------------------------- */
+@media (max-width: 799.98px) {
+  .shell { grid-template-columns: minmax(0, 1fr); background: none; }
+  .verdict { padding: 14px 14px 12px; border-left-width: 6px; }
+  .reasons > li { grid-template-columns: 1fr; }
+  .reasons .r-body, .next { grid-column: 1; }
+  #nav {
+    position: fixed; z-index: 20; left: 0; top: 0; width: min(300px, 86vw); height: 100vh;
+    transform: translateX(-100%); visibility: hidden; transition: transform 0.18s ease, visibility 0s linear 0.18s;
+    box-shadow: 0 0 40px rgba(0,0,0,0.25);
+  }
+  body.nav-open #nav { transform: none; visibility: visible; transition: transform 0.18s ease; }
+  #nav-scrim { position: fixed; inset: 0; z-index: 15; background: rgba(0,0,0,0.35); }
+  #nav-toggle { display: inline-flex; }
+  .toolbar { padding: 8px 16px; }
+  .content { padding: 18px 16px 48px; }
+  .summary-grid { grid-template-columns: minmax(0, 1fr); }
+  .verdict .v-label { font-size: 21px; }
+  dl.fields { grid-template-columns: 1fr; gap: 0; }
+  dl.fields dd { margin-bottom: 8px; }
+}
+@media (prefers-reduced-motion: reduce) { #nav { transition: none !important; } }
+
+/* ---------------------------------------------------------------------------
+   Print: every section in order, no navigation, panels expanded.
+   --------------------------------------------------------------------------- */
+@media print {
+  :root { --bg: #fff; --panel: #fff; --panel-2: #f5f5f5; --nav-bg: #fff; }
+  body { background: #fff; font-size: 11.5pt; }
+  #nav, #nav-scrim, .toolbar, .no-print, .diff-frame, details > summary::marker { display: none !important; }
+  .shell { display: block; background: none; }
+  .content { padding: 0; max-width: none; }
+  .report-section { display: block !important; break-before: page; }
+  .report-section:first-child { break-before: auto; }
+  .print-only { display: block; }
+  details::details-content { content-visibility: visible; display: block; }
+  details > summary { padding: 4px 0; }
+  .check, .gate, .verdict, tr { break-inside: avoid; }
+  a { color: inherit; }
+  .table-wrap { overflow: visible; }
+}
+</style>
+</head>
+<body>
+<div id="no-data" role="alert">
+  <h1>No report data</h1>
+  <p>This page is the report template without a report model, or the model failed to load. Generate a report with <code>cpr review &lt;PR number&gt;</code> and open the file it prints.</p>
+</div>
+<div class="shell">
+  <nav id="nav" aria-label="Report sections">
+    <div class="nav-head">
+      <div class="eyebrow">apache/cassandra review</div>
+      <div class="pr-num" id="nav-pr"></div>
+      <div class="nav-verdict" id="nav-verdict"></div>
+    </div>
+    <ol id="nav-list"></ol>
+    <div class="nav-foot" id="nav-foot"></div>
+  </nav>
+  <main id="main">
+    <div class="toolbar">
+      <button type="button" class="tool" id="nav-toggle" aria-controls="nav" aria-expanded="false"><span aria-hidden="true">&#9776;</span> Sections</button>
+      <div class="crumb" id="crumb"></div>
+      <button type="button" class="tool" id="theme-toggle" title="Switch colour theme">Theme: system</button>
+    </div>
+    <div class="content" id="content"></div>
+  </main>
+</div>
+<!--REPORT_MODEL-->
+<script>
+(function () {
+  "use strict";
+
+  // -------------------------------------------------------------------------
+  // Escaping and links. Everything from the model is untrusted text.
+  // -------------------------------------------------------------------------
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  // http(s)/mailto, or no explicit scheme. Normalise the way a browser URL parser does first, so
+  // "\x01javascript:" or "java\tscript:" cannot pass as scheme-less.
+  function isSafeLinkUrl(url) {
+    if (url === null || url === undefined) return false;
+    var normalized = String(url)
+      .replace(/^[\x00-\x20]+|[\x00-\x20]+$/g, "")
+      .replace(/[\t\n\r]/g, "");
+    if (!normalized) return false;
+    if (/^(https?:|mailto:)/i.test(normalized)) return true;
+    if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(normalized)) return false;
+    return true;
+  }
+
+  // -------------------------------------------------------------------------
+  // Markdown: headings, lists, fenced code, inline code, bold/italic, links,
+  // pipe tables. Input is escaped first; only our own tags are added.
+  // -------------------------------------------------------------------------
+  function inlineMD(text) {
+    var s = escapeHtml(text);
+    var stash = [];
+    function keep(html) { stash.push(html); return "\u0001" + (stash.length - 1) + "\u0002"; }
+    s = s.replace(/\u0001|\u0002/g, "");
+    s = s.replace(/`([^`]+)`/g, function (m, p1) { return keep("<code>" + p1 + "</code>"); });
+    s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, function (m, label, url) {
+      if (!isSafeLinkUrl(url)) return label + " (" + url + ")";
+      return keep('<a href="' + url + '" target="_blank" rel="noopener noreferrer">') + label + keep("</a>");
+    });
+    s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    s = s.replace(/(^|[^\w])__([^_]+)__(?=[^\w]|$)/g, "$1<strong>$2</strong>");
+    s = s.replace(/(^|[^\w*])\*([^*\s][^*]*)\*(?=[^\w*]|$)/g, "$1<em>$2</em>");
+    s = s.replace(/(^|[^\w])_([^_\s][^_]*)_(?=[^\w]|$)/g, "$1<em>$2</em>");
+    s = s.replace(/\u0001(\d+)\u0002/g, function (m, i) { return stash[Number(i)]; });
+    return s;
+  }
+
+  function splitTableRow(line) {
+    var t = line.trim();
+    if (t.charAt(0) === "|") t = t.slice(1);
+    if (t.charAt(t.length - 1) === "|") t = t.slice(0, -1);
+    return t.split("|").map(function (c) { return c.trim(); });
+  }
+
+  var TABLE_SEP_RE = /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/;
+  var HEADING_RE = /^(#{1,6})\s+(.*)$/;
+  var UL_RE = /^\s*[-*+]\s+(.*)$/;
+  var OL_RE = /^\s*\d+[.)]\s+(.*)$/;
+  var FENCE_RE = /^\s*(```|~~~)(.*)$/;
+
+  function renderMarkdown(src) {
+    var lines = String(src || "").replace(/\r\n/g, "\n").split("\n");
+    var html = "";
+    var i = 0;
+    while (i < lines.length) {
+      var line = lines[i];
+      var fence = line.match(FENCE_RE);
+      if (fence) {
+        var mark = fence[1], code = [];
+        i++;
+        while (i < lines.length && lines[i].trim().indexOf(mark) !== 0) { code.push(lines[i]); i++; }
+        i++;
+        html += "<pre><code>" + escapeHtml(code.join("\n")) + "</code></pre>";
+        continue;
+      }
+      var heading = line.match(HEADING_RE);
+      if (heading) {
+        var level = Math.min(6, heading[1].length + 2); // nest under the section's h2/h3
+        html += "<h" + level + ">" + inlineMD(heading[2]) + "</h" + level + ">";
+        i++;
+        continue;
+      }
+      if (line.indexOf("|") !== -1 && i + 1 < lines.length && TABLE_SEP_RE.test(lines[i + 1])) {
+        var head = splitTableRow(line), rows = [];
+        i += 2;
+        while (i < lines.length && lines[i].indexOf("|") !== -1 && !/^\s*$/.test(lines[i])) { rows.push(splitTableRow(lines[i])); i++; }
+        html += '<div class="table-wrap"><table><thead><tr>' +
+          head.map(function (c) { return "<th>" + inlineMD(c) + "</th>"; }).join("") + "</tr></thead><tbody>" +
+          rows.map(function (r) { return "<tr>" + r.map(function (c) { return "<td>" + inlineMD(c) + "</td>"; }).join("") + "</tr>"; }).join("") +
+          "</tbody></table></div>";
+        continue;
+      }
+      if (/^\s*$/.test(line)) { i++; continue; }
+      if (UL_RE.test(line) || OL_RE.test(line)) {
+        var ordered = !UL_RE.test(line), re = ordered ? OL_RE : UL_RE, items = [];
+        while (i < lines.length && re.test(lines[i])) { items.push(lines[i].replace(re, "$1")); i++; }
+        var tag = ordered ? "ol" : "ul";
+        html += "<" + tag + ">" + items.map(function (it) { return "<li>" + inlineMD(it) + "</li>"; }).join("") + "</" + tag + ">";
+        continue;
+      }
+      var para = [];
+      while (i < lines.length && !/^\s*$/.test(lines[i]) && !HEADING_RE.test(lines[i]) &&
+             !UL_RE.test(lines[i]) && !OL_RE.test(lines[i]) && !FENCE_RE.test(lines[i])) {
+        para.push(lines[i]); i++;
+      }
+      html += "<p>" + para.map(inlineMD).join("<br>") + "</p>";
+    }
+    return html;
+  }
+
+  // -------------------------------------------------------------------------
+  // DOM helpers. Text always goes in through textContent.
+  // -------------------------------------------------------------------------
+  function h(tag, cls, children) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    append(e, children);
+    return e;
+  }
+  function append(e, children) {
+    if (children === null || children === undefined || children === false) return e;
+    if (!Array.isArray(children)) children = [children];
+    children.forEach(function (c) {
+      if (c === null || c === undefined || c === false) return;
+      if (Array.isArray(c)) { append(e, c); return; }
+      e.appendChild(typeof c === "object" ? c : document.createTextNode(String(c)));
+    });
+    return e;
+  }
+  function trustedHtml(tag, cls, html) { // only for output of inlineMD/renderMarkdown, which escape
+    var e = h(tag, cls);
+    e.innerHTML = html;
+    return e;
+  }
+  function md(src) { return trustedHtml("div", "md", renderMarkdown(src)); }
+  function mdInline(tag, src, cls) { return trustedHtml(tag || "span", cls, inlineMD(src)); }
+  function link(url, text, cls) {
+    if (!isSafeLinkUrl(url)) return h("span", cls, text);
+    var a = h("a", cls, text);
+    a.href = String(url);
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    return a;
+  }
+  function short(sha, n) { return sha ? String(sha).slice(0, n || 10) : ""; }
+  function plural(n, word) { return n + " " + word + (n === 1 ? "" : "s"); }
+  function details(title, body, opts) {
+    var d = h("details", (opts && opts.cls) || null);
+    if (opts && opts.open) d.open = true;
+    append(d, h("summary", null, title));
+    append(d, h("div", "d-body", body));
+    return d;
+  }
+  function block(title, children, count) {
+    return h("div", "block", [h("h3", null, [title, count !== undefined ? h("span", "count", String(count)) : null])].concat(children));
+  }
+  function table(headers, rows, opts) {
+    var t = h("table");
+    var tr = h("tr");
+    headers.forEach(function (hd) {
+      var th = h("th", /^(\+|−|Passed|Failed|Total|Points|Lines|Size)/.test(hd) ? "num" : null, hd);
+      th.scope = "col";
+      tr.appendChild(th);
+    });
+    append(t, h("thead", null, tr));
+    var tb = h("tbody");
+    rows.forEach(function (r) {
+      var row = h("tr", r.cls || null);
+      r.cells.forEach(function (c) {
+        var td = h("td", c && c.num ? "num" : null);
+        append(td, c && c.node !== undefined ? c.node : c);
+        row.appendChild(td);
+      });
+      tb.appendChild(row);
+    });
+    t.appendChild(tb);
+    return h("div", "table-wrap" + ((opts && opts.cls) ? " " + opts.cls : ""), t);
+  }
+  function fields(pairs) {
+    var dl = h("dl", "fields");
+    pairs.forEach(function (p) {
+      if (!p) return;
+      dl.appendChild(h("dt", null, p[0]));
+      var v = p[1];
+      dl.appendChild(h("dd", null, (v === null || v === undefined || v === "" || (Array.isArray(v) && !v.length)) ? h("span", "muted", "not set") : v));
+    });
+    return dl;
+  }
+  function list(items, render) {
+    var ul = h("ul");
+    items.forEach(function (it) { ul.appendChild(h("li", null, render(it))); });
+    return ul;
+  }
+  function empty(text) { return h("p", "empty", text); }
+
+  var STATUS = {
+    "pass": { g: "✓", w: "Pass" },
+    "warn": { g: "!", w: "Warning" },
+    "fail": { g: "✕", w: "Fail" },
+    "unknown": { g: "?", w: "Unknown" },
+    "info": { g: "i", w: "Info" },
+    "not-applicable": { g: "–", w: "N/A" }
+  };
+  function st(s) { return STATUS[s] ? s : "unknown"; }
+  function badge(status, label) {
+    var s = st(status);
+    var b = h("span", "badge s-" + s, [h("span", "g", STATUS[s].g), h("span", "w", label || STATUS[s].w)]);
+    b.lastChild.previousSibling.setAttribute("aria-hidden", "true");
+    b.title = STATUS[s].w;
+    return b;
+  }
+  function ownerLabel(o) { return o ? o.charAt(0).toUpperCase() + o.slice(1) : "Unassigned"; }
+  function kindTag(blocking) { return h("span", "tag" + (blocking ? " blocking" : ""), blocking ? "Blocking" : "Advisory"); }
+
+  // -------------------------------------------------------------------------
+  // Model
+  // -------------------------------------------------------------------------
+  var M = window.REPORT_MODEL;
+  if (!M || typeof M !== "object" || !Array.isArray(M.sections)) {
+    document.body.classList.add("no-data");
+    if (typeof console !== "undefined") console.error("report: window.REPORT_MODEL is missing or malformed");
+    return;
+  }
+
+  var pr = M.pr || {};
+  var checks = Array.isArray(M.checks) ? M.checks : [];
+  var checkById = {};
+  checks.forEach(function (c) { checkById[c.id] = c; });
+  var sectionOfCheck = {};
+  M.sections.forEach(function (s) { (s.checks || []).forEach(function (id) { sectionOfCheck[id] = s.id; }); });
+  var sectionIds = M.sections.map(function (s) { return s.id; });
+  var sectionById = {};
+  M.sections.forEach(function (s) { sectionById[s.id] = s; });
+
+  // Path classification, mirroring cpr/paths.py.
+  var TEST_SUITES = [
+    ["test/unit/", "Unit (test/unit)"], ["test/distributed/", "In-JVM dtest (test/distributed)"],
+    ["test/burn/", "Burn (test/burn)"], ["test/long/", "Long (test/long)"],
+    ["test/microbench/", "Microbench (test/microbench)"], ["test/simulator/", "Simulator (test/simulator)"],
+    ["test/harry/", "Harry (test/harry)"], ["test/memory/", "Memory (test/memory)"],
+    ["test/anttasks/", "Ant tasks (test/anttasks)"], ["pylib/cqlshlib/test/", "cqlsh (pylib/cqlshlib/test)"]
+  ];
+  function isTest(p) { return p.indexOf("test/") === 0 || p.indexOf("/test/") !== -1; }
+  function testSuite(p) {
+    for (var i = 0; i < TEST_SUITES.length; i++) if (p.indexOf(TEST_SUITES[i][0]) === 0) return TEST_SUITES[i][1];
+    return isTest(p) ? "Other tests" : null;
+  }
+  function fileLines(f) { return (Number(f.additions) || 0) + (Number(f.deletions) || 0); }
+
+  function prCommitUrl(sha) {
+    return pr.url && isSafeLinkUrl(pr.url) ? String(pr.url).replace(/\/+$/, "") + "/commits/" + encodeURIComponent(sha) : null;
+  }
+  function ghUser(login) { return login ? "https://github.com/" + encodeURIComponent(login) : null; }
+  function ghTree(repo, ref) {
+    if (!repo || !ref) return null;
+    return "https://github.com/" + String(repo).split("/").map(encodeURIComponent).join("/") + "/tree/" + String(ref).split("/").map(encodeURIComponent).join("/");
+  }
+
+  // -------------------------------------------------------------------------
+  // Check cards
+  // -------------------------------------------------------------------------
+  function nextStep(action, owner) {
+    return h("div", "next", [h("span", "lead", "Next step"), mdInline("span", action), " ",
+      h("span", "tag owner", "Who acts: " + ownerLabel(owner))]);
+  }
+  function checkCard(c) {
+    var card = h("article", "check s-" + st(c.status));
+    card.id = "check-" + c.id;
+    append(card, h("div", "check-head", [badge(c.status), h("span", "ct", c.title || c.id), h("span", "cid", c.id),
+      h("span", "spacer"), kindTag(c.blocking), h("span", "tag owner", "Owner: " + ownerLabel(c.owner))]));
+    if (c.summary) append(card, mdInline("p", c.summary, "csum"));
+    var ev = Array.isArray(c.evidence) ? c.evidence : [];
+    if (ev.length) {
+      var ul = h("ul", "evidence");
+      ev.forEach(function (e) {
+        var li = h("li");
+        if (e && e.url && isSafeLinkUrl(e.url)) {
+          var a = trustedHtml("a", null, inlineMD(e.text || e.url));
+          a.href = String(e.url); a.target = "_blank"; a.rel = "noopener noreferrer";
+          li.appendChild(a);
+        } else {
+          li.appendChild(mdInline("span", (e && e.text) || ""));
+          if (e && e.url) append(li, [" ", h("span", "muted", "(" + e.url + ")")]);
+        }
+        ul.appendChild(li);
+      });
+      append(card, ul);
+    }
+    if (c.action) append(card, nextStep(c.action, c.owner));
+    return card;
+  }
+  function checksBlock(sec) {
+    var ids = sec.checks || [];
+    if (!ids.length) return null;
+    var cs = ids.map(function (id) { return checkById[id]; }).filter(Boolean);
+    var order = { "fail": 0, "unknown": 1, "warn": 2, "pass": 3, "not-applicable": 4 };
+    cs.sort(function (a, b) { return (order[a.status] - order[b.status]) || ((b.blocking ? 1 : 0) - (a.blocking ? 1 : 0)); });
+    return block("Checks", [h("div", "checks", cs.map(checkCard))], cs.length);
+  }
+  function docsBlock(sec) {
+    var aspects = sec.docs || [];
+    if (!aspects.length) return null;
+    return h("div", "block", aspects.map(function (a) {
+      var doc = (M.docs || {})[a];
+      var title = aspects.length > 1 ? "How this is judged: " + a : "How this is judged";
+      return details(title, doc ? md(doc) : empty("No document for " + a + "."), { cls: "howto" });
+    }));
+  }
+
+  // -------------------------------------------------------------------------
+  // Files
+  // -------------------------------------------------------------------------
+  var STATUS_WORD = { A: "added", M: "modified", D: "deleted", R: "renamed", C: "copied", T: "type changed" };
+  function fileTable(files) {
+    if (!files.length) return empty("No files in the model.");
+    return table(["Path", "Status", "+ Added", "− Deleted"], files.map(function (f) {
+      var path = [h("span", "mono", f.path)];
+      if (f.previous_path) append(path[0], h("span", "muted", " (from " + f.previous_path + ")"));
+      var stw = STATUS_WORD[String(f.status || "").charAt(0)] || f.status || "";
+      return { cells: [{ node: path }, stw + (f.binary ? " (binary)" : ""),
+        { num: true, node: h("span", "add", "+" + (f.additions || 0)) }, { num: true, node: h("span", "del", "−" + (f.deletions || 0)) }] };
+    }));
+  }
+
+  // -------------------------------------------------------------------------
+  // Sections
+  // -------------------------------------------------------------------------
+  var verdictStatus = (sectionById.summary && sectionById.summary.status) || "unknown";
+
+  function renderSummary() {
+    var out = [];
+    var jira = M.jira || {};
+    var t = jira.ticket;
+    var key = (M.jira_key && M.jira_key.key) || (t && t.key);
+
+    var head = h("header", "pr-head");
+    append(head, h("div", "eyebrow", "apache/cassandra · Pull request #" + pr.number + " · " + (pr.draft ? "draft" : (pr.state || ""))));
+    append(head, h("h1", null, link(pr.url, pr.title || "(untitled)")));
+    var meta = h("div", "meta-row");
+    append(meta, h("span", null, [h("span", "k", "Author"), link(ghUser(pr.author), pr.author || "unknown"),
+      pr.author_association ? h("span", "muted", " (" + String(pr.author_association).toLowerCase().replace(/_/g, " ") + ")") : null]));
+    append(meta, h("span", null, [h("span", "k", "Base"), link(ghTree("apache/cassandra", pr.base), pr.base || "?", "mono")]));
+    if (pr.head_repo) append(meta, h("span", null, [h("span", "k", "From"), link(ghTree(pr.head_repo, pr.head_ref), pr.head_repo + ":" + (pr.head_ref || ""), "mono")]));
+    append(meta, h("span", null, [h("span", "k", "Size"), h("span", "add", "+" + (pr.additions || 0)), " ", h("span", "del", "−" + (pr.deletions || 0)),
+      " in " + plural(pr.changed_files || 0, "file")]));
+    append(meta, h("span", null, [h("span", "k", "JIRA"), key ? link(t && t.url ? t.url : "https://issues.apache.org/jira/browse/" + encodeURIComponent(key), key, "mono") : h("span", "muted", "no ticket key found"),
+      " ", t ? h("span", "tag", t.status || "?") : (key ? h("span", "tag", "ticket " + (jira.status || "unavailable")) : null)]));
+    append(head, meta);
+    if (t && t.summary) append(head, h("p", "muted", t.summary));
+    out.push(head);
+
+    // Recommendation
+    var rec = M.recommendation || {};
+    var v = h("section", "verdict s-" + st(verdictStatus));
+    v.setAttribute("aria-label", "Recommendation");
+    append(v, h("div", "eyebrow", "Recommendation"));
+    var glyph = h("span", "v-glyph", STATUS[st(verdictStatus)].g);
+    glyph.setAttribute("aria-hidden", "true");
+    append(v, h("div", "v-label", [glyph, h("span", "v-text", rec.label || rec.verdict || "No recommendation")]));
+    if (rec.verdict === "requirements-met-unreviewed")
+      append(v, h("p", "v-note", "Code review has not run yet. The merge requirements below pass, but no review lens has read the code, so this is not a ready-to-merge verdict."));
+    if (rec.verdict === "draft" || pr.draft)
+      append(v, h("p", "v-note", "This PR is a draft. Treat everything here as early feedback, not a merge decision."));
+    if (rec.verdict === "insufficient-evidence")
+      append(v, h("p", "v-note", "Some required inputs could not be read, so the tool cannot say whether the requirements are met."));
+    if (Array.isArray(rec.waiting_on) && rec.waiting_on.length) {
+      var w = h("div", "waiting", h("strong", null, "Waiting on:"));
+      rec.waiting_on.forEach(function (o) { append(w, h("span", "tag owner", ownerLabel(o))); });
+      append(v, w);
+    }
+    var reasons = (Array.isArray(rec.reasons) ? rec.reasons : []).slice();
+    // In a draft the recommendation carries only the draft reason; still surface blocking failures.
+    if (rec.verdict === "draft") {
+      checks.filter(function (c) { return c.blocking && c.status === "fail"; }).forEach(function (c) {
+        reasons.push({ check: c.id, title: c.title, status: c.status, summary: c.summary, action: c.action, owner: c.owner });
+      });
+    }
+    function rank(r) {
+      var c = r.check ? checkById[r.check] : null;
+      var blocking = c ? !!c.blocking : false;
+      var s = { "fail": 0, "unknown": 1, "warn": 2 }[r.status];
+      return (blocking ? 0 : 10) + (s === undefined ? 5 : s);
+    }
+    reasons = reasons.map(function (r, i) { return { r: r, i: i }; })
+      .sort(function (a, b) { return (rank(a.r) - rank(b.r)) || (a.i - b.i); }).map(function (x) { return x.r; });
+    if (reasons.length) {
+      var ol = h("ol", "reasons");
+      ol.setAttribute("aria-label", "Reasons");
+      reasons.forEach(function (r) {
+        var c = r.check ? checkById[r.check] : null;
+        var sec = r.check ? sectionOfCheck[r.check] : null;
+        var title = sec ? h("a", null, r.title || r.check) : h("span", null, r.title || "");
+        if (sec) { title.href = "#" + sec; title.setAttribute("data-check", r.check); }
+        var li = h("li", null, [badge(r.status), h("div", "r-title", [title, c ? kindTag(c.blocking) : null, r.check ? h("span", "cid mono muted", r.check) : null])]);
+        if (r.summary) append(li, mdInline("div", r.summary, "r-body"));
+        if (r.action) append(li, nextStep(r.action, r.owner));
+        else if (r.owner) append(li, h("div", "r-body", [h("span", "tag owner", "Who acts: " + ownerLabel(r.owner))]));
+        ol.appendChild(li);
+      });
+      append(v, ol);
+    }
+    out.push(v);
+
+    // Triage + matrix
+    var grid = h("div", "summary-grid");
+    var tr = M.triage || {};
+    var tc = h("section", "panel triage-card");
+    tc.setAttribute("aria-label", "Review difficulty");
+    append(tc, h("div", "eyebrow", "Review difficulty"));
+    append(tc, h("div", null, [h("span", "rating", tr.rating || "unknown"), h("span", "pts", plural(tr.points || 0, "point"))]));
+    if (tr.forced_by) append(tc, h("p", null, [h("strong", null, "Rated hard because it "), tr.forced_by + "."]));
+    var sig = h("ul", "sig");
+    (tr.signals || []).forEach(function (s) {
+      var pts = Number(s.points) || 0;
+      sig.appendChild(h("li", pts ? "scored" : null, [h("span", null, [s.signal + ": ", h("span", "sv", String(s.value))]),
+        h("span", "pp", (pts > 0 ? "+" : "") + pts)]));
+    });
+    append(tc, sig);
+    var tl = h("a", null, "Triage details");
+    tl.href = "#triage";
+    append(tc, h("p", null, tl));
+    grid.appendChild(tc);
+
+    var mx = h("section", "matrix");
+    mx.setAttribute("aria-label", "Every check");
+    append(mx, h("div", "eyebrow", "Every check · " + checks.length));
+    var placed = {};
+    M.sections.forEach(function (s) {
+      var ids = (s.checks || []).filter(function (id) { return checkById[id]; });
+      if (!ids.length) return;
+      ids.forEach(function (id) { placed[id] = true; });
+      mx.appendChild(matrixGroup(s.title, s.id, ids));
+    });
+    var stray = checks.filter(function (c) { return !placed[c.id]; }).map(function (c) { return c.id; });
+    if (stray.length) mx.appendChild(matrixGroup("Other", null, stray));
+    grid.appendChild(mx);
+    out.push(grid);
+
+    if (pr.body) out.push(h("div", "block", details("PR description", h("pre", null, pr.body))));
+    return out;
+  }
+  function matrixGroup(title, sid, ids) {
+    var g = h("div", "matrix-group", h("h4", null, title));
+    var ul = h("ul");
+    ids.forEach(function (id) {
+      var c = checkById[id];
+      var a = h(sid ? "a" : "div", "gate s-" + st(c.status) + (c.blocking ? " blocking" : ""),
+        [badge(c.status), h("span", "gt", c.title || c.id), h("span", "gk", (c.blocking ? "Blocking" : "Advisory") + " · " + (STATUS[st(c.status)].w))]);
+      if (sid) { a.href = "#" + sid; a.setAttribute("data-check", c.id); }
+      a.title = c.id + ": " + (c.summary || "");
+      ul.appendChild(h("li", null, a));
+    });
+    g.appendChild(ul);
+    return g;
+  }
+
+  function people(arr) {
+    if (!Array.isArray(arr) || !arr.length) return null;
+    return arr.map(function (p) { return p.display ? p.display + (p.name ? " (" + p.name + ")" : "") : p.name; }).join(", ");
+  }
+  function renderTicket() {
+    var jira = M.jira || {};
+    var t = jira.ticket;
+    var out = [];
+    var jk = M.jira_key || {};
+    if (jira.status !== "ok" || !t) {
+      var msg = {
+        "skipped": "JIRA was not queried for this report (no ticket key, or JIRA lookup was turned off).",
+        "not_found": "The ticket " + (jk.key || "") + " was not found in JIRA. Check the key in the PR title.",
+        "unavailable": "JIRA could not be reached when this report was generated, so ticket checks are unknown."
+      }[jira.status] || "Ticket data is not available (status: " + (jira.status || "unknown") + ").";
+      out.push(h("div", "notice s-" + (jira.status === "not_found" ? "fail" : "unknown"), [h("strong", null, "No ticket data. "), msg,
+        jira.error ? h("div", "muted mono", String(jira.error)) : null]));
+    }
+    out.push(block("Ticket key", [fields([
+      ["Key", jk.key ? link("https://issues.apache.org/jira/browse/" + encodeURIComponent(jk.key), jk.key, "mono") : null],
+      ["Found in", (jk.sources || []).join(", ")],
+      ["Also mentioned", (jk.mentioned || []).filter(function (k) { return k !== jk.key; }).join(", ") || "none"],
+      ["Conflicts", (jk.conflicts || []).length ? (jk.conflicts || []).map(function (c) { return typeof c === "string" ? c : JSON.stringify(c); }).join("; ") : "none"]
+    ])]));
+    if (t) {
+      out.push(block("Fields", [h("div", "panel", fields([
+        ["Summary", t.summary],
+        ["Status", [t.status || "", t.resolution ? " (" + t.resolution + ")" : ""].join("")],
+        ["Type", t.issuetype],
+        ["Components", (t.components || []).join(", ")],
+        ["Fix versions", (t.fix_versions || []).join(", ")],
+        ["Since versions", (t.since_versions || []).join(", ")],
+        ["Reviewers", people(t.reviewers)],
+        ["Authors", people(t.authors)],
+        ["Assignee", people(t.assignee)],
+        ["Test and doc plan", t.test_doc_plan ? h("span", "mono", t.test_doc_plan) : null],
+        ["Impacts", (t.impacts || []).join(", ")],
+        ["Ticket", link(t.url, "Open " + t.key + " in JIRA")]
+      ]))]));
+    }
+    var cb = checksBlock(sectionById.ticket);
+    if (cb) out.splice(t ? 0 : 1, 0, cb);
+    if (t) {
+      out.push(block("Description", [t.description ? details("Show description", h("pre", null, t.description)) : empty("No description.")]));
+      var cms = t.comments || [];
+      var body = cms.length ? cms.map(function (c) {
+        return h("div", "comment", [h("div", "who", [h("strong", null, c.display || c.author || "unknown"), " · " + (c.created || "").slice(0, 16).replace("T", " ") + " · ",
+          link(c.url, "link")]), h("pre", null, c.body || "")]);
+      }) : empty("No comments.");
+      var label = cms.length ? "Show " + (t.comment_count > cms.length ? "the last " + cms.length + " of " + t.comment_count + " comments" : plural(cms.length, "comment")) : "Comments";
+      out.push(block("Comments", [details(label, body)], t.comment_count || 0));
+    }
+    return out;
+  }
+
+  function renderCi() {
+    var out = [checksBlock(sectionById.ci)];
+    var rows = (M.branches || []).map(function (b) {
+      var ci = b.ci;
+      var ciCells;
+      if (ci) {
+        var match = ci.sha ? (ci.sha_matches ? h("span", "badge s-pass", [h("span", "g", "✓"), h("span", "w", "matches head")])
+                                             : h("span", "badge s-warn", [h("span", "g", "!"), h("span", "w", "older commit")]))
+                           : h("span", "muted", "no sha");
+        var fails = (ci.failures || []);
+        ciCells = [
+          { node: [link(ci.url, ci.attachment || "summary"), ci.overall ? h("div", "muted", "overall: " + ci.overall) : null] },
+          { node: [h("span", "mono", short(ci.sha) || "—"), " ", match] },
+          { num: true, node: ci.passed === null || ci.passed === undefined ? "—" : String(ci.passed) },
+          { num: true, node: ci.failed === null || ci.failed === undefined ? "—" : h("span", ci.failed ? "del" : null, String(ci.failed)) },
+          { num: true, node: ci.total === null || ci.total === undefined ? "—" : String(ci.total) },
+          ci.has_upgrade_tests === true ? "yes" : ci.has_upgrade_tests === false ? "no" : "—",
+          { node: fails.length ? h("details", "inline", [h("summary", null, plural(fails.length, "failure")),
+              h("div", "d-body", list(fails, function (f) { return h("span", "mono", typeof f === "string" ? f : JSON.stringify(f)); }))]) : h("span", "muted", "none") }
+        ];
+      } else {
+        ciCells = [{ node: badge("fail", "no CI attached") }, "", "", "", "", "", ""];
+      }
+      return {
+        cls: b.is_self ? "self" : null,
+        cells: [{ node: [h("span", "mono nowrap", b.branch), b.is_self ? h("div", "muted", "this PR") : null] },
+          { node: [link(b.pr_url, "#" + b.pr_number), b.draft ? h("span", "muted", " draft") : null] },
+          b.state || "",
+          { node: h("span", "mono", short(b.head_sha)) }].concat(ciCells)
+      };
+    });
+    out.push(block("Target branches", [rows.length ? table(["Branch", "PR", "State", "Head", "CI summary", "CI sha", "Passed", "Failed", "Total", "Upgrade tests", "Failures"], rows)
+      : empty("No sibling PRs found for this ticket.")], rows.length));
+    var un = M.ci_unmapped || [];
+    out.push(block("CI summaries not matched to a branch", [un.length ? list(un, function (u) {
+      return [link(u.url, u.attachment || "attachment"), " — parse: " + (u.parse_status || "?"),
+        u.ref ? [" · ref ", h("span", "mono", u.ref)] : null, u.error ? h("div", "muted", u.error) : null];
+    }) : empty("Every attached CI summary was matched to a branch.")], un.length));
+    var ar = M.ci_archives || [];
+    out.push(block("Result archives", [ar.length ? list(ar, function (a) {
+      return [link(a.url, a.filename || "archive"), h("span", "muted", " · " + (a.size ? (a.size / 1048576).toFixed(1) + " MB" : "size unknown") +
+        " · " + (a.target_branch || "branch unknown"))];
+    }) : empty("No result_details archives attached.")], ar.length));
+    out.push(docsBlock(sectionById.ci));
+    return out;
+  }
+
+  function renderTesting() {
+    var files = M.files || [];
+    var groups = {}, order = [], prodLines = 0, testLines = 0, prodFiles = 0;
+    files.forEach(function (f) {
+      var s = testSuite(f.path || "");
+      if (s) {
+        testLines += fileLines(f);
+        if (!groups[s]) { groups[s] = []; order.push(s); }
+        groups[s].push(f);
+      } else { prodLines += fileLines(f); prodFiles++; }
+    });
+    var out = [checksBlock(sectionById.testing)];
+    out.push(block("Lines changed", [h("div", "panel", fields([
+      ["Non-test", plural(prodLines, "line") + " in " + plural(prodFiles, "file")],
+      ["Test", plural(testLines, "line") + " in " + plural(files.length - prodFiles, "file")]
+    ]))]));
+    if (!order.length) out.push(block("Test files by suite", [empty("No test files changed.")], 0));
+    else out.push(block("Test files by suite", order.map(function (s) {
+      return h("div", "block", [h("h4", "eyebrow", s + " · " + groups[s].length), fileTable(groups[s])]);
+    }), files.length - prodFiles));
+    out.push(docsBlock(sectionById.testing));
+    return out;
+  }
+
+  function renderCommits() {
+    var cs = M.commits || [];
+    var out = [checksBlock(sectionById.commits)];
+    out.push(block("Commits", [cs.length ? h("div", "checks", cs.map(function (c) {
+      var msg = String(c.message || "");
+      var first = msg.split("\n")[0];
+      var rest = msg.slice(first.length).replace(/^\n+/, "");
+      var card = h("article", "check s-info", [h("div", "check-head", [link(prCommitUrl(c.sha), short(c.sha), "mono"), h("span", "ct", first),
+        h("span", "spacer"), h("span", "muted", c.login ? c.author_name + " (@" + c.login + ")" : (c.author_name || ""))])]);
+      if (rest) append(card, details("Full message", h("pre", null, msg), { cls: "inline" }));
+      var trs = c.trailers || [];
+      if (trs.length) append(card, h("div", null, [h("span", "eyebrow", "Trailers"), list(trs, function (t) { return [h("strong", null, t.name + ": "), t.value]; })]));
+      return card;
+    })) : empty("No commits in the model.")], cs.length));
+    out.push(docsBlock(sectionById.commits));
+    return out;
+  }
+
+  function renderCompat() {
+    var surf = M.compat_surfaces || {};
+    var names = Object.keys(surf);
+    var out = [checksBlock(sectionById.compatibility)];
+    out.push(block("Surfaces touched", [names.length ? list(names, function (n) {
+      return [h("strong", null, n), list(surf[n] || [], function (p) { return h("span", "mono", p); })];
+    }) : empty("No compatibility surfaces touched.")], names.length));
+    out.push(docsBlock(sectionById.compatibility));
+    return out;
+  }
+
+  function renderVotes() {
+    var rv = M.github_reviews || [];
+    var out = [checksBlock(sectionById.votes)];
+    out.push(block("GitHub reviews", [rv.length ? table(["Reviewer", "State", "Association", "Submitted", "Link"], rv.map(function (r) {
+      var s = String(r.state || "");
+      return { cells: [{ node: link(ghUser(r.user), r.user || "?") },
+        { node: badge(s === "APPROVED" ? "pass" : s === "CHANGES_REQUESTED" ? "fail" : "info", s.toLowerCase().replace(/_/g, " ")) },
+        String(r.association || "").toLowerCase().replace(/_/g, " "), String(r.submitted_at || "").replace("T", " ").replace("Z", ""),
+        { node: link(r.url, "view") }] };
+    })) : empty("No GitHub reviews yet.")], rv.length));
+    out.push(docsBlock(sectionById.votes));
+    return out;
+  }
+
+  function renderTriage() {
+    var tr = M.triage || {};
+    var out = [];
+    out.push(block("Rating", [h("div", "panel", fields([
+      ["Rating", h("strong", null, tr.rating || "unknown")],
+      ["Points", String(tr.points || 0)],
+      ["Forced to hard by", tr.forced_by || "nothing; rated by points"],
+      ["Counted lines", tr.lines === undefined ? null : String(tr.lines)],
+      ["Counted files", tr.files === undefined ? null : String(tr.files)]
+    ]))]));
+    out.push(block("Signals", [table(["Signal", "Value", "Points", "Why"], (tr.signals || []).map(function (s) {
+      return { cls: s.points ? null : null, cells: [s.signal, String(s.value), { num: true, node: String(s.points || 0) }, s.why || ""] };
+    }))], (tr.signals || []).length));
+    var sp = tr.split_suggestion;
+    if (sp) {
+      out.push(block("Consider splitting", [h("div", "notice s-warn", [
+        "This patch changes " + sp.src_lines + " production lines, over the " + sp.threshold + "-line threshold. The largest files:",
+        list(sp.largest || [], function (f) { return [h("span", "mono", f.path), h("span", "muted", " · " + plural(f.lines, "line"))]; })
+      ])]));
+    }
+    out.push(docsBlock(sectionById.triage));
+    return out;
+  }
+
+  var SEV_ORDER = { blocker: 0, major: 1, minor: 2, nit: 3 };
+  var SEV_STATUS = { blocker: "fail", major: "fail", minor: "warn", nit: "info" };
+  function renderReview() {
+    var rv = M.review || {};
+    var out = [];
+    if (rv.status === "not-run" || !rv.status) {
+      out.push(h("div", "notice s-unknown", [h("strong", null, "Not run in this version. "),
+        "No code review lens has read this patch. The recommendation cannot go past “requirements met, unreviewed” until one does."]));
+    } else {
+      var lenses = rv.lenses || [];
+      if (!lenses.length) out.push(empty("No lenses reported."));
+      lenses.forEach(function (lens) {
+        var fs = (lens.findings || []).slice().sort(function (a, b) { return (SEV_ORDER[a.severity] - SEV_ORDER[b.severity]); });
+        out.push(block(lens.name, [fs.length ? h("div", "checks", fs.map(function (f) {
+          return h("article", "check s-" + (SEV_STATUS[f.severity] || "unknown"), [
+            h("div", "check-head", [badge(SEV_STATUS[f.severity] || "unknown", f.severity), h("span", "ct", f.rule), h("span", "cid", f.id),
+              h("span", "spacer"), h("span", "mono muted", f.location)]),
+            mdInline("p", f.problem, "csum"),
+            h("div", "next", [h("span", "lead", "Fix"), mdInline("span", f.fix)])
+          ]);
+        })) : empty("No findings from this lens.")], fs.length));
+      });
+    }
+    out.push(docsBlock(sectionById.review));
+    return out;
+  }
+
+  function decodeB64Utf8(b64) {
+    var bin = atob(b64);
+    var bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder("utf-8").decode(bytes);
+  }
+  function renderChanges() {
+    var dv = M.diffview || {};
+    var files = M.files || [];
+    var out = [];
+    var ok = dv.status === "ok" && dv.html_b64;
+    if (ok) {
+      var frame = document.createElement("iframe");
+      frame.className = "diff-frame";
+      frame.setAttribute("sandbox", "allow-scripts");
+      frame.setAttribute("title", "Diff view for PR #" + pr.number);
+      frame.setAttribute("referrerpolicy", "no-referrer");
+      try {
+        frame.srcdoc = decodeB64Utf8(String(dv.html_b64));
+        out.push(frame);
+      } catch (e) {
+        ok = false;
+        out.push(h("div", "notice s-unknown", [h("strong", null, "Diff view could not be decoded. "), "The file list below is shown instead."]));
+      }
+      if (dv.version) out.push(h("p", "muted no-print", "Diff view from ide-explain " + dv.version + "."));
+    } else {
+      out.push(h("div", "notice s-unknown", [h("strong", null, "Diff view unavailable. "), dv.reason || "No reason recorded."]));
+    }
+    var om = dv.omitted || [];
+    if (om.length) out.push(block("Left out of the diff view", [list(om, function (o) { return mdInline("span", typeof o === "string" ? o : JSON.stringify(o)); })], om.length));
+    var ft = details("Files changed (" + files.length + ")", fileTable(files), { open: !ok });
+    ft.id = "changes-files";
+    out.push(h("div", "block", ft));
+    out.push(docsBlock(sectionById.changes));
+    return out;
+  }
+
+  function renderAbout() {
+    var a = M.about || {};
+    var inp = a.inputs || {};
+    var tool = M.tool || {};
+    var out = [];
+    out.push(block("This report", [h("div", "panel", fields([
+      ["Tool", (tool.name || "") + " " + (tool.version || "")],
+      ["Generated", M.generated_at],
+      ["Model schema", String(M.schema)]
+    ].concat(Object.keys(inp).map(function (k) {
+      var v = inp[k];
+      var label = k.replace(/_/g, " ");
+      label = label.charAt(0).toUpperCase() + label.slice(1);
+      return [label, v === null || v === undefined ? null : h("span", /sha|merge_base/.test(k) ? "mono" : null, String(v))];
+    }))))]));
+    out.push(block("Not checked by this tool", [list(a.not_checked || [], function (x) { return mdInline("span", x); })], (a.not_checked || []).length));
+    out.push(block("Needs a human", [list(a.human_only || [], function (x) { return mdInline("span", x); })], (a.human_only || []).length));
+    return out;
+  }
+
+  function renderGeneric(sec) { return [checksBlock(sec), docsBlock(sec)]; }
+
+  var RENDERERS = {
+    summary: function (s) { return renderSummary().concat([docsBlock(s)]); },
+    ticket: function (s) { return renderTicket().concat([docsBlock(s)]); },
+    ci: renderCi, testing: renderTesting, commits: renderCommits, compatibility: renderCompat,
+    votes: renderVotes, triage: renderTriage, review: renderReview, changes: renderChanges, about: renderAbout
+  };
+
+  // -------------------------------------------------------------------------
+  // Build page
+  // -------------------------------------------------------------------------
+  document.title = "PR #" + pr.number + ": " + (pr.title || "") + " — Cassandra PR review";
+  var navPr = document.getElementById("nav-pr");
+  append(navPr, link(pr.url, "PR #" + pr.number));
+  append(document.getElementById("nav-verdict"), badge(verdictStatus, (M.recommendation && M.recommendation.verdict || "").replace(/-/g, " ")));
+  append(document.getElementById("nav-foot"), [(M.tool && M.tool.name) + " " + (M.tool && M.tool.version), h("br"), "Generated " + (M.generated_at || "")]);
+
+  var navList = document.getElementById("nav-list");
+  var content = document.getElementById("content");
+  var navLinks = {}, sectionEls = {};
+  M.sections.forEach(function (s) {
+    var a = h("a", null, [h("span", null, s.title), badge(s.status)]);
+    a.href = "#" + s.id;
+    a.setAttribute("aria-label", s.title + ", status " + STATUS[st(s.status)].w);
+    navLinks[s.id] = a;
+    navList.appendChild(h("li", null, a));
+
+    var el = h("section", "report-section");
+    el.id = "section-" + s.id;
+    el.setAttribute("data-section", s.id);
+    el.setAttribute("aria-labelledby", "h-" + s.id);
+    var h2 = h("h2", null, s.title);
+    h2.id = "h-" + s.id;
+    h2.tabIndex = -1;
+    append(el, h("div", "sec-head", [h2, badge(s.status)]));
+    var body;
+    try {
+      body = (RENDERERS[s.id] || renderGeneric)(s);
+    } catch (e) {
+      if (typeof console !== "undefined") console.error(e);
+      body = [h("div", "notice s-fail", [h("strong", null, "This section failed to render. "), String(e && e.message || e)])];
+    }
+    append(el, body.filter(Boolean));
+    content.appendChild(el);
+    sectionEls[s.id] = el;
+  });
+
+  // -------------------------------------------------------------------------
+  // Routing: one section at a time, current section in location.hash.
+  // -------------------------------------------------------------------------
+  var crumb = document.getElementById("crumb");
+  var current = null, pendingCheck = null, focusHeading = false;
+  function show(id) {
+    if (!sectionEls[id]) id = sectionEls.summary ? "summary" : sectionIds[0];
+    if (current !== id) {
+      Object.keys(sectionEls).forEach(function (k) {
+        sectionEls[k].classList.toggle("active", k === id);
+        if (k === id) navLinks[k].setAttribute("aria-current", "page"); else navLinks[k].removeAttribute("aria-current");
+      });
+      current = id;
+      crumb.textContent = "";
+      append(crumb, ["PR #" + pr.number + " · ", h("strong", null, sectionById[id].title)]);
+      window.scrollTo(0, 0);
+    }
+    if (pendingCheck) {
+      var card = document.getElementById("check-" + pendingCheck);
+      pendingCheck = null;
+      if (card) {
+        card.scrollIntoView({ block: "start" });
+        card.classList.add("flash");
+        setTimeout(function () { card.classList.remove("flash"); }, 1600);
+      }
+    } else if (focusHeading) {
+      var hd = document.getElementById("h-" + id);
+      if (hd) hd.focus({ preventScroll: true });
+    }
+    focusHeading = false;
+  }
+  function route() { show(decodeURIComponent((location.hash || "").replace(/^#/, ""))); }
+  window.addEventListener("hashchange", route);
+  document.addEventListener("click", function (ev) {
+    var a = ev.target.closest ? ev.target.closest('a[href^="#"]') : null;
+    if (!a) return;
+    pendingCheck = a.getAttribute("data-check");
+    focusHeading = true;
+    closeNav();
+    if (a.getAttribute("href") === location.hash) { ev.preventDefault(); show(location.hash.slice(1)); }
+  });
+  if (!location.hash || !sectionEls[location.hash.slice(1)]) {
+    try { history.replaceState(null, "", "#summary"); } catch (e) { /* file:// in some browsers */ }
+  }
+  route();
+
+  // -------------------------------------------------------------------------
+  // Narrow-screen nav
+  // -------------------------------------------------------------------------
+  var navToggle = document.getElementById("nav-toggle");
+  var scrim = null;
+  function openNav() {
+    document.body.classList.add("nav-open");
+    navToggle.setAttribute("aria-expanded", "true");
+    scrim = h("div");
+    scrim.id = "nav-scrim";
+    scrim.addEventListener("click", closeNav);
+    document.body.appendChild(scrim);
+    var cur = navLinks[current];
+    if (cur) cur.focus();
+  }
+  function closeNav() {
+    if (!document.body.classList.contains("nav-open")) return;
+    document.body.classList.remove("nav-open");
+    navToggle.setAttribute("aria-expanded", "false");
+    if (scrim) { scrim.remove(); scrim = null; }
+  }
+  navToggle.addEventListener("click", function () {
+    if (document.body.classList.contains("nav-open")) { closeNav(); navToggle.focus(); } else openNav();
+  });
+  document.addEventListener("keydown", function (ev) {
+    if (ev.key === "Escape" && document.body.classList.contains("nav-open")) { closeNav(); navToggle.focus(); }
+  });
+
+  // -------------------------------------------------------------------------
+  // Theme: system -> light -> dark, remembered per browser.
+  // -------------------------------------------------------------------------
+  var THEMES = ["system", "light", "dark"];
+  var themeBtn = document.getElementById("theme-toggle");
+  function applyTheme(t) {
+    if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    else document.documentElement.removeAttribute("data-theme");
+    themeBtn.textContent = "Theme: " + t;
+    themeBtn.setAttribute("aria-label", "Colour theme: " + t + ". Activate to change.");
+  }
+  var theme = "system";
+  try { theme = localStorage.getItem("cpr-theme") || "system"; } catch (e) { /* storage blocked */ }
+  if (THEMES.indexOf(theme) < 0) theme = "system";
+  applyTheme(theme);
+  themeBtn.addEventListener("click", function () {
+    theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
+    applyTheme(theme);
+    try { localStorage.setItem("cpr-theme", theme); } catch (e) { /* storage blocked */ }
+  });
+
+  // -------------------------------------------------------------------------
+  // Print: open every <details> while printing, then restore.
+  // -------------------------------------------------------------------------
+  var reopened = [];
+  window.addEventListener("beforeprint", function () {
+    reopened = Array.prototype.filter.call(document.querySelectorAll("details:not([open])"), function (d) { d.open = true; return true; });
+  });
+  window.addEventListener("afterprint", function () {
+    reopened.forEach(function (d) { d.open = false; });
+    reopened = [];
+  });
+})();
+</script>
+</body>
+</html>

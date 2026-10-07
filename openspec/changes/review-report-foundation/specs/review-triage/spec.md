@@ -36,3 +36,11 @@ The system SHALL flag PRs over a configured size (default 1,000 changed lines in
 #### Scenario: Huge PR
 - **WHEN** a PR changes 20,000 lines
 - **THEN** the report flags it and lists the five largest files by changed lines
+
+### Requirement: Small changes are not rated hard on breadth alone
+The system SHALL cap the rating at `moderate` when a PR changes fewer than a configured number of
+lines (default 50), unless it changes serialization or on-disk format code.
+
+#### Scenario: Tiny change across many packages
+- **WHEN** a PR changes 12 lines across 9 files in 6 subsystems and touches no serializer
+- **THEN** the rating is `moderate` and the report says it was capped because the change is small

@@ -1,0 +1,5 @@
+{
+  "_comment": "Corrections for committer matching. Map a GitHub login or JIRA username to an ASF id on the Cassandra roster. Keep this small; matching is derived from ASF data first.",
+  "github": {},
+  "jira": {}
+}

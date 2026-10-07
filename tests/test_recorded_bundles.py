@@ -1,0 +1,68 @@
+"""Regression tests over bundles recorded from real apache/cassandra PRs (2026-10-07)."""
+
+import gzip
+import json
+import os
+import unittest
+
+from cpr import checks, diffview, model, render
+from cpr.recommend import recommend
+from cpr.triage import triage
+
+DIR = os.path.join(os.path.dirname(__file__), "fixtures", "bundles")
+
+
+def load(name):
+    with gzip.open(os.path.join(DIR, name), "rt") as f:
+        return json.load(f)
+
+
+def status(results, check_id):
+    return next(r["status"] for r in results if r["id"] == check_id)
+
+
+class RecordedBundles(unittest.TestCase):
+    def test_backport_set(self):
+        b = load("5201-backport-set.json.gz")
+        res = checks.run_all(b)
+        self.assertEqual({s["base"] for s in b["siblings"]},
+                         {"cassandra-4.0", "cassandra-4.1", "cassandra-5.0", "cassandra-6.0", "trunk"})
+        self.assertEqual(status(res, "ci.evidence"), "fail")  # only 5.0 has CI attached
+        self.assertEqual(status(res, "static.banned-api"), "not-applicable")  # 4.0 has no checkstyle.xml
+        self.assertEqual(recommend(b["pr"], res)["verdict"], "blocked")
+
+    def test_no_jira(self):
+        b = load("5212-no-jira.json.gz")
+        res = checks.run_all(b)
+        self.assertIsNone(b["jira_key"]["key"])
+        self.assertEqual(status(res, "jira.key-present"), "fail")
+        self.assertEqual(status(res, "ci.evidence"), "unknown")
+        self.assertEqual(triage(b)["rating"], "moderate")  # 12 lines across 9 files
+
+    def test_draft(self):
+        b = load("5238-draft.json.gz")
+        self.assertEqual(recommend(b["pr"], checks.run_all(b))["verdict"], "draft")
+
+    def test_huge(self):
+        b = load("4967-huge.json.gz")
+        t = triage(b)
+        self.assertEqual(t["rating"], "hard")
+        self.assertIsNotNone(t["split_suggestion"])
+
+    def test_stale_ci(self):
+        b = load("5228-stale-ci.json.gz")
+        res = checks.run_all(b)
+        self.assertEqual(status(res, "ci.freshness"), "warn")
+        self.assertEqual(status(res, "jira.not-resolved"), "warn")
+
+    def test_every_bundle_renders(self):
+        for name in sorted(os.listdir(DIR)):
+            with self.subTest(name):
+                b = load(name)
+                res = checks.run_all(b)
+                m = model.build(b, res, triage(b), render.load_docs(), diffview.unavailable("fixture"))
+                self.assertTrue(render.render_html(m).startswith("<!doctype html>"))
+
+
+if __name__ == "__main__":
+    unittest.main()

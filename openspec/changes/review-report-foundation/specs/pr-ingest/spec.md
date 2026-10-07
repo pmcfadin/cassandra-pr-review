@@ -86,13 +86,13 @@ downloaded in this change.
 - **THEN** the bundle records "no CI evidence" for every branch
 
 ### Requirement: Local clone for diffs
-The system SHALL keep a partial clone of apache/cassandra in the work directory and SHALL fetch the
-PR's head (`refs/pull/<N>/head`) and base branch into it, so the diff view and diff-based checks run
-against real git objects.
+The system SHALL keep a full clone of apache/cassandra in the work directory and SHALL fetch the
+PR's head (`refs/pull/<N>/head`) and base branch into it, so the diff view (including its blame
+context) and diff-based checks run against local git objects.
 
 #### Scenario: First run
 - **WHEN** no clone exists
-- **THEN** a blobless partial clone is created, and the PR head and base are fetched
+- **THEN** a full clone is created, and the PR head and base are fetched
 
 #### Scenario: Subsequent run
 - **WHEN** the clone exists

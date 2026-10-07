@@ -54,11 +54,14 @@ each with the contributor's next action.
 - **THEN** the first page states plainly that code review has not run yet
 
 ### Requirement: Detail sections
-The report SHALL include these sections after the summary: Requirements (every check, grouped by
-category, with evidence), JIRA (ticket fields, Reviewers, recent comments), Branches & CI (one row
-per target branch: PR, head sha, CI sha, profile, counts), Commits, Changes (the diff view),
-Compatibility surfaces, Triage signals, Code review (findings from review lenses, or "not run"), and
-About (tool version, ide-explain version, generation time, input shas, what was not checked).
+The report SHALL include one section per aspect after the summary, each showing its checks in full
+(status, evidence, action, owner): JIRA ticket (ticket fields, Reviewers, recent comments), Branches
+& CI (one row per target branch: PR, head sha, CI sha, profile, counts), Testing (test files by
+suite, production vs test lines), Commits & changelog, Code style, Compatibility (touched surfaces),
+Reviews & votes, Triage (signals), Code review (findings from review lenses, or "not run"), Changes
+(the diff view), and About (tool version, ide-explain version, generation time, input shas, what was
+not checked). The summary SHALL hold a compact grid of every check, grouped by aspect, each linking
+to its section.
 
 #### Scenario: Code review not run
 - **WHEN** no review lens has produced findings

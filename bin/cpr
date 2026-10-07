@@ -1,0 +1,4 @@
+#!/bin/sh
+# Thin wrapper: run the cpr package from this checkout with the system python3.
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m cpr "$@"

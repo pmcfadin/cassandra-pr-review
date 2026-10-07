@@ -8,3 +8,8 @@ reports/
 *.swp
 .idea/
 .vscode/
+
+# Playwright output
+tests/browser/test-results/
+tests/browser/.fixtures/
+__pycache__/

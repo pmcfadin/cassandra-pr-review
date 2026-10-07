@@ -2,9 +2,12 @@
 
 ### Requirement: Check result shape
 Every requirement check SHALL produce a result with: an id, a title, a category (ticket, ci,
-commit, changelog, tests, static, compatibility, governance), a status (pass, fail, warn, unknown,
-not-applicable), a one-line summary, the evidence it used (with links where one exists), and, when
-not passing, what the contributor must do. Each check SHALL be either blocking or advisory.
+commit, changelog, tests, static, compatibility, governance), the aspect document that explains it,
+a status (pass, fail, warn, unknown, not-applicable), a one-line summary, the evidence it used (with
+links and file:line locations where they exist), and, when not passing, the next action and who
+takes it (contributor, reviewer, or committer). Each check SHALL be either blocking or advisory. A
+warning SHALL say whether it requires action; warnings that do not are shown but do not change the
+recommendation. A check that crashes SHALL report unknown, never pass.
 
 #### Scenario: Failing check explains itself
 - **WHEN** a blocking check fails
@@ -118,7 +121,8 @@ These checks SHALL be advisory, because `ant check` (not run here) is authoritat
 The system SHALL detect when the diff touches config (`Config.java`, `cassandra*.yaml`), system
 properties, native protocol, CQL grammar, nodetool commands, JMX/metrics, or virtual tables, and
 SHALL check the deterministic pairings: config changes touch both `cassandra.yaml` and
-`cassandra_latest.yaml`; new system properties go through `CassandraRelevantProperties`; nodetool
+`cassandra_latest.yaml` (on branches that have `cassandra_latest.yaml`; a change to
+`cassandra_latest.yaml` alone is allowed, since its defaults differ on purpose); new system properties go through `CassandraRelevantProperties`; nodetool
 changes update help fixtures. Detected surfaces SHALL be listed for human attention even when no
 pairing rule applies.
 

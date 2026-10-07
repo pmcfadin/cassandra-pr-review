@@ -1,0 +1,72 @@
+{
+  "_comment": "Triage thresholds. Points add up; the total picks the rating. Serialization or on-disk format changes force 'hard'.",
+  "size_lines": [
+    {
+      "over": 1000,
+      "points": 4,
+      "label": "very large"
+    },
+    {
+      "over": 400,
+      "points": 2,
+      "label": "large"
+    },
+    {
+      "over": 100,
+      "points": 1,
+      "label": "medium"
+    }
+  ],
+  "files": [
+    {
+      "over": 30,
+      "points": 2
+    },
+    {
+      "over": 10,
+      "points": 1
+    }
+  ],
+  "subsystems": [
+    {
+      "over": 4,
+      "points": 2
+    },
+    {
+      "over": 2,
+      "points": 1
+    }
+  ],
+  "points_per_compat_surface": 1,
+  "points_concurrency": 2,
+  "points_no_tests": 1,
+  "rating": {
+    "moderate_at": 2,
+    "hard_at": 5
+  },
+  "split_threshold_src_lines": 1000,
+  "concurrency_paths": [
+    "src/java/org/apache/cassandra/concurrent/",
+    "src/java/org/apache/cassandra/db/compaction/",
+    "src/java/org/apache/cassandra/service/paxos/",
+    "src/java/org/apache/cassandra/service/accord/",
+    "src/java/org/apache/cassandra/utils/concurrent/",
+    "src/java/org/apache/cassandra/tcm/",
+    "src/java/org/apache/cassandra/streaming/"
+  ],
+  "hard_surfaces": [
+    "messaging",
+    "sstable format",
+    "commitlog / hints",
+    "native protocol",
+    "schema / system tables"
+  ],
+  "branches": [
+    {
+      "over": 2,
+      "points": 1
+    }
+  ],
+  "points_hard_surface_extra": 1,
+  "small_change_lines": 50
+}

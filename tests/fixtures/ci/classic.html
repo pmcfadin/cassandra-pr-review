@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <style>
+   table {
+            width: 100%;
+            margin: auto;
+
+            /* Rounded border stuff */
+            border-collapse: collapse;
+            border: 1px solid white;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+            border-spacing: 0;
+            border-radius: 10px; /* Get us some rounded corners */
+
+            overflow: hidden; /* Ensure rounded corners are visible */
+            table-layout: fixed;
+            word-wrap: break-word;
+            font-family: verdana;
+        }
+        th, td {
+            border: 1px solid white;
+            padding: 10px; /* Don't want to bump into our shiny rounded corners now do we */
+            font-size: smaller;
+            font-family: verdana;
+        }
+        /* Alternating colors make things easier to read */
+        tr:nth-child(odd) {
+            background-color: #DDDDDD;
+        }
+        tr:nth-child(even) {
+            background-color: #BBBBBB;
+        }
+        .header {
+            font-weight: bold;
+            font-size: larger;
+            text-align: left;
+            color: white;
+            font-family: verdana;
+        }
+        .table-header {
+            font-family: verdana;
+            text-align: left;
+            background-color: #000061;
+            color: white;
+        }
+        .table-section-header {
+            font-weight: bold;
+            font-family: verdana;
+            text-align: left;
+            background-color: #b3b2cf;
+            color: black;
+        }
+        /* These are top line <p> style independent headers, not intended for use in a table */
+        .header-pass {
+            font-weight: bold;
+            font-size: medium;
+            text-align: left;
+            font-family: verdana;
+            color: white;
+        }
+        .header-fail {
+            font-weight: bold;
+            font-size: medium;
+            font-style: italic;
+            font-family: verdana;
+            color: red;
+        }
+        .separator {
+            height: 2px;
+            background-color: #3b3b3b;
+        }
+        .separator td {
+            background-color: #3b3b3b;
+            padding: 0;
+        }
+        .align-left {
+            text-align: left;
+        }
+        .align-right {
+            text-align: right;
+        }
+        .blue {
+            color: #a095de;
+        }
+        .red {
+            color: #ff8c8c;
+        }
+        .green {
+            color: #26ff60;
+        }
+        .table-failure th:nth-child(1), .table-failure td:nth-child(1),
+        .table-failure th:nth-child(2), .table-failure td:nth-child(2) {
+            width: 15%;
+            text-align: left;
+            word-break: break-all;
+        }
+        .table-failure th:nth-child(3), .table-failure td:nth-child(3) {
+            width: 60%;
+            text-align: left;
+        }
+        .table-failure th:nth-child(4), .table-failure td:nth-child(4) {
+            width: 10%;
+            text-align: right;
+        }
+        .centered-image {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+  </style>
+  <style>
+   .table-fixed {
+            table-layout: fixed;
+            width: 100%;
+        }
+        .table-fixed th:nth-child(1), .table-fixed td:nth-child(1),
+        .table-fixed th:nth-child(2), .table-fixed td:nth-child(2) {
+            width: 15%;
+            text-align: left;
+            word-break: break-all;
+        }
+        .table-fixed th:nth-child(3), .table-fixed td:nth-child(3) {
+            width: 60%;
+            text-align: left;
+            font-size: smaller;
+        }
+        .table-fixed th:nth-child(4), .table-fixed td:nth-child(4) {
+            width: 10%;
+            text-align: right;
+        }
+  </style>
+ </head>
+ <body style="background-color:#0e1f0c;">
+  <h1 class="header header-fail align-left">CI results for  CASSANDRA-21520-5.0: FAIL</h1>
+  <h2 class="header align-left">
+   sha:  1c9f391e00a10e3294a6fa3c5258effef8f2b4a3
+  </h2>
+  <h2 class="header align-left">
+   Build JDK: 11
+  </h2>
+  <h2 class="header align-left">
+   Runtime JDK: 11
+  </h2>
+  <h2 class="header align-left">
+   Date: 2026/09/30 18:31:06
+  </h2>
+  <hr style="height:2px;border-width:10;width:100%;color:gray;background-color:white"/>
+  <h2 class="header align-left">
+   JUnit results summary
+  </h2>
+  <p style="color:lightgreen">    - Passed: 28804</p>
+<p style="color:white">    - Failed: 0</p>
+<p style="color:white">    - Total: 30478</p>
+  <hr style="height:2px;border-width:10;width:100%;color:gray;background-color:white"/>
+  <table id="data_table">
+  </table>
+  <table id="data_table">
+   <h3 style="text-align:left; color:lightgray;">
+    Note: download and decompress detailed .gz results locally for test to follow detailed links
+   </h3>
+   <tr>
+    <td class="table-header" colspan="6">
+     jdk build status: pass
+    </td>
+   </tr>
+   <tr class="table-section-header">
+    <td class="table-section-header">
+     JDK
+    </td>
+    <td class="table-section-header">
+     Build result
+    </td>
+    <td class="table-section-header">
+    </td>
+    <td class="table-section-header">
+    </td>
+    <td class="table-section-header">
+    </td>
+    <td class="table-section-header">
+    </td>
+   </tr>
+   <tr class="td">
+    <td class="td">
+     j11_build
+    </td>
+    <td class="td">
+     success
+    </td>
+    <td class="td">
+    </td>
+    <td class="td">
+    </td>
+    <td class="td">
+    </td>
+    <td class="td">
+    </td>
+   </tr>
+   <tr class="td">
+    <td class="td">
+     j17_build
+    </td>
+    <td class="td">
+     success
+    </td>
+    <td class="td">
+    </td>
+    <td class="td">
+    </td>
+    <td class="td">
+    </td>
+    <td class="td">
+    </td>
+   </tr>
+   <tr>
+    <td class="table-header red" colspan="6">
+     packaging build status: fail
+    </td>
+   </tr>
+   <tr class="table-section-header">
+    <td class="table-section-header">
+     Package
+    </td>
+    <td class="table-section-header">
+     Build result
+    </td>
+    <td class="table-section-header">
+    </td>
+    <td class="table-section-header">
+    </td>
+    <td class="table-section-header">
+    </td>
+    <td class="table-section-header">
+    </td>
+   </tr>
+   <tr class="table-failure">
+    <td class="table-failure">
+     rpm
+    </td>
+    <td class="table-failure">
+     unknown
+    </td>
+    <td class="table-failure">
+    </td>
+    <td class="table-failure">
+    </td>
+    <td class="table-failure">
+    </td>
+    <td class="table-failure">
+    </td>
+   </tr>
+   <tr class="table-failure">
+    <td class="table-failure">
+     deb
+    </td>
+    <td class="table-failure">
+     unknown
+    </td>
+    <td class="table-failure">
+    </td>
+    <td class="table-failure">
+    </td>
+    <td class="table-failure">
+    </td>
+    <td class="table-failure">
+    </td>
+   </tr>
+   <tr>
+    <td class="table-section-header" colspan="6">
+     packaging builds: NO DATA FOUND
+    </td>
+   </tr>
+   <tr class="table-section-header">
+    <td class="table-section-header">
+     Checkstyle Suites: PASS
+    </td>
+    <td class="table-section-header">
+    </td>
+    <td class="table-section-header">
+    </td>
+    <td class="table-section-header">
+    </td>
+    <td class="table-section-header">
+    </td>
+    <td class="table-section-header">
+    </td>
+   </tr>
+   <tr class="table-section-header">
+    <td class="table-section-header">
+     Suite
+    </td>
+    <td class="table-section-header">
+     Status
+    </td>
+    <td class="table-section-header">
+     Files Scanned
+    </td>
+    <td class="table-section-header">
+     Files Failed
+    </td>
+    <td class="table-section-header">
+    </td>
+    <td class="table-section-header">
+    </td>
+   </tr>
+   <tr class="td">
+    <td class="td">
+     <a href="checkstyle/checkstyle_report.xml">
+      checkstyle_report.xml
+     </a>
+    </td>
+    <td class="td">
+     pass
+    </td>
+    <td class="td">
+     2529
+    </td>
+    <td class="td">
+     0
+    </td>
+    <td class="td">
+    </td>
+    <td class="td">
+    </td>
+   </tr>
+   <tr>
+    <td class="table-header green" colspan="6">
+     JUnit output based suites: all passed
+    </td>
+   </tr>
+   <tr class="table-section-header">
+    <td class="table-section-header">
+     Suite
+    </td>
+    <td class="table-section-header">
+     Total Tests
+    </td>
+    <td class="table-section-header">
+     Passed
+    </td>
+    <td class="table-section-header">
+     Skipped
+    </td>
+    <td class="table-section-header">
+     Failed
+    </td>
+    <td class="table-section-header">
+     Errors
+    </td>
+   </tr>
+   <tr class="td">
+    <td class="td">
+     cqlshlib
+    </td>
+    <td class="td">
+     <a href="cqlshlib/unitTestReports/html//overview-summary.html">
+      130
+     </a>
+    </td>
+    <td class="td">
+     130
+    </td>
+    <td class="td">
+     <a href="cqlshlib/unitTestReports/html//alltests-skipped.html">
+      0
+     </a>
+    </td>
+    <td class="td">
+     <a href="cqlshlib/unitTestReports/html//alltests-fails.html">
+      0
+     </a>
+    </td>
+    <td class="td">
+     <a href="cqlshlib/unitTestReports/html//alltests-errors.html">
+      0
+     </a>
+    </td>
+   </tr>
+   <tr class="td">
+    <td class="td">
+     jvm-dtest-simulator
+    </td>
+    <td class="td">
+     <a href="jvm-dtest-simulator/unitTestReports/html//overview-summary.html">
+      7
+     </a>
+    </td>
+    <td class="td">
+     6
+    </td>
+    <td class="td">
+     <a href="jvm-dtest-simulator/unitTestReports/html//alltests-skipped.html">
+      1
+     </a>
+    </td>
+    <td class="td">
+     <a href="jvm-dtest-simulator/unitTestReports/html//alltests-fails.html">
+      0
+     </a>
+    </td>
+    <td class="td">
+     <a href="jvm-dtest-simulator/unitTestReports/html//alltests-errors.html">
+      0
+     </a>
+    </td>
+   </tr>
+   <tr class="td">
+    <td class="td">
+     jvm-upgrade-dtests
+    </td>
+    <td class="td">
+     <a href="jvm-upgrade-dtests/unitTestReports/html//overview-summary.html">
+      46
+     </a>
+    </td>
+    <td class="td">
+     45
+    </td>
+    <td class="td">
+     <a href="jvm-upgrade-dtests/unitTestReports/html//alltests-skipped.html">
+      1
+     </a>
+    </td>
+    <td class="td">
+     <a href="jvm-upgrade-dtests/unitTestReports/html//alltests-fails.html">
+      0
+     </a>
+    </td>
+    <td class="td">
+     <a href="jvm-upgrade-dtests/unitTestReports/html//alltests-errors.html">
+      0
+     </a>
+    </td>
+   </tr>
+   <tr class="td">
+    <td class="td">
+     jvm11-dtests
+    </td>
+    <td class="td">
+     <a href="jvm11-dtests/unitTestReports/html//overview-summary.html">
+      1680
+     </a>
+    </td>
+    <td class="td">
+     1658
+    </td>
+    <td class="td">
+     <a href="jvm11-dtests/unitTestReports/html//alltests-skipped.html">
+      22
+     </a>
+    </td>
+    <td class="td">
+     <a href="jvm11-dtests/unitTestReports/html//alltests-fails.html">
+      0
+     </a>
+    </td>
+    <td class="td">
+     <a href="jvm11-dtests/unitTestReports/html//alltests-errors.html">
+      0
+     </a>
+    </td>
+   </tr>
+   <tr class="td">
+    <td class="td">
+     jvm11-dtests-fuzz
+    </td>
+    <td class="td">
+     <a href="jvm11-dtests-fuzz/unitTestReports/html//overview-summary.html">
+      1
+     </a>
+    </td>
+    <td class="td">
+     1
+    </td>
+    <td class="td">
+     <a href="jvm11-dtests-fuzz/unitTestReports/html//alltests-skipped.html">
+      0
+     </a>
+    </td>
+    <td class="td">
+     <a href="jvm11-dtests-fuzz/unitTestReports/html//alltests-fails.html">
+      0
+     </a>
+    </td>
+    <td class="td">
+     <a href="jvm11-dtests-fuzz/unitTestReports/html//alltests-errors.html">
+      0
+     </a>
+    </td>
+   </tr>
+   <tr class="td">
+    <td class="td">
+     jvm11-utests
+    </td>
+    <td class="td">
+     <a href="jvm11-utests/unitTestReports/html//overview-summary.html">
+      11285
+     </a>
+    </td>
+    <td class="td">
+     11220
+    </td>
+    <td class="td">
+     <a href="jvm11-utests/unitTestReports/html//alltests-skipped.html">
+      65
+     </a>
+    </td>
+    <td class="td">
+     <a href="jvm11-utests/unitTestReports/html//alltests-fails.html">
+      0
+     </a>
+    </td>
+    <td class="td">
+     <a href="jvm11-utests/unitTestReports/html//alltests-errors.html">
+      0
+     </a>
+    </td>
+   </tr>
+   <tr class="td">
+    <td class="td">
+     jvm11-utests-long
+    </td>
+    <td class="td">
+     <a href="jvm11-utests-long/unitTestReports/html//overview-summary.html">
+      106
+     </a>
+    </td>
+    <td class="td">
+     104
+    </td>
+    <td class="td">
+     <a href="jvm11-utests-long/unitTestReports/html//alltests-skipped.html">
+      2
+     </a>
+    </td>
+    <td class="td">
+     <a href="jvm11-utests-long/unitTestReports/html//alltests-fails.html">
+      0
+     </a>
+    </td>
+    <td class="td">
+     <a href="jvm11-utests-long/unitTestReports/html//alltests-errors.html">
+      0
+     </a>
+    </td>
+   </tr>
+   <tr class="td">
+    <td class="td">
+     jvm17-dtests
+    </td>
+    <td class="td">
+     <a href="jvm17-dtests/unitTestReports/html//overview-summary.html">
+      1680
+     </a>
+    </td>
+    <td class="td">
+     1658
+    </td>
+    <td class="td">
+     <a href="jvm17-dtests/unitTestReports/html//alltests-skipped.html">
+      22
+     </a>
+    </td>
+    <td class="td">
+     <a href="jvm17-dtests/unitTestReports/html//alltests-fails.html">
+      0
+     </a>
+    </td>
+    <td class="td">
+     <a href="jvm17-dtests/unitTestReports/html//alltests-errors.html">
+      0
+     </a>
+    </td>
+   </tr>
+   <tr class="td">
+    <td class="td">
+     jvm17-dtests-fuzz
+    </td>
+    <td class="td">
+     <a href="jvm17-dtests-fuzz/unitTestReports/html//overview-summary.html">
+      1
+     </a>
+    </td>
+    <td class="td">
+     1
+    </td>
+    <td class="td">
+     <a href="jvm17-dtests-fuzz/unitTestReports/html//alltests-skipped.html">
+      0
+     </a>
+    </td>
+    <td class="td">
+     <a href="jvm17-dtests-fuzz/unitTestReports/html//alltests-fails.html">
+      0
+     </a>
+    </td>
+    <td class="td">
+     <a href="jvm17-dtests-fuzz/unitTestReports/html//alltests-errors.html">
+      0
+     </a>
+    </td>
+   </tr>
+   <tr class="td">
+    <td class="td">
+     jvm17-utests
+    </td>
+    <td class="td">
+     <a href="jvm17-utests/unitTestReports/html//overview-summary.html">
+      11285
+     </a>
+    </td>
+    <td class="td">
+     11220
+    </td>
+    <td class="td">
+     <a href="jvm17-utests/unitTestReports/html//alltests-skipped.html">
+      65
+     </a>
+    </td>
+    <td class="td">
+     <a href="jvm17-utests/unitTestReports/html//alltests-fails.html">
+      0
+     </a>
+    </td>
+    <td class="td">
+     <a href="jvm17-utests/unitTestReports/html//alltests-errors.html">
+      0
+     </a>
+    </td>
+   </tr>
+   <tr class="td">
+    <td class="td">
+     jvm17-utests-long
+    </td>
+    <td class="td">
+     <a href="jvm17-utests-long/unitTestReports/html//overview-summary.html">
+      106
+     </a>
+    </td>
+    <td class="td">
+     104
+    </td>
+    <td class="td">
+     <a href="jvm17-utests-long/unitTestReports/html//alltests-skipped.html">
+      2
+     </a>
+    </td>
+    <td class="td">
+     <a href="jvm17-utests-long/unitTestReports/html//alltests-fails.html">
+      0
+     </a>
+    </td>
+    <td class="td">
+     <a href="jvm17-utests-long/unitTestReports/html//alltests-errors.html">
+      0
+     </a>
+    </td>
+   </tr>
+   <tr class="td">
+    <td class="td">
+     python-dtests
+    </td>
+    <td class="td">
+     <a href="python-dtests/unitTestReports/html//overview-summary.html">
+      1106
+     </a>
+    </td>
+    <td class="td">
+     832
+    </td>
+    <td class="td">
+     <a href="python-dtests/unitTestReports/html//alltests-skipped.html">
+      274
+     </a>
+    </td>
+    <td class="td">
+     <a href="python-dtests/unitTestReports/html//alltests-fails.html">
+      0
+     </a>
+    </td>
+    <td class="td">
+     <a href="python-dtests/unitTestReports/html//alltests-errors.html">
+      0
+     </a>
+    </td>
+   </tr>
+   <tr class="td">
+    <td class="td">
+     python-dtests-large
+    </td>
+    <td class="td">
+     <a href="python-dtests-large/unitTestReports/html//overview-summary.html">
+      35
+     </a>
+    </td>
+    <td class="td">
+     32
+    </td>
+    <td class="td">
+     <a href="python-dtests-large/unitTestReports/html//alltests-skipped.html">
+      3
+     </a>
+    </td>
+    <td class="td">
+     <a href="python-dtests-large/unitTestReports/html//alltests-fails.html">
+      0
+     </a>
+    </td>
+    <td class="td">
+     <a href="python-dtests-large/unitTestReports/html//alltests-errors.html">
+      0
+     </a>
+    </td>
+   </tr>
+   <tr class="td">
+    <td class="td">
+     python-upgrade-dtests
+    </td>
+    <td class="td">
+     <a href="python-upgrade-dtests/unitTestReports/html//overview-summary.html">
+      2940
+     </a>
+    </td>
+    <td class="td">
+     1727
+    </td>
+    <td class="td">
+     <a href="python-upgrade-dtests/unitTestReports/html//alltests-skipped.html">
+      1213
+     </a>
+    </td>
+    <td class="td">
+     <a href="python-upgrade-dtests/unitTestReports/html//alltests-fails.html">
+      0
+     </a>
+    </td>
+    <td class="td">
+     <a href="python-upgrade-dtests/unitTestReports/html//alltests-errors.html">
+      0
+     </a>
+    </td>
+   </tr>
+   <tr class="td">
+    <td class="td">
+     python-upgrade-dtests-large
+    </td>
+    <td class="td">
+     <a href="python-upgrade-dtests-large/unitTestReports/html//overview-summary.html">
+      70
+     </a>
+    </td>
+    <td class="td">
+     66
+    </td>
+    <td class="td">
+     <a href="python-upgrade-dtests-large/unitTestReports/html//alltests-skipped.html">
+      4
+     </a>
+    </td>
+    <td class="td">
+     <a href="python-upgrade-dtests-large/unitTestReports/html//alltests-fails.html">
+      0
+     </a>
+    </td>
+    <td class="td">
+     <a href="python-upgrade-dtests-large/unitTestReports/html//alltests-errors.html">
+      0
+     </a>
+    </td>
+   </tr>
+   <tr class="td">
+    <td class="td">
+     Total
+    </td>
+    <td class="td">
+     30478
+    </td>
+    <td class="td">
+     28804
+    </td>
+    <td class="td">
+     1674
+    </td>
+    <td class="td">
+     0
+    </td>
+    <td class="td">
+     0
+    </td>
+   </tr>
+   <!-- Closing out before ci_parser -->
+  </table>
+  <hr style="height:2px;border-width:10;width:100%;color:gray;background-color:white">
+  <div style="font-size: 22px; color: white; font-weight: bold;">
+   [Test Failure Details]
+  </div>
+ </body>
+</html>
+  <!-- Closing out body at end of ci_parser -->
+  </body>
+</html>

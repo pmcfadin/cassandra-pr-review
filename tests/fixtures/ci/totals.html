@@ -1,0 +1,731 @@
+<html>
+ <head>
+  <style>
+   table, tr {
+            border: 1px solid black; border-collapse: collapse;
+        }
+        .table-fixed {
+            table-layout: fixed;
+            width: 100%;
+        }
+  </style>
+ </head>
+ <body>
+  <h1>
+   CI Summary
+  </h1>
+  <h2>
+   Build State
+  </h2>
+  <ul>
+   <li>
+    sha:  e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+   </li>
+   <li>
+    repo: https://github.com/thelastpickle/cassandra.git
+   </li>
+   <li>
+    branch: mck/CASSANDRA-21700/trunk
+   </li>
+   <li>
+    date: Sat Sep 19 20:56:32 UTC 2026
+   </li>
+  </ul>
+  <h2>
+   Build Parameters
+  </h2>
+  <ul>
+   <li>
+    repository:
+   </li>
+   <li>
+    branch:
+   </li>
+   <li>
+    profile:
+   </li>
+   <li>
+    profile_custom_regexp:
+   </li>
+   <li>
+    architecture:
+   </li>
+   <li>
+    jdk:
+   </li>
+   <li>
+    dtest_repository: {DTEST_REPOSITORY}
+   </li>
+   <li>
+    dtest_branch:
+   </li>
+  </ul>
+  <div>
+   [Totals]<br/><br/><table style="width:100px">
+        <tr><td >Passed</td><td></td><td align="right"> 114106</td></tr>
+        <tr><td >Failed</td><td></td><td align="right"> 11</td></tr>
+        <tr><td >Skipped</td><td></td><td align="right"> 2394</td></tr>
+        <tr><td >Total</td><td>&nbsp;&nbsp;&nbsp;</td><td align="right"> 116511</td></tr>
+        <tr><td >Files</td><td></td><td align="right"> 11962</td></tr>
+        <tr><td >Suites</td><td></td><td align="right"> 11962</td></tr></table><hr/>
+  </div>
+  <div>
+   <br/><br/>[Test Failures]<br/><br/>
+   <div>
+    dtest-novnode.repair_tests.repair_test.TestRepair test_wide_row_repair_lcs
+    <br/>
+   </div>
+   <div>
+    cql3.RandomSchemaTest test-latest_jdk21_x86_64
+    <br/>
+   </div>
+   <div>
+    distributed.test.accord.InteropAccordCQLTest testCASSimulatorLite-_jdk11_x86_64
+    <br/>
+   </div>
+   <div>
+    distributed.test.accord.InteropAccordCQLTest testCASSimulatorLite-_jdk21_x86_64
+    <br/>
+   </div>
+   <div>
+    simulator.test.AccordHarrySimulationTest test-_jdk11_x86_64
+    <br/>
+   </div>
+   <div>
+    simulator.test.EpochStressTest manyEpochsAndAccordConverges-_jdk11_x86_64
+    <br/>
+   </div>
+   <div>
+    simulator.test.ShortAccordSimulationTest simulationTest-_jdk11_x86_64
+    <br/>
+   </div>
+   <div>
+    simulator.test.ShortPaxosSimulationTest selfReconcileTest-cassandra.testtag_IS_UNDEFINED
+    <br/>
+   </div>
+   <div>
+    simulator.test.SingleNodeSingleTableASTTest accordFull-_jdk11_x86_64
+    <br/>
+    simulator.test.SingleNodeSingleTableASTTest accordMixedReads-_jdk11_x86_64
+    <br/>
+   </div>
+   <div>
+    transport.SimpleClientPerfTest measureLargeWithCompression[6/v6-beta]-cassandra.testtag_IS_UNDEFINED
+    <br/>
+   </div>
+  </div>
+  <div>
+   <br/><br/>[Test Failure Details]<br/><br/>
+   <table class="table-fixed">
+    <tr style="height: 18px;">
+     <th colspan="4">
+      dtest-novnode_jdk11_python3.8_cythonno_x86_64_44_64
+     </th>
+    </tr>
+    <tr>
+     <th style="width: 15%; text-align: left;">
+      Class
+      <th style="width: 15%; text-align: left;">
+       Method
+       <th style="width: 60%; text-align: left;">
+        Output
+        <th style="width: 10%; text-align: right;">
+         Duration
+        </th>
+       </th>
+      </th>
+     </th>
+    </tr>
+    <tr>
+     <td style="width: 15%; text-align: left;">
+      dtest-novnode.repair_tests.repair_test.TestRepair
+     </td>
+     <td style="width: 15%; text-align: left;">
+      test_wide_row_repair_lcs
+     </td>
+     <td style="width: 60%; text-align: left;">
+      <pre>FileNotFoundError: [Errno 2] No such file or directory: '/home/cassandra/cassandra/build/run-python-dtest.meQIGo/tmpl0_hlfo6/stress_profiles/repair_wide_rows.yaml.tmpl'-self = <repair_tests.repair_test.testrepair 0x7ff694bf3370="" at="" object="">
+
+    @since('4.0')
+    def test_wide_row_repair_lcs(self):
+>       self._test_wide_row_repair('LeveledCompactionStrategy')
+
+/home/cassandra/cassandra-dtest/repair_tests/repair_test.py:1196: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <repair_tests.repair_test.testrepair 0x7ff694bf3370="" at="" object="">
+compaction_strategy = 'LeveledCompactionStrategy'
+
+    def _test_wide_row_repair(self, compaction_strategy):
+        """
+        @jira_ticket CASSANDRA-13899
+        Make sure compressed vs uncompressed blocks are handled correctly when stream decompressing
+        """
+        cluster = self.cluster
+        cluster.set_configuration_options(values={'hinted_handoff_enabled': False})
+        cluster.populate(2).start()
+        node1, node2 = cluster.nodelist()
+        node2.stop(wait_other_notice=True)
+        template_path = os.path.join(os.getcwd(), 'stress_profiles/repair_wide_rows.yaml.tmpl')
+>       with open(template_path) as profile_template:
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/cassandra/cassandra/build/run-python-dtest.meQIGo/tmpl0_hlfo6/stress_profiles/repair_wide_rows.yaml.tmpl'
+
+/home/cassandra/cassandra-dtest/repair_tests/repair_test.py:1183: FileNotFoundError</repair_tests.repair_test.testrepair></repair_tests.repair_test.testrepair></pre>
+     </td>
+     <td style="width: 10%; text-align: right;">
+      27.965
+     </td>
+    </tr>
+   </table>
+   <table class="table-fixed">
+    <tr style="height: 18px;">
+     <th colspan="4">
+      org.apache.cassandra.cql3.RandomSchemaTest-latest_jdk21_x86_64
+     </th>
+    </tr>
+    <tr>
+     <th style="width: 15%; text-align: left;">
+      Class
+      <th style="width: 15%; text-align: left;">
+       Method
+       <th style="width: 60%; text-align: left;">
+        Output
+        <th style="width: 10%; text-align: right;">
+         Duration
+        </th>
+       </th>
+      </th>
+     </th>
+    </tr>
+    <tr>
+     <td style="width: 15%; text-align: left;">
+      cql3.RandomSchemaTest
+     </td>
+     <td style="width: 15%; text-align: left;">
+      test-latest_jdk21_x86_64
+     </td>
+     <td style="width: 60%; text-align: left;">
+      <pre>Failure for seed 40414879687119-junit.framework.AssertionFailedError: Failure for seed 40414879687119
+	at org.apache.cassandra.cql3.RandomSchemaTest$Builder.checkAssert(RandomSchemaTest.java:287)
+	at org.apache.cassandra.cql3.RandomSchemaTest.test(RandomSchemaTest.java:79)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:75)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:52)
+Caused by: java.lang.AssertionError: Failure at attempt 0 with schema
+CREATE TABLE cql_test_keyspace."yrvwV3p4" (
+    "gUnSdAWkvWRjzz04" frozen<set<'compositetype(timestamptype,asciitype)'>>,
+    "xZT4dwgIq8ET9_3CF4oJetM3Z5RcRhV2wR" vector<frozen<"i">, 3>,
+    "Pn7K4CbtrwNm5rGMg" bigint,
+    "H6Cembhel9k1jzeyyu" date,
+    "Oxhn6jQsAbesmiXekygu8aFbhsk1pCE4LwG9xFycU5PEu_" frozen<"YwhTkkeZ0jBrZKLsE5BXM">,
+    "Qvnn02siAzQfaMlWKBxuDMTMYWej7WD8m2v9Q9w" frozen<tuple<frozen<tuple<frozen<tuple<text>>, frozen<"tU5nUxOE8sjX">, frozen<"oPHCPqwDiG">>>, frozen<"_6ej2hltUNLLzz1IsjosMZee8jNMYcFISiA_">>>,
+    "eCzuuNXymG5FmdqtiJ6RKgYBc" frozen<tuple<frozen<map<vector<time, 1="">, frozen<set<timestamp>>>>, vector<frozen<"iwzmlydew4lpb">, 3>>>,
+    "pkDBifH1cEbpuT4oIOhPVtp8fn7p6iDsGMWeIVNB1" timestamp,
+    PRIMARY KEY ("gUnSdAWkvWRjzz04", "xZT4dwgIq8ET9_3CF4oJetM3Z5RcRhV2wR", "Pn7K4CbtrwNm5rGMg")
+) WITH CLUSTERING ORDER BY ("xZT4dwgIq8ET9_3CF4oJetM3Z5RcRhV2wR" ASC, "Pn7K4CbtrwNm5rGMg" DESC)
+    AND additional_write_policy = '99p'
+    AND allow_auto_snapshot = true
+    AND bloom_filter_fp_chance = 0.01
+    AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
+    AND cdc = false
+    AND comment = ''
+    AND compaction = {'class': 'org.apache.cassandra.db.compaction.UnifiedCompactionStrategy', 'max_sstables_to_compact': '64', 'min_sstable_size': '100MiB', 'scaling_parameters': 'T4', 'sstable_growth': '0.3333333333333333', 'target_sstable_size': '1GiB'}
+    AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
+    AND memtable = 'skiplist_remapped'
+    AND crc_check_chance = 1.0
+    AND fast_path = 'keyspace'
+    AND default_time_to_live = 0
+    AND extensions = {}
+    AND gc_grace_seconds = 864000
+    AND incremental_backups = true
+    AND max_index_interval = 2048
+    AND memtable_flush_period_in_ms = 0
+    AND min_index_interval = 128
+    AND read_repair = 'BLOCKING'
+    AND transactional_mode = 'off'
+    AND transactional_migration_from = 'none'
+    AND speculative_retry = '99p';
+And SSTable Format big:{}
+for values [{0x00080000025a876065b50002a67476492b69127e2a7d690b391b425b6e50293f684f6d6b486d207833241a6151147706517e142b6348167a3c7b637d164826252d7f4f46431611181c286338037300244459664330605b5b1c326319611e4b0d5e15222b712d3a4b02222b2979505165433a49055006786f187f046f111259373b51255914735c4f24523474736b2a090e627c31067b2d747022054066640e63047418136c27356643783e5a31054c4e650f40070f7e3b2d645b264b1e552c52793d3b163709074f1d54071a745c7676090453482d506157356b28507b2472435b6c4f24375a114b742751747b336840397e77321f2f603322114a0f3c1120766941137c2b58141907305b290647636c353e6b08255d76026b0d4c49215c772b637d475e53454f79162f65785559253b3d056f077f196503511f6e3d6a4636230a5f2b0a7061012b62652f21292a706c121244706e236c771208712b580e1d1d1d270041416a6d6f2a117a644179043f73262804313c4b1c700714532a746c595c160542062250062e7305015d061f74207f5d02082343342a5c177620386418076a7a4d7f486c2f2e4b10393d12034c595f232b3318137e01473a537b1b44185e651f236d1c002a6b595c4b225c6f055f05383d735b7b3b34093e2a7a5c4c1b224635020e5e4c38235e28774b24236171315e7a072d3b290261613b5d3b3c60124e7b2c244f10171919337e782a60204f2454212f4d140a2e0f6647647855286e3b31606f2e0d090a4a401f692e6400391d5a722b7b441d75530a0d4f545631774f185f2d3b024e37320c1a5f717143705c312e3c770d23196e0e4d5f0e7f3d6c496e6820372f24610f592f183247283321181421022f5a591f33475366100b0d6a753a0760554d4723661e5731246f422c4f641a5b68047526383c6b1c4a5c1a716c18227832082a2e7328592f4a595d3e1600}, [{"Fj4cMTftGEKw": 1660850654, "oGfqVTtgkRn5ECVCDDN_v1lI8cVovc1WO06K1kZmrBQHRR": 104, "84upyqraHrYYNqrCWTyEH8VPVw0w9YKBlwOzSw2i9Z": '1977-09-09T09:34:22.865Z'}, {"Fj4cMTftGEKw": -1149601696, "oGfqVTtgkRn5ECVCDDN_v1lI8cVovc1WO06K1kZmrBQHRR": 45, "84upyqraHrYYNqrCWTyEH8VPVw0w9YKBlwOzSw2i9Z": '2021-04-11T07:20:51.056Z'}, {"Fj4cMTftGEKw": 2085120619, "oGfqVTtgkRn5ECVCDDN_v1lI8cVovc1WO06K1kZmrBQHRR": -24, "84upyqraHrYYNqrCWTyEH8VPVw0w9YKBlwOzSw2i9Z": '2017-10-14T10:00:34.987Z'}], -4187697774660554413, '-3284470-03-13', {"iMWjJ7Z4wZCWhJVJR89LjMhP7aFla3x": {0x0004aec46ddb000853e19f8ae9b690e2ad9fe68f943fe9aeb9e1aea9e18d8ce788a23feb8d9ce78e81efaea0ef9f85e1808aea91bbe78dabe281a7e5858de882bee88da4e3a19ee6a793e9b98de68e90ec9890ebbebae3a09de2ae93d2bae8a185e5ae9eec98abef8291ebb79be990b2e9ada7eca0abe1aa98e5a4a2e2818ee5b682e7948deea28deb8491e1a0a1e5b4b3e69686e899beeebc8befb396e68aaceb919ce298bfecabb3e8a1b1e39d80e89f97ed8dbbe3aa9aed8db9eea7abe780a5e68298eabe9ce3b3aac29ce2b88fe989a6eeadb2e6bc90ef80a7eb91a6e5b880e8b4b9eb8a92e8918eea91a9e5beb6e597bfeeb980e4bab7ec9e80ee8098e3a3a3e7a4bfe2ab99eb8a8fed8e89e4bfbbee9da5e48996e1afa4e4beb9ebb7a73fe4b6aee8b691e2b8a2ea8a9aea8294e5afa6e4b291efa298e49988ed989de8acbfeaa4a1e6beabeaa698e69486ea918fe3bbafe5a6b2e487b0e6b390e49f92e3b795ecaaa7e8a793ef8a93e48d8eeaabb2e8abb1e39ba0ec8c87e584a4e284b6e3bc93ecb19de687833fe4aa83ea9ea7e8bd95e0a399ecbd89e99187eeb8b8e4a49ce4829fe883853fe68592ed8896e6b785efa7b8e28fb4e2b887eea48fe69eabe988bbe2ba80e1b8a2e1b08bebad96e99f91ed89b4ed99bbe686b9e9b286ecabb9ef87a0e18681e29d9de1928ae98387e4ad97ea90beef9c9ceb9489e4a587ee8c91e1808aeabdbaeaaea2ebb19fe2b791ed8bb1e5839de0b1a8e7b5b1e1aca2e1a8aaefb996e5a69ce3be9fe892b7ee93a2e387b4e79590e79e85e995b2ecb6a9d5aaef85b2e19f9de4a589e59486e88498e3bd98e9adbbe89b9be5a2bbe996b6eb81bae7b092e6afb8eb8ca9e88489e582b7e3a189ecafb0eca488ec99b23fe38caa3fe3a19be4beb4ebbaa4e58086e782abe4ae96e1b885e49096ed84bde1af96e3bca5e1a5b3e7ada9e8a2afe1a4b2e89ab7e8bd84e0ac9de689a6ee869eeea3a8ec9fb1e68292e2a8a2ed929ded969ce3a9beea9fb8e890ade799b5ea9d90e993aaeca0b2e2be99e88690ea88abe8b2b6e48083e48f8ae195b8e89185e39c89e58087e1b7a2e5bd9ce294bae0bdbbe296abe9bca6efbebce38dace9a78be284bce6a3bde4b380e6bebeec90a4e8b396e3a2b9e8a38ae19cacebb588ee8487c3bfef9aaaeab8aee0bf80e4ad98e8ad84ee98b6e2aca23fe793b1eebf883febb7b6ec9baeecb5afe5abb5e38c8fecacbee482bc3fe39785e3958bea9882eebb87ed8ebacfb8e88880e49abae68183ed989ae68988e3a58fe5a5ba3fe5b199ea8f933fee8cafe4a9bcef9082e586a4e383bfee8487e38f89e691add68e3fe0a980e7acb6ea928cebae92efb8a2e99a9aeb9eb3e48eb4e0ab82ef8193eb91afefa283ec98b4ebb3aeeb8694e5808aeeb088e2ada6ec8881ea9b8be1b896e1b789e7acb2e68c88e183b0e1af8dec9cb53fe2a095eb8583e88db4ee97a2eba8aeec80aeeb98bdeca595ed8e88e4b7b6e59da2e6aebae58890ebbfb3e2aaabea8ab7ea88b2e3ac9ee3bcbde997b9efbcb9ee8e8ce496b8e8bd83e8a19fe280aae2ae90eaa88be49492ec8081e9a19febac8fe5a58deab398eeafb2ee80b3ce9d3fecbdbbe6b785e8899de4b192e799b3e483bae98fa2ec85afee8b92e589afecb790e98cb6e89aaee591a8ea8a87e8828d3fe4b4a7e396a7e2a092e5b2b7efa3abe19d91eaa5a7e3859fe9b1a7e98181ec8e86e8acaeec8f95eb85a9ed848ae994aae0a687e3a2b5eb8fbeeba68be2bca7efafbeec8cabef95b0e9878be9a99aecbda3e68ab5eaa9b5eabda7ee8698eab69deea19de2ad9de9a187ee909fe195afe4b99bea8b98ec9188e5aca03fee8e99efaaa8e5b0a6ee9bb6eb8690e39490e9af90ed8ba1e8b5bfe8a398e9a784e8aba7e5b6bce6bdbde9b6bae3ba90eeb99ee89e89e2b1b0ea9296d2b0e5aab2e88db2ea918cecb482ea97b6e4a09defbe91ecb3accc89eca6a2eeb890ecad9ee5b8bfed938de9a283e58baee59b9ce1b0a2e0afb4e8aa96e88db9ea9597e8a786e28e8de99bbde886b7e18b98cca9e8b893e58fbaeaa6a8e285b8e68199ecb289e0be91ecbaa9e2aebbe5849feabebfe388b3e78db6e7ab99cc9ae5bf85ed9f96ef88a9ef9592ed818ee9bb9fe79aa8ebb4aae695a1e884ade8b283e29c89e5bca2e786a2e5bf8be8a78bed99ace888baeea98ee7afbbe5b5b0e9aa88e4b992ee9d8fe68aaee783a7ea96bce49e92ed8f98e1a691e3a8adeba580e49898e8ab85e3a096e9b192eaa09be79284eab7a5ebada7ec89baeca3b8eeb092e5bcb1efb4aaee81beecaa99e8ac8deb909ae78fbae68c9ced8a89ed9fb5e591b8e78daed1aeeb97bce3bcb8e8b3a7ed8088eea4a0e8a998e69e81ef84a0e683a43fe2b0aeec85a83fee93b4ee82b2e198883fef98a7e7879cebb280ea88bced8883ec84b2eab4a4e3b894e8b9afeab588e1b0b6e3b0a0e1bfb8e88db7ecb7a9e58fa9e79e87eab5bce795a6e8bb89e8b9bfeb9099e78492e19387eba1bcee8c94eeab9eeca582e3a6a9ef8cade3b787e5808ce6bfb0e2808be89496eea1b6ed8f8befa786e695beeca781eb96b6e1898ce78ca1e581b1ee8fade68389e18bb9e5ab92e58cafed9892e5a58bea9b83e7b59be298bae387b7ee8482e69c9ce3b596e18bb5e5aca5e2958ae2b6bde99183e0ac98e4aa88eaa29ee8b094e8aba43fe3a5aeeba498e4bc91e4ac8fe8bd82e99fb5e2b28fe7b48de1a098ebb1a1e99a99e1808de18b85eea6b9eb82b4eebdacd796e38781e6bcacebbd97e3ae9fe98f94e89387ed90bee7aeafef878eecab94e39b9febaeb4eb8e98e2938ceabdbfeeb089e1b4a2e9b9beeebf82e58d9be2b6aaeaa688ebaebae2a08c3feeab8ce681ade399b5ea80bdefbda03fe6adbae9a896efb1b9ef8886ef8289e38e92e79cb3e4af91ed8799ef868a3fe79795e1a08ce8918aeebb93df99e9949eecbf88e8b9bee0abbfe19b84e2848ee59595ef91ba00: {'䐽瘪⽙쟹檁Ϙ喠ჭ㗱ú퉠괳풟ꏆ렰谆廊魓?奾痄炵餙ꑭ欮沨ᖍ禨梽赛≎䑊煢폚ዐ皧넎䗰⻲ᦪ獑혓餗﹝፩㯕◙ﵺ魙ᙗ쪯ﲧ驈⓼侃㾄↞毊賧⍺썞뛈疴焍ꇝ㲾㢙첟❵邗⨜ꎟ칋歛ﶗ炝ැ뀑罴❄ﺱℐ輟贂칔슑殄队졘毬㏦㐭좐桙㖍遂릐緉腠⫚겗ṳᯒ쵑烔ꀪ᎘⼻紋쓞㖀証??湫렧ᅔ纠⃛ᩢ콛鯥၈༎捈?䲅鞺⒈柑➮鳡犟䠓ӭᛘ랠縒䖥䏞㏌刍袵鍋藑Š啾拤骛ꊍ뇻⌜硛譿삋懲駎䷂㕛홌충﵌?ངề筣채ᱹ탳䦄膝⦕쐤첰䉑痭幱ᒥᓽ你ᬖ㶩ᚱꇬ᮶폍슳럈᭑嫇髾緡츗墭㡚饊ȩᛯ?偵?㯲틕쁗嵲兓꓀勻솊⚅䀤⊭䎷獐滁垔묱㛦糡뤼世䭛✸踌픮谅ባ퉔⯳걂騄菆ꐘ钩䳵ɼఓ㈻֙겦珿?븑?麲᪉ずᮓ蟲挣敯፶뒷ﲷ뱔颻휊戤쒏垦ᖳي氨ꚬ㯝뮗竢쯂甀Ꮉᬐὠ슡Ҁ旰돷쟈䫘㵎︉Ụ맻炆鎠謭择륎쥲㾢ȏ緘?铡珎፵쌮뫒᾽⓺⦾ډ练⊕颮ᅪꓼ?湣琘叓ϴ瘊쯪䅑ﰕ冷搩溡勵旫ဲ晱ꢂ袳헀騭莦箙釠涷橸䢨꿦둦㥜䔡䵶鴴쩿ዱΰ냊ॳ巠豜蘫泃嘹⭀ꍿ暀?艍拥닯匬ⴺ鎄ㄈﶌ⹖촘뫍烹滶襥ⴶ䟆劋玃蝳Ᏻ?幤ﶔ䀞ញ葿Ƨ骑䄤ᖍ旬朏檋ꟲ㞜䞲諘៉朠ퟟཷ⎹瘑䧼豞飢ﯽ⋏緵罂㟬ㄑ◟?訩?൹瞁䈍鶟㴤贐띕ۛ뽡좀㿩꼘㑩빽ⰸ曢웹釚煈㕶ﶲ맢ℋ锜驉৵ዼ雁ꥅꄧ芐ྱ㝜鼪ܘڌ뾀俥佈㐁锇闉饆᥌殘隐䘵ᦾ纒걕鸷?킉痼枠唋П떪菹䶧葨㡞窶馡켌싙?燯쪨Ꮶ魫梵祲硇沰饊천䀏半읛㯼椛뮄䖺켦악谖쀷⁵㸪姦龮쾾咯勣줱眾혒뱻稘亄媾ꓣ묀쫈홲蔑Ḥ罟⨐?㽬嵘⃛蠾ᬒ勻尢徲┢䝥ੴ甋絉魋耮፥嬯⨬棳⊦퀜ⴿ澶䈅ꁭਚ右䢞㵚맴뷱횼دౄ䜰ᐮ罪闭扯쭷褗ቒ䬇짽楢呢뎴￠떄?챦읙㟖ծ鰏ꐘ㌰캤鈐?ᯢ餠嬴ᶫ獵磞孕벦摃蟈췉웎ႃ为杝䬘̬㬨꺰볹暣ʘ濫ㅝ曬ᐱ䲎戊ཀ颎蕌䶢뿑熳釳灄ꁋ仫᠂ౣ㱏Ὸ識茴칀㣋啶⒔鱒펰ࡱ鲺᭝뺩슁Ꮎ脶닋쟻迷韹䖼烔얻팖⛱쒫㛻퇠璹쒄뤝떘䡐좮硳ꓛ︻績★䎂竜鯒ㆎ✯ರﭞ판戂蚒ᎇ㬞ﯤ벻죣': 00000000-0000-4400-af00-000000000000}}, "m_IWn_mvdgvfOD5XkYOYj2qLQhtnPS71OwNRZuveE_": {{00000000-0000-1200-b800-000000000000: 2.1833717E-16, 00000000-0000-1400-a600-000000000000: 0.028957015, 00000000-0000-1e00-b600-000000000000: -0.0012839718}, {00000000-0000-1800-a700-000000000000: 0.0020087024, 00000000-0000-1b00-8300-000000000000: -6.146661E30}}, "oTnP52_R4taEGmQ46TrGZ9zh8PtdcuG_H": {0x0004e340354c00, 0x00010000}}, ((('ѕ㧻艥깣찛ᩇ～瞎９⠰◩⯒瘖廚政묗㷫ẖ?竬츈斵寜퓁䘋㴦뀺핌睗睢쓺㩖㬆錯倸⡙द㕜儃⪵非鍻鲙刟ꪀ㲪흝ᨘ鬨㍍꡴鐉鴥뉤뽁༬Ɋ谚덬琽ꟳ㓐蚲侹鐓ḣ鑞宊햒ꥸ?䁚ꕄ禯䴴⣶➾鑧챽ᗩ뾿〡ሑ緃?ꅪ쿈縗왜잎殧崊럦됁ᨤИﺀ罣Ꜷ胚먲齗婭檠샽鰹ණ챒榄⪵驨稘춖㿿穖銉곏Ḁ⫶闤?붘㔺ῌஓ䡹汋尋Α弅?ꝥ¢뿇렻ピ胕?䫖訶澱ᜌݨ굧黳씉㕀晵쟖僭䗖铍鼊صણ匸꯸干䦎ၐ뜫㼐뀂퉹އ᪈鯟金⸃뾍⑰鶹∭ꪃᴽ宼ዃ츩㡫奟╰롋ꗁ꿟䡎铋履穰晆徏ۢዤ㥾Ꜿ⻱柌䆧单?喾厩ℙ缍⡛ⰸ镻੍㨜?눠㩬樹唳൸뷯羥ᖁ츒嗰襣놣॒뵓㢪㎛齀쇢隍㭊ⅈ瓓롯䤥攻ৎҚ姟ᱢ囐湜꣫㙺櫪㓐蓫♮♅앏ᅒ弱疻⍙⫨፼薔盫浦縎殩傔蟎꼦ꐍﴈ寳⺫ﮏ㘇ﰢ天יּ?裠㔸껟煬⟜䏼棭⍢ᩰ幘럀张ꭹ䎅ꍵ身⻇蛱䗕矵㇅릤퓥徵ꀙᡡ沔徨쪅췵먓썱ꈆ쳧䨀炏蛱⮎傊北ⷬ勓뿌㍻冑ⴂ弩읯홶‷ᒏŌꊿ᱑겿幽ᆠ뽅㍨쒤㤨㶪贶ඤ?詝舸슢Ⲫ?㪑컯拿ꡮ?哪ิ䫴括ஸ겯찍倳鳎ئ'), {"YCGtmkw7LmNAQ9lorgRlVu2q0l510": -327921572, "HSUZ4diMttI5YwtwJ_oKBSklhlR9pr": 00000000-0000-4900-bc00-000000000000, "ES3NbnkBCtuShy9b6EbnpoSvbDtbFgvqEDf": 00000000-0000-4c00-ac00-000000000000}, {"vRLEBtHLqtidrJc3Htoo1TdPyfAeL03OPyikI": '-4587107-08-14', "76U0M7emQxq2fk2Z4HPIOB5lj": true}), {"y04m52XmGMKZmWmbKTW4NAq88nCG93DtpCrP3p_b3YGSUJ7C": -2.5652398467346734E-266}), ({['08:33:03.181682536']: {'2013-07-28T22:55:33.219Z', '2026-11-18T03:54:35.642Z', '2056-08-28T01:10:07.985Z'}, ['14:29:24.310018575']: {'2002-12-26T08:24:21.660Z'}, ['21:41:15.075776120']: {'1990-11-08T11:20:19.433Z', '2003-12-07T17:32:01.257Z'}}, [{"dVddZ1Tf9lxX6tI": -24148231y1mo1868840013d1280742h11m31s259ms918us299ns}, {"dVddZ1Tf9lxX6tI": -75896102y10mo2064969621d2478253h18m6s788ms831us196ns}, {"dVddZ1Tf9lxX6tI": 36518385y8mo1011148651d2294002h21m57s418ms567us253ns}]), empty]
+	at org.apache.cassandra.cql3.RandomSchemaTest.lambda$test$1(RandomSchemaTest.java:159)
+	at org.apache.cassandra.cql3.RandomSchemaTest$Builder.checkAssert(RandomSchemaTest.java:283)
+Caused by: org.apache.cassandra.exceptions.InvalidRequestException: Failure validating the 0th field v2y3gPE; Not enough bytes to read 0th field cGHFpuvjoYtgw6WpS3LxUsQ7lahMRzaV9WRnNQa
+	at org.apache.cassandra.cql3.statements.RequestValidations.invalidRequest(RequestValidations.java:358)
+	at org.apache.cassandra.cql3.terms.MultiElements$Value.fromSerialized(MultiElements.java:73)
+	at org.apache.cassandra.cql3.terms.Marker.bindAndGet(Marker.java:113)
+	at org.apache.cassandra.cql3.terms.Terms$NonTerminals$1.bindAndGetSingleTermValue(Terms.java:653)
+	at org.apache.cassandra.cql3.restrictions.SimpleRestriction.bindAndGetSingle(SimpleRestriction.java:326)
+	at org.apache.cassandra.cql3.restrictions.SimpleRestriction.bindAndGetSingleTermClusteringElements(SimpleRestriction.java:284)
+	at org.apache.cassandra.cql3.restrictions.SimpleRestriction.bindAndGetClusteringElements(SimpleRestriction.java:272)
+	at org.apache.cassandra.cql3.restrictions.SimpleRestriction.values(SimpleRestriction.java:256)
+	at org.apache.cassandra.cql3.restrictions.ClusteringColumnRestrictions.valuesAsClustering(ClusteringColumnRestrictions.java:119)
+	at org.apache.cassandra.cql3.restrictions.StatementRestrictions.getClusteringColumns(StatementRestrictions.java:836)
+	at org.apache.cassandra.cql3.statements.ModificationStatement.createClustering(ModificationStatement.java:600)
+	at org.apache.cassandra.cql3.statements.ModificationStatement.addUpdates(ModificationStatement.java:1182)
+	at org.apache.cassandra.cql3.statements.ModificationStatement.getMutations(ModificationStatement.java:972)
+	at org.apache.cassandra.cql3.statements.ModificationStatement.executeInternalWithoutCondition(ModificationStatement.java:912)
+	at org.apache.cassandra.cql3.statements.ModificationStatement.executeLocally(ModificationStatement.java:904)
+	at org.apache.cassandra.cql3.QueryProcessor.executeInternal(QueryProcessor.java:520)
+	at org.apache.cassandra.cql3.CQLTester.executeFormattedQuery(CQLTester.java:1902)
+	at org.apache.cassandra.cql3.CQLTester.executeInternal(CQLTester.java:1851)
+	at org.apache.cassandra.cql3.CQLTester.execute(CQLTester.java:1834)
+	at org.apache.cassandra.cql3.RandomSchemaTest.lambda$test$1(RandomSchemaTest.java:132)
+</frozen<"iwzmlydew4lpb"></set<timestamp></tuple<frozen<map<vector<time,></tuple<frozen<tuple<frozen<tuple<text></frozen<"i"></set<'compositetype(timestamptype,asciitype)'></pre>
+     </td>
+     <td style="width: 10%; text-align: right;">
+      10.329
+     </td>
+    </tr>
+   </table>
+   <table class="table-fixed">
+    <tr style="height: 18px;">
+     <th colspan="4">
+      org.apache.cassandra.distributed.test.accord.InteropAccordCQLTest-_jdk11_x86_64
+     </th>
+    </tr>
+    <tr>
+     <th style="width: 15%; text-align: left;">
+      Class
+      <th style="width: 15%; text-align: left;">
+       Method
+       <th style="width: 60%; text-align: left;">
+        Output
+        <th style="width: 10%; text-align: right;">
+         Duration
+        </th>
+       </th>
+      </th>
+     </th>
+    </tr>
+    <tr>
+     <td style="width: 15%; text-align: left;">
+      distributed.test.accord.InteropAccordCQLTest
+     </td>
+     <td style="width: 15%; text-align: left;">
+      testCASSimulatorLite-_jdk11_x86_64
+     </td>
+     <td style="width: 60%; text-align: left;">
+      <pre>java.util.concurrent.ExecutionException: org.apache.cassandra.exceptions.WriteTimeoutException: [127,1789847625029835,162(KW),1]: [tid:7e:[DecoratedKey(-4069959284402364209, 00000001)]]-java.lang.RuntimeException: java.util.concurrent.ExecutionException: org.apache.cassandra.exceptions.WriteTimeoutException: [127,1789847625029835,162(KW),1]: [tid:7e:[DecoratedKey(-4069959284402364209, 00000001)]]
+	at org.apache.cassandra.utils.Throwables.unchecked(Throwables.java:328)
+	at org.apache.cassandra.utils.Throwables.throwAsUncheckedException(Throwables.java:338)
+	at org.apache.cassandra.utils.FailingConsumer.accept(FailingConsumer.java:34)
+	at org.apache.cassandra.distributed.test.accord.AccordTestBase.test(AccordTestBase.java:234)
+	at org.apache.cassandra.distributed.test.accord.AccordTestBase.test(AccordTestBase.java:202)
+	at org.apache.cassandra.distributed.test.accord.AccordCQLTestBase.testCASSimulatorLite(AccordCQLTestBase.java:3329)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+Caused by: java.util.concurrent.ExecutionException: org.apache.cassandra.exceptions.WriteTimeoutException: [127,1789847625029835,162(KW),1]: [tid:7e:[DecoratedKey(-4069959284402364209, 00000001)]]
+	at java.base/java.util.concurrent.FutureTask.report(FutureTask.java:122)
+	at java.base/java.util.concurrent.FutureTask.get(FutureTask.java:191)
+	at org.apache.cassandra.distributed.test.accord.AccordCQLTestBase.lambda$testCASSimulatorLite$105(AccordCQLTestBase.java:3343)
+	at org.apache.cassandra.utils.FailingConsumer.accept(FailingConsumer.java:30)
+Caused by: org.apache.cassandra.exceptions.WriteTimeoutException: [127,1789847625029835,162(KW),1]: [tid:7e:[DecoratedKey(-4069959284402364209, 00000001)]]
+	at org.apache.cassandra.service.accord.RequestBookkeeping.newTimeout(RequestBookkeeping.java:88)
+	at org.apache.cassandra.service.accord.RequestBookkeeping.newTimeout(RequestBookkeeping.java:64)
+	at org.apache.cassandra.service.accord.AccordResult.tryFailure(AccordResult.java:200)
+	at org.apache.cassandra.service.accord.AccordResult.accept(AccordResult.java:245)
+	at org.apache.cassandra.service.accord.AccordResult.accept(AccordResult.java:60)
+	at org.apache.cassandra.service.accord.interop.AccordInteropExecution.lambda$start$6(AccordInteropExecution.java:413)
+	at accord.utils.async.AsyncCallbacks.callAndCallback(AsyncCallbacks.java:185)
+	at accord.utils.async.AsyncCallbacks$CallAndCallback.run(AsyncCallbacks.java:82)
+	at org.apache.cassandra.concurrent.FutureTask$2.call(FutureTask.java:124)
+	at org.apache.cassandra.concurrent.FutureTask.call(FutureTask.java:61)
+	at org.apache.cassandra.concurrent.FutureTask.run(FutureTask.java:71)
+	at org.apache.cassandra.concurrent.SEPWorker.run(SEPWorker.java:192)
+	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	at java.base/java.lang.Thread.run(Thread.java:829)
+	at org.apache.cassandra.concurrent.CassandraThread.run(CassandraThread.java:97)
+	Suppressed: org.apache.cassandra.exceptions.ReadTimeoutException: Operation timed out - received only 0 responses.
+		at org.apache.cassandra.service.reads.ReadCallback.awaitResults(ReadCallback.java:213)
+		at org.apache.cassandra.service.reads.AbstractReadExecutor.awaitResponses(AbstractReadExecutor.java:428)
+		at org.apache.cassandra.service.StorageProxy.fetchRows(StorageProxy.java:2692)
+		at org.apache.cassandra.service.accord.interop.AccordInteropExecution.lambda$keyReadChains$0(AccordInteropExecution.java:283)
+		at accord.utils.async.AsyncCallbacks.callAndCallback(AsyncCallbacks.java:181)
+</pre>
+     </td>
+     <td style="width: 10%; text-align: right;">
+      5.555
+     </td>
+    </tr>
+   </table>
+   <table class="table-fixed">
+    <tr style="height: 18px;">
+     <th colspan="4">
+      org.apache.cassandra.distributed.test.accord.InteropAccordCQLTest-_jdk21_x86_64
+     </th>
+    </tr>
+    <tr>
+     <th style="width: 15%; text-align: left;">
+      Class
+      <th style="width: 15%; text-align: left;">
+       Method
+       <th style="width: 60%; text-align: left;">
+        Output
+        <th style="width: 10%; text-align: right;">
+         Duration
+        </th>
+       </th>
+      </th>
+     </th>
+    </tr>
+    <tr>
+     <td style="width: 15%; text-align: left;">
+      distributed.test.accord.InteropAccordCQLTest
+     </td>
+     <td style="width: 15%; text-align: left;">
+      testCASSimulatorLite-_jdk21_x86_64
+     </td>
+     <td style="width: 60%; text-align: left;">
+      <pre>java.util.concurrent.ExecutionException: org.apache.cassandra.exceptions.WriteTimeoutException: [127,1789847352353962,162(KW),1]: [tid:7e:[DecoratedKey(-4069959284402364209, 00000001)]]-java.lang.RuntimeException: java.util.concurrent.ExecutionException: org.apache.cassandra.exceptions.WriteTimeoutException: [127,1789847352353962,162(KW),1]: [tid:7e:[DecoratedKey(-4069959284402364209, 00000001)]]
+	at org.apache.cassandra.utils.Throwables.unchecked(Throwables.java:328)
+	at org.apache.cassandra.utils.Throwables.throwAsUncheckedException(Throwables.java:338)
+	at org.apache.cassandra.utils.FailingConsumer.accept(FailingConsumer.java:34)
+	at org.apache.cassandra.distributed.test.accord.AccordTestBase.test(AccordTestBase.java:234)
+	at org.apache.cassandra.distributed.test.accord.AccordTestBase.test(AccordTestBase.java:202)
+	at org.apache.cassandra.distributed.test.accord.AccordCQLTestBase.testCASSimulatorLite(AccordCQLTestBase.java:3329)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:75)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:52)
+Caused by: java.util.concurrent.ExecutionException: org.apache.cassandra.exceptions.WriteTimeoutException: [127,1789847352353962,162(KW),1]: [tid:7e:[DecoratedKey(-4069959284402364209, 00000001)]]
+	at java.base/java.util.concurrent.FutureTask.report(FutureTask.java:122)
+	at java.base/java.util.concurrent.FutureTask.get(FutureTask.java:191)
+	at org.apache.cassandra.distributed.test.accord.AccordCQLTestBase.lambda$testCASSimulatorLite$105(AccordCQLTestBase.java:3343)
+	at org.apache.cassandra.utils.FailingConsumer.accept(FailingConsumer.java:30)
+Caused by: org.apache.cassandra.exceptions.WriteTimeoutException: [127,1789847352353962,162(KW),1]: [tid:7e:[DecoratedKey(-4069959284402364209, 00000001)]]
+	at org.apache.cassandra.service.accord.RequestBookkeeping.newTimeout(RequestBookkeeping.java:88)
+	at org.apache.cassandra.service.accord.RequestBookkeeping.newTimeout(RequestBookkeeping.java:64)
+	at org.apache.cassandra.service.accord.AccordResult.tryFailure(AccordResult.java:200)
+	at org.apache.cassandra.service.accord.AccordResult.accept(AccordResult.java:245)
+	at org.apache.cassandra.service.accord.AccordResult.accept(AccordResult.java:60)
+	at org.apache.cassandra.service.accord.interop.AccordInteropExecution.lambda$start$6(AccordInteropExecution.java:413)
+	at accord.utils.async.AsyncCallbacks.callAndCallback(AsyncCallbacks.java:185)
+	at accord.utils.async.AsyncCallbacks$CallAndCallback.run(AsyncCallbacks.java:82)
+	at org.apache.cassandra.concurrent.FutureTask$2.call(FutureTask.java:124)
+	at org.apache.cassandra.concurrent.FutureTask.call(FutureTask.java:61)
+	at org.apache.cassandra.concurrent.FutureTask.run(FutureTask.java:71)
+	at org.apache.cassandra.concurrent.SEPWorker.run(SEPWorker.java:192)
+	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+	at org.apache.cassandra.concurrent.CassandraThread.run(CassandraThread.java:97)
+	Suppressed: org.apache.cassandra.exceptions.ReadTimeoutException: Operation timed out - received only 0 responses.
+		at org.apache.cassandra.service.reads.ReadCallback.awaitResults(ReadCallback.java:213)
+		at org.apache.cassandra.service.reads.AbstractReadExecutor.awaitResponses(AbstractReadExecutor.java:428)
+		at org.apache.cassandra.service.StorageProxy.fetchRows(StorageProxy.java:2692)
+		at org.apache.cassandra.service.accord.interop.AccordInteropExecution.lambda$keyReadChains$0(AccordInteropExecution.java:283)
+		at accord.utils.async.AsyncCallbacks.callAndCallback(AsyncCallbacks.java:181)
+</pre>
+     </td>
+     <td style="width: 10%; text-align: right;">
+      5.631
+     </td>
+    </tr>
+   </table>
+   <table class="table-fixed">
+    <tr style="height: 18px;">
+     <th colspan="4">
+      org.apache.cassandra.simulator.test.AccordHarrySimulationTest-_jdk11_x86_64
+     </th>
+    </tr>
+    <tr>
+     <th style="width: 15%; text-align: left;">
+      Class
+      <th style="width: 15%; text-align: left;">
+       Method
+       <th style="width: 60%; text-align: left;">
+        Output
+        <th style="width: 10%; text-align: right;">
+         Duration
+        </th>
+       </th>
+      </th>
+     </th>
+    </tr>
+    <tr>
+     <td style="width: 15%; text-align: left;">
+      simulator.test.AccordHarrySimulationTest
+     </td>
+     <td style="width: 15%; text-align: left;">
+      test-_jdk11_x86_64
+     </td>
+     <td style="width: 60%; text-align: left;">
+      <pre>Failed on seed 0xfa3d51da237d56e5; Failure creating the simulation-org.apache.cassandra.simulator.SimulationException: Failed on seed 0xfa3d51da237d56e5; Failure creating the simulation
+Caused by: java.lang.AssertionError: Errors detected during simulation
+	Suppressed: java.lang.NullPointerException
+		at org.apache.cassandra.tcm.ClusterMetadata.current(ClusterMetadata.java:1287)
+		at org.apache.cassandra.cql3.statements.schema.AlterSchemaStatement.execute(AlterSchemaStatement.java:192)
+		at org.apache.cassandra.cql3.statements.schema.AlterSchemaStatement.execute(AlterSchemaStatement.java:122)
+		at org.apache.cassandra.distributed.impl.Query.call(Query.java:83)
+		at org.apache.cassandra.distributed.impl.Query.call(Query.java:40)
+		at org.apache.cassandra.distributed.api.IInvokableInstance.unsafeCallOnThisThread(IInvokableInstance.java:93)
+		at org.apache.cassandra.simulator.systems.SimulatedActionCallable$1.run(SimulatedActionCallable.java:47)
+		at org.apache.cassandra.simulator.systems.InterceptingExecutor$InterceptingPooledExecutor$WaitingThread.lambda$new$1(InterceptingExecutor.java:284)
+		at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+		at java.base/java.lang.Thread.run(Thread.java:829)
+</pre>
+     </td>
+     <td style="width: 10%; text-align: right;">
+      19.609
+     </td>
+    </tr>
+   </table>
+   <table class="table-fixed">
+    <tr style="height: 18px;">
+     <th colspan="4">
+      org.apache.cassandra.simulator.test.EpochStressTest-_jdk11_x86_64
+     </th>
+    </tr>
+    <tr>
+     <th style="width: 15%; text-align: left;">
+      Class
+      <th style="width: 15%; text-align: left;">
+       Method
+       <th style="width: 60%; text-align: left;">
+        Output
+        <th style="width: 10%; text-align: right;">
+         Duration
+        </th>
+       </th>
+      </th>
+     </th>
+    </tr>
+    <tr>
+     <td style="width: 15%; text-align: left;">
+      simulator.test.EpochStressTest
+     </td>
+     <td style="width: 15%; text-align: left;">
+      manyEpochsAndAccordConverges-_jdk11_x86_64
+     </td>
+     <td style="width: 60%; text-align: left;">
+      <pre>Failed on seed 0x1a0bb2a170f-org.apache.cassandra.simulator.SimulationException: Failed on seed 0x1a0bb2a170f
+Caused by: java.lang.AssertionError: Errors detected during simulation
+	Suppressed: java.lang.NullPointerException
+		at org.apache.cassandra.config.DatabaseDescriptor.isAuthenticationRequired(DatabaseDescriptor.java:2125)
+		at org.apache.cassandra.service.ClientState.<init>(ClientState.java:206)
+		at org.apache.cassandra.service.ClientState.forExternalCalls(ClientState.java:242)
+		at org.apache.cassandra.distributed.impl.CoordinatorHelper.makeFakeClientState(CoordinatorHelper.java:109)
+		at org.apache.cassandra.distributed.impl.Query.call(Query.java:71)
+		at org.apache.cassandra.distributed.impl.Query.call(Query.java:40)
+		at org.apache.cassandra.distributed.api.IInvokableInstance.unsafeCallOnThisThread(IInvokableInstance.java:93)
+		at org.apache.cassandra.simulator.systems.SimulatedActionCallable$1.run(SimulatedActionCallable.java:47)
+		at org.apache.cassandra.simulator.systems.InterceptingExecutor$InterceptingPooledExecutor$WaitingThread.lambda$new$1(InterceptingExecutor.java:284)
+		at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+		at java.base/java.lang.Thread.run(Thread.java:829)
+</init></pre>
+     </td>
+     <td style="width: 10%; text-align: right;">
+      0.023
+     </td>
+    </tr>
+   </table>
+   <table class="table-fixed">
+    <tr style="height: 18px;">
+     <th colspan="4">
+      org.apache.cassandra.simulator.test.ShortAccordSimulationTest-_jdk11_x86_64
+     </th>
+    </tr>
+    <tr>
+     <th style="width: 15%; text-align: left;">
+      Class
+      <th style="width: 15%; text-align: left;">
+       Method
+       <th style="width: 60%; text-align: left;">
+        Output
+        <th style="width: 10%; text-align: right;">
+         Duration
+        </th>
+       </th>
+      </th>
+     </th>
+    </tr>
+    <tr>
+     <td style="width: 15%; text-align: left;">
+      simulator.test.ShortAccordSimulationTest
+     </td>
+     <td style="width: 15%; text-align: left;">
+      simulationTest-_jdk11_x86_64
+     </td>
+     <td style="width: 60%; text-align: left;">
+      <pre>Simulation failed with exit code: 1-java.lang.RuntimeException: Simulation failed with exit code: 1
+	at org.apache.cassandra.simulator.SimulatorUtils.executeWithExceptionThrowing(SimulatorUtils.java:111)
+	at org.apache.cassandra.simulator.paxos.AccordSimulationRunner.executeWithExceptionThrowing(AccordSimulationRunner.java:104)
+	at org.apache.cassandra.simulator.test.ShortAccordSimulationTest.simulationTest(ShortAccordSimulationTest.java:97)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+Caused by: org.apache.cassandra.simulator.SimulationException: Failed on seed 0x4b3d58d3fe6dfba4
+	Suppressed: java.lang.IllegalStateException: Unterminated threads detected; active threads:
+Threads: [node4_MutationStage:2, node4_ReadStage:1, node4_InternalMetadataStage:1, node4_AccordMigrationStage:1, node4_StreamReceiveTask:1, node4_PaxosRepairStage:2, node4_isolatedExecutor:2, node4_RepairSnapshotExecutor:1, node4_MutationStage:1, node4_MutationStage:3, node4_isolatedExecutor:6, node4_PaxosRepairStage:1, node4_RequestResponseStage:2, node4_Repair-Task:1, node4_RequestResponseStage:1, node4_isolatedExecutor:4, node4_MutationStage:4, node4_isolatedExecutor:3]:
+	java.base@11.0.31/java.lang.Object.wait(Native Method)
+	java.base@11.0.31/java.lang.Object.wait(Object.java:328)
+	org.apache.cassandra.simulator.systems.InterceptingExecutor$InterceptingPooledExecutor$WaitingThread.lambda$new$1(InterceptingExecutor.java:314)
+	org.apache.cassandra.simulator.systems.InterceptingExecutor$InterceptingPooledExecutor$WaitingThread$$Lambda$6875/0x0000000841c63440.run(Unknown Source)
+	app//io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	java.base@11.0.31/java.lang.Thread.run(Thread.java:829)
+Threads: [node4_AntiEntropyStage:1, node4_NonPeriodicTasks:1, node4_JMX:1, node4_AccordScheduled:1, node4_NetworkPermissionsCacheRefresh:1, node4_PaxosUncommittedMerge:1, node4_MetadataFetchLogStage:1, node4_MemtableReclaimMemory:1, node4_GossipStage:1, node4_PermissionsCacheRefresh:1, node4_AccordJournal-releaser:1, node4_RolesCacheRefresh:1, node4_Sampler:1, node4_AccordJournal-compactor:1, node4_PaxosRepairRetries:1, node4_StatusPropagationExecutor:1, node4_OptionalTasks:1, node4_HintsWriteExecutor:1, node4_read-hotness-tracker:1, node4_MiscStage:1, node4_ScheduledFastTasks:1, node4_ScheduledTasks:1, node4_PerDiskMemtableFlushWriter_0:1, node4_CompactionLogger:1, node4_PerDiskMemtableFlushWriter_1:1, node4_PerDiskMemtableFlushWriter_2:1, node4_AccordJournal-closer:1, node4_MemtableFlushWriter:1, node4_MemtablePostFlush:1, node4_StreamingTransferTaskTimeouts:1]:
+	java.base@11.0.31/java.lang.Object.wait(Native Method)
+	java.base@11.0.31/java.lang.Object.wait(Object.java:328)
+	org.apache.cassandra.simulator.systems.InterceptingExecutor$AbstractSingleThreadedExecutorPlus.dequeue(InterceptingExecutor.java:644)
+	org.apache.cassandra.simulator.systems.InterceptingExecutor$AbstractSingleThreadedExecutorPlus.lambda$new$0(InterceptingExecutor.java:541)
+	org.apache.cassandra.simulator.systems.InterceptingExecutor$AbstractSingleThreadedExecutorPlus$$Lambda$7088/0x0000000841d59040.run(Unknown Source)
+	app//io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	java.base@11.0.31/java.lang.Thread.run(Thread.java:829)
+Threads: [node5_StatusPropagationExecutor:1, node5_CompactionLogger:1, node5_AccordJournal-closer:1, node5_ScheduledTasks:1, node5_ScheduledFastTasks:1, node5_PermissionsCacheRefresh:1, node5_RolesCacheRefresh:1, node5_Sampler:1, node5_NetworkPermissionsCacheRefresh:1, node5_MemtablePostFlush:1, node5_StreamingTransferTaskTimeouts:1, node5_OptionalTasks:1, node5_PerDiskMemtableFlushWriter_1:1, node5_AntiEntropyStage:1, node5_AccordScheduled:1, node5_PerDiskMemtableFlushWriter_2:1, node5_PaxosRepairRetries:1, node5_MiscStage:1, node5_PaxosUncommittedMerge:1, node5_NonPeriodicTasks:1, node5_GossipStage:1, node5_MemtableFlushWriter:1, node5_MetadataFetchLogStage:1, node5_AccordJournal-compactor:1, node5_HintsWriteExecutor:1, node5_JMX:1, node5_AccordJournal-releaser:1, node5_PerDiskMemtableFlushWriter_0:1, node5_read-hotness-tracker:1, node5_MemtableReclaimMemory:1]:
+	java.base@11.0.31/java.lang.Object.wait(Native Method)
+	java.base@11.0.31/java.lang.Object.wait(Object.java:328)
+	org.apache.cassandra.simulator.systems.InterceptingExecutor$AbstractSingleThreadedExecutorPlus.dequeue(InterceptingExecutor.java:644)
+	org.apache.cassandra.simulator.systems.InterceptingExecutor$AbstractSingleThreadedExecutorPlus.lambda$new$0(InterceptingExecutor.java:541)
+	org.apache.cassandra.simulator.systems.InterceptingExecutor$AbstractSingleThreadedExecutorPlus$$Lambda$8619/0x00000008422f0c40.run(Unknown Source)
+	app//io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	java.base@11.0.31/java.lang.Thread.run(Thread.java:829)
+Threads: [node1_LocalPool-Cleaner-chunk-cache:1, node1_LocalPool-Cleaner-networking:1]:
+	java.base@11.0.31/java.lang.Object.wait(Native Method)
+	java.base@11.0.31/java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:155)
+	org.apache.cassandra.utils.memory.BufferPool.cleanupOneReference(BufferPool.java:1090)
+	org.apache.cassandra.utils.memory.BufferPool$$Lambda$3302/0x0000000841058840.run(Unknown Source)
+	app//org.apache.cassandra.concurrent.Interruptible$Task.lambda$from$0(Interruptible.java:40)
+	app//org.apache.cassandra.concurrent.Interruptible$Task$$Lambda$2043/0x0000000840aaa440.run(Unknown Source)
+	app//org.apache.cassandra.concurrent.InfiniteLoopExecutor.loop(InfiniteLoopExecutor.java:119)
+	app//org.apache.cassandra.concurrent.InfiniteLoopExecutor$$Lambda$2045/0x0000000840aaac40.run(Unknown Source)
+	app//org.apache.cassandra.simulator.systems.InterceptibleThreadFactory$PlainThreadFactory.lambda$newThread$0(InterceptibleThreadFactory.java:87)
+	app//org.apache.cassandra.simulator.systems.InterceptibleThreadFactory$PlainThreadFactory$$Lambda$2047/0x0000000840aab440.run(Unknown Source)
+	app//io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	java.base@11.0.31/java.lang.Thread.run(Thread.java:829)
+	app//org.apache.cassandra.concurrent.CassandraThread.run(CassandraThread.java:97)
+Threads: [node2_PaxosRepairStage:3, node2_isolatedExecutor:3, node2_RequestResponseStage:2, node2_isolatedExecutor:1, node2_PaxosRepairStage:1, node2_MutationStage:1, node2_StreamReceiveTask:1, node2_isolatedExecutor:5, node2_MutationStage:2, node2_PaxosRepairStage:2, node2_isolatedExecutor:2, node2_InternalMetadataStage:1, node2_RepairSnapshotExecutor:1, node2_RequestResponseStage:1, node2_AccordMigrationStage:1, node2_ReadStage:1, node2_Repair-Task:1, node2_isolatedExecutor:7]:
+	java.base@11.0.31/java.lang.Object.wait(Native Method)
+	java.base@11.0.31/java.lang.Object.wait(Object.java:328)
+	org.apache.cassandra.simulator.systems.InterceptingExecutor$InterceptingPooledExecutor$WaitingThread.lambda$new$1(InterceptingExecutor.java:314)
+	org.apache.cassandra.simulator.systems.InterceptingExecutor$InterceptingPooledExecutor$WaitingThread$$Lambda$3449/0x00000008410c8040.run(Unknown Source)
+	app//io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	java.base@11.0.31/java.lang.Thread.run(Thread.java:829)
+Threads: [node1_RepairSnapshotExecutor:1, node1_MutationStage:2, node1_isolatedExecutor:5, node1_Repair-Task:1, node1_ReadStage:1, node1_PaxosRepairStage:2, node1_PaxosRepairStage:1, node1_MutationStage:1, node1_isolatedExecutor:1, node1_RequestResponseStage:1, node1_InternalMetadataStage:1, node1_isolatedExecutor:4, node1_RequestResponseStage:2, node1_StreamReceiveTask:1]:
+	java.base@11.0.31/java.lang.Object.wait(Native Method)
+	java.base@11.0.31/java.lang.Object.wait(Object.java:328)
+	org.apache.cassandra.simulator.systems.InterceptingExecutor$InterceptingPooledExecutor$WaitingThread.lambda$new$1(InterceptingExecutor.java:314)
+	org.apache.cassandra.simulator.systems.InterceptingExecutor$InterceptingPooledExecutor$WaitingThread$$Lambda$1798/0x0000000840884040.run(Unknown Source)
+	app//io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	java.base@11.0.31/java.lang.Thread.run(Thread.java:829)
+Threads: [node2_ScheduledFastTasks:1, node2_HintsWriteExecutor:1, node2_StreamingTransferTaskTimeouts:1, node2_PaxosUncommittedMerge:1, node2_MemtablePostFlush:1, node2_AccordJournal-compactor:1, node2_CompactionLogger:1, node2_StatusPropagationExecutor:1, node2_PerDiskMemtableFlushWriter_0:1, node2_PerDiskMemtableFlushWriter_2:1, node2_JMX:1, node2_AccordScheduled:1, node2_AccordJournal-closer:1, node2_PermissionsCacheRefresh:1, node2_MemtableFlushWriter:1, node2_Sampler:1, node2_MiscStage:1, node2_RolesCacheRefresh:1, node2_GossipStage:1, node2_PaxosRepairRetries:1, node2_AntiEntropyStage:1, node2_NetworkPermissionsCacheRefresh:1, node2_AccordJournal-releaser:1, node2_MemtableReclaimMemory:1, node2_MetadataFetchLogStage:1, node2_OptionalTasks:1, node2_read-hotness-tracker:1, node2_PerDiskMemtableFlushWriter_1:1, node2_ScheduledTasks:1, node2_NonPeriodicTasks:1]:
+	java.base@11.0.31/java.lang.Object.wait(Native Method)
+	java.base@11.0.31/java.lang.Object.wait(Object.java:328)
+	org.apache.cassandra.simulator.systems.InterceptingExecutor$AbstractSingleThreadedExecutorPlus.dequeue(InterceptingExecutor.java:644)
+	org.apache.cassandra.simulator.systems.InterceptingExecutor$AbstractSingleThreadedExecutorPlus.lambda$new$0(InterceptingExecutor.java:541)
+	org.apache.cassandra.simulator.systems.InterceptingExecutor$AbstractSingleThreadedExecutorPlus$$Lambda$3662/0x0000000841246840.run(Unknown Source)
+	app//io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	java.base@11.0.31/java.lang.Thread.run(Thread.java:829)
+Threads: [node3_StreamingTransferTaskTimeouts:1, node3_AccordJournal-compactor:1, node3_PerDiskMemtableFlushWriter_2:1, node3_NetworkPermissionsCacheRefresh:1, node3_GossipStage:1, node3_MetadataFetchLogStage:1, node3_JMX:1, node3_AccordScheduled:1, node3_BatchlogTasks:1, node3_MemtableReclaimMemory:1, node3_RolesCacheRefresh:1, node3_Sampler:1, node3_StatusPropagationExecutor:1, node3_PaxosUncommittedMerge:1, node3_ScheduledFastTasks:1, node3_OptionalTasks:1, node3_MiscStage:1, node3_AccordJournal-closer:1, node3_AccordJournal-releaser:1, node3_AntiEntropyStage:1, node3_PerDiskMemtableFlushWriter_0:1, node3_CompactionLogger:1, node3_HintsWriteExecutor:1, node3_PerDiskMemtableFlushWriter_1:1, node3_MemtablePostFlush:1, node3_PaxosRepairRetries:1, node3_MemtableFlushWriter:1, node3_ScheduledTasks:1, node3_NonPeriodicTasks:1, node3_read-hotness-tracker:1, node3_PermissionsCacheRefresh:1]:
+	java.base@11.0.31/java.lang.Object.wait(Native Method)
+	java.base@11.0.31/java.lang.Object.wait(Object.java:328)
+	org.apache.cassandra.simulator.systems.InterceptingExecutor$AbstractSingleThreadedExecutorPlus.dequeue(InterceptingExecutor.java:644)
+	org.apache.cassandra.simulator.systems.InterceptingExecutor$AbstractSingleThreadedExecutorPlus.lambda$new$0(InterceptingExecutor.java:541)
+	org.apache.cassandra.simulator.systems.InterceptingExecutor$AbstractSingleThreadedExecutorPlus$$Lambda$5524/0x0000000840a3a840.run(Unknown Source)
+	app//io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	java.base@11.0.31/java.lang.Thread.run(Thread.java:829)
+Threads: [node1_AccordExecutor[1,3]:1, node1_AccordExecutor[0,0]:1, node1_AccordExecutor[0,1]:1, node1_AccordExecutor[0,3]:1, node1_AccordExecutor[0,2]:1, node1_AccordExecutor[1,2]:1, node1_AccordExecutor[1,1]:1, node1_AccordExecutor[1,0]:1]:
+	java.base@11.0.31/jdk.internal.misc.Unsafe.park(Native Method)
+	java.base@11.0.31/java.util.concurrent.locks.LockSupport.park(LockSupport.java:323)
+	app//org.apache.cassandra.simulator.systems.InterceptibleThread.park(InterceptibleThread.java:498)
+	org.apache.cassandra.simulator.systems.InterceptorOfGlobalMethods$IfInterceptibleThread.park(InterceptorOfGlobalMethods.java:267)
+	org.apache.cassandra.simulator.systems.InterceptorOfSystemMethods$Global.park(InterceptorOfSystemMethods.java:146)
+	org.apache.cassandra.utils.concurrent.LockWithAsyncSignal.awaitDeferThrow(LockWithAsyncSignal.java:203)
+	org.apache.cassandra.utils.concurrent.LockWithAsyncSignal$$Lambda$3269/0x0000000841038040.await(Unknown Source)
+	org.apache.cassandra.utils.concurrent.LockWithAsyncSignal.awaitLock(LockWithAsyncSignal.java:158)
+	org.apache.cassandra.utils.concurrent.LockWithAsyncSignal.await(LockWithAsyncSignal.java:126)
+	org.apache.cassandra.utils.concurrent.LockWithAsyncSignal.await(LockWithAsyncSignal.java:109)
+	org.apache.cassandra.service.accord.AccordExecutorAsyncSubmit.awaitExclusive(AccordExecutorAsyncSubmit.java:51)
+	org.apache.cassandra.service.accord.AccordExecutorAbstractLockLoop$2.run(AccordExecutorAbstractLockLoop.java:250)
+	org.apache.cassandra.service.accord.AccordExecutorLoops.lambda$wrap$0(AccordExecutorLoops.java:80)
+	org.apache.cassandra.service.accord.AccordExecutorLoops$$Lambda$3226/0x0000000841012c40.run(Unknown Source)
+	app//org.apache.cassandra.simulator.systems.InterceptedExecution$InterceptedThreadStart.run(InterceptedExecution.java:216)
+	app//io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	java.base@11.0.31/java.lang.Thread.run(Thread.java:829)
+Threads: [node2_ThreadLocalMetrics-Cleaner:1]:
+	java.base@11.0.31/java.lang.Object.wait(Native Method)
+	java.base@11.0.31/java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:155)
+	org.apache.cassandra.metrics.ThreadLocalMetrics.cleanupOneReference(ThreadLocalMetrics.java:132)
+	org.apache.cassandra.metrics.ThreadLocalMetrics$$Lambda$3664/0x0000000841246440.run(Unknown Source)
+	app//org.apache.cassandra.concurrent.Interruptible$Task.lambda$from$0(Interruptible.java:40)
+	app//org.apache.cassandra.concurrent.Interruptible$Task$$Lambda$2043/0x0000000840aaa440.run(Unknown Source)
+	app//org.apache.cassandra.concurrent.InfiniteLoopExecutor.loop(InfiniteLoopExecutor.java:119)
+	app//org.apache.cassandra.concurrent.InfiniteLoopExecutor$$Lambda$2045/0x0000000840aaac40.run(Unknown Source)
+	app//org.apache.cassandra.simulator.systems.InterceptibleThreadFactory$PlainThreadFactory.lambda$newThread$0(InterceptibleThreadFactory.java:87)
+	app//org.apache.cassandra.simulator.systems.InterceptibleThreadFactory$PlainThreadFactory$$Lambda$2047/0x0000000840aab440.run(Unknown Source)
+	app//io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	java.base@11.0.31/java.lang.Thread.run(Thread.java:829)
+	app//org.apache.cassandra.concurrent.CassandraThread.run(CassandraThread.java:97)
+Threads: [node5_RepairSnapshotExecutor:1, node5_isolatedExecutor:3, node5_RequestResponseStage:1, node5_PaxosRepairStage:1, node5_isolatedExecutor:1, node5_MutationStage:3, node5_MutationStage:1, node5_Repair-Task:1, node5_RequestResponseStage:3, node5_isolatedExecutor:2, node5_InternalMetadataStage:1, node5_RequestResponseStage:2, node5_AccordMigrationStage:1, node5_StreamReceiveTask:1, node5_isolatedExecutor:7, node5_MutationStage:2]:
+	java.base@11.0.31/java.lang.Object.wait(Native Method)
+	java.base@11.0.31/java.lang.Object.wait(Object.java:328)
+	org.apache.cassandra.simulator.systems.InterceptingExecutor$InterceptingPooledExecutor$WaitingThread.lambda$new$1(InterceptingExecutor.java:314)
+	org.apache.cassandra.simulator.systems.InterceptingExecutor$InterceptingPooledExecutor$WaitingThread$$Lambda$8405/0x00000008421a6c40.run(Unknown Source)
+	app//io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	java.base@11.0.31/java.lang.Thread.run(Thread.java:829)
+Threads: [node1_Sampler:1, node1_ScheduledTasks:1, node1_MetadataFetchLogStage:1, node1_GossipStage:1, node1_AntiEntropyStage:1, node1_MemtableReclaimMemory:1, node1_HintsWriteExecutor:1, node1_AccordJournal-compactor:1, node1_PaxosRepairRetries:1, node1_StatusPropagationExecutor:1, node1_PerDiskMemtableFlushWriter_0:1, node1_MemtablePostFlush:1, node1_AccordJournal-releaser:1, node1_NetworkPermissionsCacheRefresh:1, node1_PaxosUncommittedMerge:1, node1_OptionalTasks:1, node1_PerDiskMemtableFlushWriter_2:1, node1_CompactionLogger:1, node1_MemtableFlushWriter:1, node1_AccordJournal-closer:1, node1_PermissionsCacheRefresh:1, node1_MiscStage:1, node1_ScheduledFastTasks:1, node1_PerDiskMemtableFlushWriter_1:1, node1_JMX:1, node1_StreamingTransferTaskTimeouts:1, node1_RolesCacheRefresh:1, node1_NonPeriodicTasks:1, node1_read-hotness-tracker:1]:
+	java.base@11.0.31/java.lang.Object.wait(Native Method)
+	java.base@11.0.31/java.lang.Object.wait(Object.java:328)
+	org.apache.cassandra.simulator.systems.InterceptingExecutor$AbstractSingleThreadedExecutorPlus.dequeue(InterceptingExecutor.java:644)
+	org.apache.cassandra.simulator.systems.InterceptingExecutor$AbstractSingleThreadedExecutorPlus.lambda$new$0(InterceptingExecutor.java:541)
+	org.apache.cassandra.simulator.systems.InterceptingExecutor$AbstractSingleThreadedExecutorPlus$$Lambda$2039/0x0000000840aa9040.run(Unknown Source)
+	app//io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	java.base@11.0.31/java.lang.Thread.run(Thread.java:829)
+Threads: [node3_RepairSnapshotExecutor:1, node3_PaxosRepairStage:4, node3_RequestResponseStage:2, node3_AccordMigrationStage:1, node3_isolatedExecutor:4, node3_MutationStage:4, node3_HintsDispatcher:1, node3_PaxosRepairStage:1, node3_ReadStage:1, node3_isolatedExecutor:1, node3_MutationStage:1, node3_StreamReceiveTask:1, node3_MutationStage:3, node3_Repair-Task:1, node3_isolatedExecutor:2, node3_PaxosRepairStage:2, node3_isolatedExecutor:5, node3_InternalMetadataStage:1, node3_PaxosRepairStage:3, node3_RequestResponseStage:1, node3_MutationStage:2]:
+	java.base@11.0.31/java.lang.Object.wait(Native Method)
+	java.base@11.0.31/java.lang.Object.wait(Object.java:328)
+	org.apache.cassandra.simulator.systems.InterceptingExecutor$InterceptingPooledExecutor$WaitingThread.lambda$new$1(InterceptingExecutor.java:314)
+	org.apache.cassandra.simulator.systems.InterceptingExecutor$InterceptingPooledExecutor$WaitingThread$$Lambda$5310/0x0000000841704c40.run(Unknown Source)
+	app//io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	java.base@11.0.31/java.lang.Thread.run(Thread.java:829)
+Threads: [node5_GlobalLogFollower:1]:
+	java.base@11.0.31/jdk.internal.misc.Unsafe.park(Native Method)
+	java.base@11.0.31/java.util.concurrent.locks.LockSupport.park(LockSupport.java:323)
+	app//org.apache.cassandra.utils.concurrent.WaitQueue$Standard$AbstractSignal.await(WaitQueue.java:322)
+	app//org.apache.cassandra.utils.concurrent.WaitQueue$Standard$AbstractSignal.await(WaitQueue.java:300)
+	org.apache.cassandra.tcm.log.LocalLog$Async$AsyncRunnable.run(LocalLog.java:844)
+	org.apache.cassandra.concurrent.InfiniteLoopExecutor.loop(InfiniteLoopExecutor.java:119)
+	org.apache.cassandra.concurrent.InfiniteLoopExecutor$$Lambda$8626/0x00000008422f7440.run(Unknown Source)
+	app//org.apache.cassandra.simulator.systems.InterceptedExecution$InterceptedThreadStart.run(InterceptedExecution.java:216)
+	app//io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	java.base@11.0.31/java.lang.Thread.run(Thread.java:829)
+Threads: [node2_AccordExecutor[1,1]:1, node2_AccordExecutor[1,2]:1, node2_AccordExecutor[1,0]:1, node2_AccordExecutor[1,3]:1, node2_AccordExecutor[0,0]:1, node2_AccordExecutor[0,2]:1, node2_AccordExecutor[0,1]:1, node2_AccordExecutor[0,3]:1]:
+	java.base@11.0.31/jdk.internal.misc.Unsafe.park(Native Method)
+	java.base@11.0.31/java.util.concurrent.locks.LockSupport.park(LockSupport.java:323)
+	app//org.apache.cassandra.simulator.systems.InterceptibleThread.park(InterceptibleThread.java:498)
+	org.apache.cassandra.simulator.systems.InterceptorOfGlobalMethods$IfInterceptibleThread.park(InterceptorOfGlobalMethods.java:267)
+	org.apache.cassandra.simulator.systems.InterceptorOfSystemMethods$Global.park(InterceptorOfSystemMethods.java:146)
+	org.apache.cassandra.utils.concurrent.LockWithAsyncSignal.awaitDeferThrow(LockWithAsyncSignal.java:203)
+	org.apache.cassandra.utils.concurrent.LockWithAsyncSignal$$Lambda$5183/0x00000008416b4840.await(Unknown Source)
+	org.apache.cassandra.utils.concurrent.LockWithAsyncSignal.awaitLock(LockWithAsyncSignal.java:158)
+	org.apache.cassandra.utils.concurrent.LockWithAsyncSignal.await(LockWithAsyncSignal.java:126)
+	org.apache.cassandra.utils.concurrent.LockWithAsyncSignal.await(LockWithAsyncSignal.java:109)
+	org.apache.cassandra.service.accord.AccordExecutorAsyncSubmit.awaitExclusive(AccordExecutorAsyncSubmit.java:51)
+	org.apache.cassandra.service.accord.AccordExecutorAbstractLockLoop$2.run(AccordExecutorAbstractLockLoop.java:250)
+	org.apache.cassandra.service.accord.AccordExecutorLoops.lambda$wrap$0(AccordExecutorLoops.java:80)
+	org.apache.cassandra.service.accord.AccordExecutorLoops$$Lambda$5141/0x0000000841696040.run(Unknown Source)
+	app//org.apache.cassandra.simulator.systems.InterceptedExecution$InterceptedThreadStart.run(InterceptedExecution.java:216)
+	app//io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	java.base@11.0.31/java.lang.Thread.run(Thread.java:829)
+Threads: [node5_COMMIT-LOG-ALLOCATOR:1]:
+	java.base@11.0.31/jdk.internal.misc.Unsafe.park(Native Method)
+	java.base@11.0.31/java.util.concurrent.locks.LockSupport.park(LockSupport.java:323)
+	app//org.apache.cassandra.utils.concurrent.WaitQueue$Standard$AbstractSignal.await(WaitQueue.java:322)
+	app//org.apache.cassandra.utils.concurrent.WaitQueue$Standard$AbstractSignal.await(WaitQueue.java:300)
+	app//org.apache.cassandra.utils.concurrent.WaitQueue.waitOnCondition(WaitQueue.java:483)
+	org.apache.cassandra.db.commitlog.AbstractCommitLogSegmentManager$AllocatorRunnable.run(AbstractCommitLogSegmentManager.java:227)
+	org.apache.cassandra.concurrent.InfiniteLoopExecutor.loop(InfiniteLoopExecutor.java:119)
+	org.apache.cassandra.concurrent.InfiniteLoopExecutor$$Lambda$8626/0x00000008422f7440.run(Unknown Source)
+	app//org.apache.cassandra.simulator.systems.InterceptedExecution$InterceptedThreadStart.run(InterceptedExecution.java:216)
+	app//io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	java.base@11.0.31/java.lang.Thread.run(Thread.java:829)
+Threads: [node3_GlobalLogFollower:1]:
+	java.base@11.0.31/jdk.internal.misc.Unsafe.park(Native Method)
+	java.base@11.0.31/java.util.concurrent.locks.LockSupport.park(LockSupport.java:323)
+	app//org.apache.cassandra.utils.concurrent.WaitQueue$Standard$AbstractSignal.await(WaitQueue.java:322)
+	app//org.apache.cassandra.utils.concurrent.WaitQueue$Standard$AbstractSignal.await(WaitQueue.java:300)
+	org.apache.cassandra.tcm.log.LocalLog$Async$AsyncRunnable.run(LocalLog.java:844)
+	org.apache.cassandra.concurrent.InfiniteLoopExecutor.loop(InfiniteLoopExecutor.java:119)
+	org.apache.cassandra.concurrent.InfiniteLoopExecutor$$Lambda$5531/0x0000000840a3cc40.run(Unknown Source)
+	app//org.apache.cassandra.simulator.systems.InterceptedExecution$InterceptedThreadStart.run(InterceptedExecution.java:216)
+	app//io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	java.base@11.0.31/java.lang.Thread.run(Thread.java:829)
+Threads: [node2_LocalPool-
