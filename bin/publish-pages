@@ -1,0 +1,31 @@
+#!/bin/sh
+# Build the GitHub Pages site from reports/ and push it to the gh-pages branch.
+# The site branch holds only generated files; main never contains reports.
+set -eu
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SITE="$ROOT/.work/site"
+
+rm -rf "$SITE"
+git -C "$ROOT" worktree prune
+if git -C "$ROOT" show-ref --quiet refs/heads/gh-pages; then
+  git -C "$ROOT" worktree add --quiet "$SITE" gh-pages
+elif git -C "$ROOT" ls-remote --exit-code --heads origin gh-pages >/dev/null 2>&1; then
+  git -C "$ROOT" fetch --quiet origin gh-pages:gh-pages
+  git -C "$ROOT" worktree add --quiet "$SITE" gh-pages
+else
+  git -C "$ROOT" worktree add --quiet --orphan -b gh-pages "$SITE"
+fi
+
+# Replace the site's contents with a fresh build.
+find "$SITE" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+PYTHONPATH="$ROOT" python3 -c "import sys; from cpr import site; rows = site.build(sys.argv[1], sys.argv[2]); print(f'{len(rows)} report(s)')" "$ROOT/reports" "$SITE"
+
+git -C "$SITE" add -A
+if git -C "$SITE" diff --cached --quiet; then
+  echo "site unchanged"
+else
+  git -C "$SITE" -c commit.gpgsign=false commit --quiet -m "Publish PR review reports"
+  git -C "$SITE" push --quiet origin gh-pages
+  echo "pushed gh-pages"
+fi
+git -C "$ROOT" worktree remove --force "$SITE"

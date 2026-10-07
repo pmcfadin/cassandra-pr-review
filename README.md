@@ -21,6 +21,17 @@ The first run makes a full clone of apache/cassandra in `.work/cassandra` (about
 3 minutes). After that a review takes a few seconds. Every network call is read-only: the tool
 never comments, labels, or changes anything on GitHub or JIRA.
 
+## Published reports
+
+Reports are published at <https://pmcfadin.github.io/cassandra-pr-review/>, with an index of every
+reviewed PR. To publish after reviewing:
+
+```
+bin/publish-pages    # builds the site from reports/ and pushes the gh-pages branch
+```
+
+`main` never contains reports; the `gh-pages` branch holds only the generated site.
+
 ## What the report checks
 
 | Aspect | Checks |
@@ -43,7 +54,7 @@ judged".
 - Compare CI failures against known flaky tests.
 - AI code review lenses. Without them the best possible verdict is "requirements met, code not yet
   reviewed".
-- Publish reports or comment on PRs. See `docs/roadmap.md`.
+- Comment on PRs or find new PRs automatically. See `docs/roadmap.md`.
 
 ## Development
 
