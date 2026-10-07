@@ -1,15 +1,15 @@
 ## 1. Trusted checklists and tiers
 
-- [ ] 1.1 `cpr/config/lenses.json`: allow-listed trunk paths, per-lens bundles per tier, size cap, optional `lens_ref`
-- [ ] 1.2 `cpr/lenses.py`: resolve ref to sha, extract allow-listed files to refdir, validate, manifest (tests: PR edits the skills, upstream renamed a checklist)
-- [ ] 1.3 Tier selection and INDEX diff-signal pre-filter with the 8-category cap (tests: small patch, medium patch with serialization changes, large patch, docs-only)
-- [ ] 1.4 Smoke test against the real clone: every allow-listed path exists at origin/trunk and INDEX parses
-- [ ] 1.5 `cpr prepare` fetches trunk, builds refdir, prints per-lens bundles and tier
+- [x] 1.1 `cpr/config/lenses.json`: allow-listed trunk paths, per-lens bundles per tier, size cap, optional `lens_ref`
+- [x] 1.2 `cpr/lenses.py`: resolve ref to sha, extract allow-listed files to refdir, validate, manifest (tests: PR edits the skills, upstream renamed a checklist)
+- [x] 1.3 Tier selection and INDEX diff-signal pre-filter with the 8-category cap (tests: small patch, medium patch with serialization changes, large patch, docs-only)
+- [x] 1.4 Smoke test against the real clone: every allow-listed path exists at origin/trunk and INDEX parses
+- [x] 1.5 `cpr prepare` fetches trunk, builds refdir, prints per-lens bundles and tier
 
 ## 2. Lenses
 
-- [ ] 2.1 Agent prompts `.claude/agents/cass-{logic-boundary,concurrency-lifecycle,persistence-compat,completeness-symmetry,test-regime}.md`: inputs, trust, method, impact/confidence/severity table, JSON contract
-- [ ] 2.2 `cassandra-standards-reviewer`: self-gating security check and reporting PR edits to `.claude/`/AGENTS.md (test: password in a virtual table, via benchmark case B4 text)
+- [x] 2.1 Agent prompts `.claude/agents/cass-{logic-boundary,concurrency-lifecycle,persistence-compat,completeness-symmetry,test-regime}.md`: inputs, trust, method, impact/confidence/severity table, JSON contract
+- [x] 2.2 `cassandra-standards-reviewer`: self-gating security check and reporting PR edits to `.claude/`/AGENTS.md (test: `tests/test_agents.py` checks the prompt text; the password-in-a-virtual-table behaviour is runtime and covered by benchmark case B4)
 - [ ] 2.3 `cpr/config/panel.json` swap and `/review-pr` skill update (refdir, bundle, tier; no spec-flow) (tests: panel is data, no spec-flow dependency)
 
 ## 3. Severity and merge

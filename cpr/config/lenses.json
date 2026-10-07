@@ -1,0 +1,126 @@
+{
+ "_comment": "Trusted checklists loaded from apache/cassandra trunk. lens_ref null means origin/trunk; set a sha to pin. Medium tier = small bundle + targeted categories matched by INDEX diff signals.",
+ "lens_ref": null,
+ "size_cap_bytes": 65536,
+ "index": ".claude/skills/targeted-review/references/categories/INDEX.md",
+ "tiers": {
+  "small_under": 50,
+  "large_over": 1000
+ },
+ "max_categories": 8,
+ "focus_files": 15,
+ "extra_signals": {
+  "serialization-and-versioning": [
+   "IVersionedSerializer",
+   "Serializer",
+   "MessagingService"
+  ],
+  "io-and-crash-safety": [
+   "SequentialWriter",
+   "SSTableWriter"
+  ]
+ },
+ "risk": {
+  "compat_surface": 2.0,
+  "concurrency_path": 1.5,
+  "serializer": 2.0
+ },
+ "allow": [
+  ".claude/skills/cassandra-injvm-dtest/SKILL.md",
+  ".claude/skills/deep-review/references/deep/deep-absence-completeness.md",
+  ".claude/skills/deep-review/references/deep/deep-boundary.md",
+  ".claude/skills/deep-review/references/deep/deep-concurrency.md",
+  ".claude/skills/deep-review/references/deep/deep-cross-cutting.md",
+  ".claude/skills/deep-review/references/deep/deep-logic.md",
+  ".claude/skills/deep-review/references/deep/deep-resources.md",
+  ".claude/skills/shallow-review/references/general/specialists/absence.md",
+  ".claude/skills/shallow-review/references/general/specialists/boundary.md",
+  ".claude/skills/shallow-review/references/general/specialists/completeness.md",
+  ".claude/skills/shallow-review/references/general/specialists/concurrency.md",
+  ".claude/skills/shallow-review/references/general/specialists/logic.md",
+  ".claude/skills/shallow-review/references/general/specialists/resources.md",
+  ".claude/skills/targeted-review/references/categories/INDEX.md",
+  ".claude/skills/targeted-review/references/categories/api-contracts-and-completeness.md",
+  ".claude/skills/targeted-review/references/categories/boundaries-and-numbers.md",
+  ".claude/skills/targeted-review/references/categories/concurrency-and-locking.md",
+  ".claude/skills/targeted-review/references/categories/conditions-and-predicates.md",
+  ".claude/skills/targeted-review/references/categories/io-and-crash-safety.md",
+  ".claude/skills/targeted-review/references/categories/lifecycle-and-ordering.md",
+  ".claude/skills/targeted-review/references/categories/null-and-type-safety.md",
+  ".claude/skills/targeted-review/references/categories/refactor-aftermath.md",
+  ".claude/skills/targeted-review/references/categories/serialization-and-versioning.md",
+  ".claude/skills/targeted-review/references/categories/state-and-resource-cleanup.md",
+  ".claude/skills/targeted-review/references/categories/validation-and-input-handling.md"
+ ],
+ "lenses": {
+  "cass-logic-boundary": {
+   "small": [
+    ".claude/skills/shallow-review/references/general/specialists/logic.md",
+    ".claude/skills/shallow-review/references/general/specialists/boundary.md"
+   ],
+   "large": [
+    ".claude/skills/deep-review/references/deep/deep-logic.md",
+    ".claude/skills/deep-review/references/deep/deep-boundary.md"
+   ],
+   "categories": {
+    "conditions-and-predicates": ".claude/skills/targeted-review/references/categories/conditions-and-predicates.md",
+    "boundaries-and-numbers": ".claude/skills/targeted-review/references/categories/boundaries-and-numbers.md",
+    "null-and-type-safety": ".claude/skills/targeted-review/references/categories/null-and-type-safety.md",
+    "validation-and-input-handling": ".claude/skills/targeted-review/references/categories/validation-and-input-handling.md"
+   }
+  },
+  "cass-concurrency-lifecycle": {
+   "small": [
+    ".claude/skills/shallow-review/references/general/specialists/concurrency.md"
+   ],
+   "large": [
+    ".claude/skills/deep-review/references/deep/deep-concurrency.md"
+   ],
+   "categories": {
+    "concurrency-and-locking": ".claude/skills/targeted-review/references/categories/concurrency-and-locking.md",
+    "lifecycle-and-ordering": ".claude/skills/targeted-review/references/categories/lifecycle-and-ordering.md",
+    "state-and-resource-cleanup": ".claude/skills/targeted-review/references/categories/state-and-resource-cleanup.md"
+   }
+  },
+  "cass-persistence-compat": {
+   "small": [
+    ".claude/skills/shallow-review/references/general/specialists/resources.md"
+   ],
+   "large": [
+    ".claude/skills/deep-review/references/deep/deep-resources.md"
+   ],
+   "categories": {
+    "serialization-and-versioning": ".claude/skills/targeted-review/references/categories/serialization-and-versioning.md",
+    "io-and-crash-safety": ".claude/skills/targeted-review/references/categories/io-and-crash-safety.md"
+   }
+  },
+  "cass-completeness-symmetry": {
+   "small": [
+    ".claude/skills/shallow-review/references/general/specialists/absence.md",
+    ".claude/skills/shallow-review/references/general/specialists/completeness.md"
+   ],
+   "large": [
+    ".claude/skills/deep-review/references/deep/deep-absence-completeness.md",
+    ".claude/skills/deep-review/references/deep/deep-cross-cutting.md"
+   ],
+   "categories": {
+    "api-contracts-and-completeness": ".claude/skills/targeted-review/references/categories/api-contracts-and-completeness.md",
+    "refactor-aftermath": ".claude/skills/targeted-review/references/categories/refactor-aftermath.md"
+   }
+  },
+  "cass-test-regime": {
+   "small": [
+    ".claude/skills/cassandra-injvm-dtest/SKILL.md"
+   ],
+   "large": [
+    ".claude/skills/cassandra-injvm-dtest/SKILL.md"
+   ],
+   "categories": {}
+  },
+  "cassandra-standards": {
+   "small": [],
+   "large": [],
+   "categories": {}
+  }
+ }
+}
