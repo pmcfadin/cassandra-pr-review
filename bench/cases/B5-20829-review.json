@@ -1,0 +1,62 @@
+{
+  "id": "B5-20829-review",
+  "title": "CASSANDRA-20829 at review time (PR #4300, soft issues)",
+  "repo": "apache/cassandra",
+  "pr": 4300,
+  "base_sha": "62150b08d5ed63c94de71b0995cd8f2b7e88c2aa",
+  "head_sha": null,
+  "ticket": "CASSANDRA-20829",
+  "cutoff": "2025-08-13",
+  "notes": "head_sha is null: blambov's review comments were made on commits d7f4c5c0931237bd9c7f1c5bd308f86e756cfa5d (Index.java) and 1761b497a30c0b7d9d6aaa05582b825e835ae3f5 (CompactionTask.java), which the author later force-pushed away. The GitHub API returns 'No commit found' for both, and PR #4300's current head e0fefea1830e is a single squashed commit in which both issues are already fixed. Set head_sha if either commit is found in a local clone. The lines are original_line values from the review comments (relative to those missing commits), not verified. Cut-off 2025-08-13 is the date of the first review comment, so lenses do not see the review discussion on JIRA. Severity is the case author's judgement. The same ticket is B2 at its landed state. Training contamination: the review is public and pre-dates mid-2026, so recheck per model.",
+  "known_issues": [
+    {
+      "id": "K1",
+      "source": "https://github.com/apache/cassandra/pull/4300#discussion_r2273392221",
+      "severity": "major",
+      "hard": false,
+      "files": [
+        "src/java/org/apache/cassandra/index/Index.java"
+      ],
+      "lines": [
+        443,
+        443
+      ],
+      "match_terms": [
+        "default"
+      ],
+      "match_any": [
+        "true",
+        "safer",
+        "sasi",
+        "sai",
+        "override"
+      ],
+      "summary": "The new SPI flag must default to true (the safer option) and be overridden by SAI and SASI"
+    },
+    {
+      "id": "K2",
+      "source": "https://github.com/apache/cassandra/pull/4300#discussion_r2275893538",
+      "severity": "minor",
+      "hard": false,
+      "files": [
+        "src/java/org/apache/cassandra/db/compaction/CompactionTask.java"
+      ],
+      "lines": [
+        196,
+        196
+      ],
+      "match_terms": [
+        "transaction"
+      ],
+      "match_any": [
+        "partition",
+        "per row",
+        "newcompactiontransaction",
+        "once",
+        "each row",
+        "every row"
+      ],
+      "summary": "Build the index compaction transaction once per partition (indexManager.newCompactionTransaction) instead of per row"
+    }
+  ]
+}

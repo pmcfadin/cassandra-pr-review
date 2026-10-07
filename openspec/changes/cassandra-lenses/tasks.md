@@ -25,8 +25,8 @@
 
 ## 5. Benchmark
 
-- [ ] 5.1 `bench/cases/` for the six research cases with known issues and cut-offs (test: case is self-describing)
-- [ ] 5.2 Cut-off context builder (test: later link removed)
+- [x] 5.1 `bench/cases/` for the six research cases with known issues and cut-offs (test: case is self-describing)
+- [x] 5.2 Cut-off context builder (test: later link removed)
 - [ ] 5.3 `cpr/bench.py` run and score, label cache (test: comparing panels on recorded outputs)
 - [ ] 5.4 Quick loop: run old and new panels on B3 (PR #4887) and B6 (PR #5201), record results in `openspec/changes/cassandra-lenses/benchmark.md` (test: regression caught)
 

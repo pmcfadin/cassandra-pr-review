@@ -1,0 +1,39 @@
+{
+  "id": "B3-21113",
+  "title": "CASSANDRA-21113 PasswordObfuscator fails to obfuscate certain passwords",
+  "repo": "apache/cassandra",
+  "pr": 4887,
+  "base_sha": "d30ac083b8118f2f80acbebf371fc584f7d7253d",
+  "head_sha": "22bbac9d6ab7e4e41035f3ac252449e2e99c4e11",
+  "ticket": "CASSANDRA-21113",
+  "cutoff": "2026-06-19",
+  "notes": "Smallest case (3 files, +134/-3); quick loop. Head is the landed cassandra-4.0 commit; PR #4887 itself was closed unmerged with head f98e31937a05 and a different diff, so review the landed commit. The hard issue is from CASSANDRA-21559 (created 2026-08-10) and fix PR #5012: the patch matches only the ''-doubled form of the password, so CREATE ROLE r WITH PASSWORD = $$pa'ss$$ reaches the audit log in cleartext. Lines re-checked at the head: the escape and regex code is at PasswordObfuscator.java:70-76 (the research doc said 73-79). Unlike B1, CASSANDRA-21113 has no link to the bug-fix ticket in its changelog, so the cut-off context is the ticket as it stands minus later comments. Training contamination: the fix and the follow-up ticket post-date the case head, but a model may still have seen them. Recheck per model before trusting a recall number. Post-dates mid-2026.",
+  "known_issues": [
+    {
+      "id": "K1",
+      "source": "https://issues.apache.org/jira/browse/CASSANDRA-21559",
+      "severity": "major",
+      "hard": true,
+      "files": [
+        "src/java/org/apache/cassandra/cql3/PasswordObfuscator.java"
+      ],
+      "lines": [
+        70,
+        76
+      ],
+      "match_terms": [
+        "$$"
+      ],
+      "match_any": [
+        "escape",
+        "quote",
+        "cleartext",
+        "audit",
+        "obfuscat",
+        "leak",
+        "dollar"
+      ],
+      "summary": "Only the ''-doubled form is matched; a $$...$$ dollar-quoted password is written to the audit log in cleartext"
+    }
+  ]
+}

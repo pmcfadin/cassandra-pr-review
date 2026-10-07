@@ -1,0 +1,114 @@
+{
+  "id": "B1-19987",
+  "title": "CASSANDRA-19987 Direct IO support for compaction reads",
+  "repo": "apache/cassandra",
+  "pr": 4178,
+  "base_sha": "940739a4889794a5f198731b152c70e86bc95976",
+  "head_sha": "6f5fe8c06d5831daae1f1a4f2412f3185798dca0",
+  "ticket": "CASSANDRA-19987",
+  "cutoff": "2026-02-04",
+  "notes": "Head is the landed trunk commit (PR #4178's own head is 78f7f24ca908; the landed commit is the one reviewed here). Mixed hard and soft. The ticket gained a Reference link to CASSANDRA-21671 on 2026-09-09, which names the bug; the cut-off context must drop it. K1-K3 come from follow-up tickets CASSANDRA-21671 and CASSANDRA-21684 (fix PRs #5168, #5202, #5210); K4 is aweisberg's review comment (made at commit f71d2ed67016; lines here were re-checked against the landed head). Severity of K2 and K3 is not stated by the sources; the values are the case author's judgement. aweisberg's other soft comment (SSTableReader file handle leaked on exception, original line 1437) is already fixed in the landed head (try/catch at SSTableReader.java:1447-1455), so it is not listed. Training contamination: the fix and the follow-up ticket post-date the case head, but a model may still have seen them. Recheck per model before trusting a recall number. Case B1 post-dates mid-2026 for the follow-ups.",
+  "known_issues": [
+    {
+      "id": "K1",
+      "source": "https://issues.apache.org/jira/browse/CASSANDRA-21671",
+      "severity": "major",
+      "hard": true,
+      "files": [
+        "src/java/org/apache/cassandra/io/util/ThreadLocalReadAheadBuffer.java"
+      ],
+      "lines": [
+        46,
+        100
+      ],
+      "match_terms": [
+        "thread"
+      ],
+      "match_any": [
+        "block",
+        "static",
+        "path",
+        "buffersize",
+        "-1",
+        "reuse",
+        "second instance",
+        "stale"
+      ],
+      "summary": "Static FastThreadLocal<Map<String, Block>> keyed by path: a second instance reuses the Block, skips setup, bufferSize stays -1 and ByteBuffer.limit(-1) throws"
+    },
+    {
+      "id": "K2",
+      "source": "https://issues.apache.org/jira/browse/CASSANDRA-21684",
+      "severity": "major",
+      "hard": true,
+      "files": [
+        "src/java/org/apache/cassandra/io/util/ThreadLocalReadAheadBuffer.java"
+      ],
+      "lines": [
+        46,
+        100
+      ],
+      "match_terms": [
+        "thread"
+      ],
+      "match_any": [
+        "leak",
+        "unbounded",
+        "never removed",
+        "evict",
+        "memory",
+        "heap"
+      ],
+      "summary": "The per-thread cache of read-ahead blocks is unbounded and never cleaned up (slow heap leak)"
+    },
+    {
+      "id": "K3",
+      "source": "https://issues.apache.org/jira/browse/CASSANDRA-21671",
+      "severity": "minor",
+      "hard": true,
+      "files": [
+        "src/java/org/apache/cassandra/io/util/FileHandle.java"
+      ],
+      "lines": [
+        194,
+        232
+      ],
+      "match_terms": [
+        "chunk cache"
+      ],
+      "match_any": [
+        "scan",
+        "bypass",
+        "pollut",
+        "evict",
+        "skip"
+      ],
+      "summary": "Compressed scan readers go through the chunk cache and pollute it; the fix touches ChunkCache.java, which this diff does not"
+    },
+    {
+      "id": "K4",
+      "source": "https://github.com/apache/cassandra/pull/4178#discussion_r2159582021",
+      "severity": "minor",
+      "hard": false,
+      "files": [
+        "src/java/org/apache/cassandra/io/util/CompressedChunkReader.java"
+      ],
+      "lines": [
+        120,
+        140
+      ],
+      "match_terms": [
+        "thread"
+      ],
+      "match_any": [
+        "memory",
+        "release",
+        "free",
+        "close",
+        "leak",
+        "handle"
+      ],
+      "summary": "Readers are allocated per scan and discarded; thread-local memory must be returned promptly when the file handle closes"
+    }
+  ]
+}

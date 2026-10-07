@@ -1,0 +1,113 @@
+{
+  "id": "B4-21546",
+  "title": "CASSANDRA-21546 Pluggable default role initializer",
+  "repo": "apache/cassandra",
+  "pr": 4990,
+  "base_sha": "10557d7ffe1452e2b40d5ef92b259b72e8fb9053",
+  "head_sha": "16cc98ffe16d1e3329aaf40357e1dcbcdd9fabed",
+  "ticket": "CASSANDRA-21546",
+  "cutoff": "2026-08-04",
+  "notes": "Differs from the research doc, which named the landed commit bd22f9d3eea8: the three soft review comments were made at 16cc98ffe16d (PR #4990 commit 'revert 00e9243...') and are already fixed in the landed code, so the head here is that PR commit and base_sha is its merge-base with trunk (found with the GitHub compare API). The commit is reachable via refs/pull/4990/head. The hard issue (K1) is from CASSANDRA-21686 (created 2026-09-15) and fix PR #5165; it is present at this head too (SettingsTable.java:121 redacts only keys ending in _password or equal to password). K1 is a stretch: the file is not in the diff, so it needs reasoning about an unchanged surface. The research also listed smiklosovic's 'method never called' comment on IDefaultRoleInitializer.java:86; that was made at a later commit (ab5f5e8d0ee6) and is not listed. Severity of the soft issues is the case author's judgement. Training contamination: the fix and the follow-up ticket post-date the case head, but a model may still have seen them. Recheck per model before trusting a recall number. Post-dates mid-2026.",
+  "known_issues": [
+    {
+      "id": "K1",
+      "source": "https://issues.apache.org/jira/browse/CASSANDRA-21686",
+      "severity": "major",
+      "hard": true,
+      "stretch": true,
+      "files": [
+        "src/java/org/apache/cassandra/db/virtual/SettingsTable.java"
+      ],
+      "lines": [
+        108,
+        130
+      ],
+      "match_terms": [
+        "password_hash"
+      ],
+      "match_any": [
+        "redact",
+        "settings",
+        "expose",
+        "leak",
+        "mask",
+        "unredacted",
+        "endswith"
+      ],
+      "summary": "A password_hash parameter of the role initializer shows unredacted in system_views.settings"
+    },
+    {
+      "id": "K2",
+      "source": "https://github.com/apache/cassandra/pull/4990#discussion_r3728489468",
+      "severity": "minor",
+      "hard": false,
+      "files": [
+        "src/java/org/apache/cassandra/auth/IDefaultRoleInitializer.java"
+      ],
+      "lines": [
+        85,
+        100
+      ],
+      "match_terms": [
+        "cassandrarolemanager"
+      ],
+      "match_any": [
+        "log",
+        "message",
+        "generic",
+        "interface",
+        "skipped",
+        "reference"
+      ],
+      "summary": "The log and exception text in the generic interface names CassandraRoleManager"
+    },
+    {
+      "id": "K3",
+      "source": "https://github.com/apache/cassandra/pull/4990#discussion_r3728393783",
+      "severity": "minor",
+      "hard": false,
+      "files": [
+        "src/java/org/apache/cassandra/auth/AuthConfig.java"
+      ],
+      "lines": [
+        98,
+        110
+      ],
+      "match_terms": [
+        "cassandrarolemanager"
+      ],
+      "match_any": [
+        "couple",
+        "static",
+        "instanceof",
+        "passworddefaultroleinitializer",
+        "consistencyforrolewrite",
+        "validate"
+      ],
+      "summary": "PasswordDefaultRoleInitializer is wired to CassandraRoleManager (consistencyForRoleWrite) but AuthConfig does not check the combination"
+    },
+    {
+      "id": "K4",
+      "source": "https://github.com/apache/cassandra/pull/4990#discussion_r3728457219",
+      "severity": "minor",
+      "hard": false,
+      "files": [
+        "src/java/org/apache/cassandra/auth/IDefaultRoleInitializer.java"
+      ],
+      "lines": [
+        76,
+        78
+      ],
+      "match_terms": [
+        "validateconfiguration"
+      ],
+      "match_any": [
+        "default",
+        "explicit",
+        "empty",
+        "abstract"
+      ],
+      "summary": "validateConfiguration is a default no-op method; implementations should be forced to decide explicitly, as IRoleManager does"
+    }
+  ]
+}

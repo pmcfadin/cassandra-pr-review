@@ -1,0 +1,88 @@
+{
+  "id": "B2-20829",
+  "title": "CASSANDRA-20829 Notify secondary indexes about rows in fully expired SSTables",
+  "repo": "apache/cassandra",
+  "pr": 4313,
+  "base_sha": "f4eb55097eaf85b0b294aaddcd10bf8da5cc05cd",
+  "head_sha": "eb9586dc68444d204a5347ef6814b2f041a81559",
+  "ticket": "CASSANDRA-20829",
+  "cutoff": "2025-08-20",
+  "notes": "Head is the landed cassandra-4.0 commit (PR #4313's own head is d9bcf8119f86). All issues are hard: they come from CASSANDRA-21577 (created 2026-08-14) and fix PR #5027. K3 has its fix in NoOpIndex, PaxosUncommittedIndex and RouteJournalIndex, which this diff does not touch; the root cause is the default in Index.java. Severity of K1 and K2 is from the research; K3 minor likewise. Training contamination: the fix and the follow-up ticket post-date the case head, but a model may still have seen them. Recheck per model before trusting a recall number. CASSANDRA-20829 is the same ticket as B5, at its landed state rather than review time.",
+  "known_issues": [
+    {
+      "id": "K1",
+      "source": "https://issues.apache.org/jira/browse/CASSANDRA-21577",
+      "severity": "major",
+      "hard": true,
+      "files": [
+        "src/java/org/apache/cassandra/db/compaction/CompactionTask.java"
+      ],
+      "lines": [
+        451,
+        510
+      ],
+      "match_terms": [
+        "compaction"
+      ],
+      "match_any": [
+        "exception",
+        "throw",
+        "catch",
+        "abort",
+        "fail",
+        "error",
+        "obsolete"
+      ],
+      "summary": "maybeNotifyIndexersAboutRowsInFullyExpiredSSTables has no catch: a read error or throwing indexer aborts compaction and the expired SSTables are never obsoleted"
+    },
+    {
+      "id": "K2",
+      "source": "https://issues.apache.org/jira/browse/CASSANDRA-21577",
+      "severity": "major",
+      "hard": true,
+      "files": [
+        "src/java/org/apache/cassandra/db/compaction/CompactionTask.java"
+      ],
+      "lines": [
+        494,
+        502
+      ],
+      "match_terms": [
+        "static"
+      ],
+      "match_any": [
+        "row",
+        "removerow",
+        "partition",
+        "unfiltered"
+      ],
+      "summary": "Only rows from partition.next() reach indexer.removeRow; the static row is never delivered"
+    },
+    {
+      "id": "K3",
+      "source": "https://issues.apache.org/jira/browse/CASSANDRA-21577",
+      "severity": "minor",
+      "hard": true,
+      "files": [
+        "src/java/org/apache/cassandra/index/Index.java"
+      ],
+      "lines": [
+        414,
+        424
+      ],
+      "match_terms": [
+        "default"
+      ],
+      "match_any": [
+        "noop",
+        "paxos",
+        "accord",
+        "opt-in",
+        "opt in",
+        "scan",
+        "false"
+      ],
+      "summary": "notifyIndexerAboutRowsInFullyExpiredSSTables defaults to true; indexes that do not need it (NoOpIndex, PaxosUncommittedIndex, RouteJournalIndex) force pointless scans"
+    }
+  ]
+}
