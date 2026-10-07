@@ -1,0 +1,81 @@
+{
+  "id": "B6-21649",
+  "title": "CASSANDRA-21649 Delete SSTables in last-modified order (PR #5201, merge fixture)",
+  "repo": "apache/cassandra",
+  "pr": 5201,
+  "base_sha": "3ccf94763b9f67d3508389d96060c2b127f4767a",
+  "head_sha": "d1095cbdca4173277488e6e93abeb06a35ea0bb8",
+  "ticket": "CASSANDRA-21649",
+  "cutoff": "2026-09-22",
+  "notes": "The merge golden fixture and quick-loop case, not a recall target in the research. PR #5201 backports CASSANDRA-21649 to 4.0, no GitHub review comments. K2 is stated in the ticket itself; K1 and K3 are findings the panel produced (.work/pr/5201/d1095cbd.../lenses/*.json, clusters A and C) and the research treated as correct, verified against the code by reading SSTable.java:109-124. They have no independent source, so source points at the PR. All three are marked soft (hard=false) because no post-merge bug ticket exists. K3's location is 'ticket', so files is empty. Minor findings D (comment wording) and E (CHANGES.txt) are not known issues. Caleb Rackliffe's JIRA comment of 2026-09-11 mentions a trunk-PR comment that was not located. Training contamination: low (September 2026) but recheck per model.",
+  "known_issues": [
+    {
+      "id": "K1",
+      "source": "https://github.com/apache/cassandra/pull/5201",
+      "severity": "major",
+      "hard": false,
+      "files": [
+        "src/java/org/apache/cassandra/io/sstable/SSTable.java"
+      ],
+      "lines": [
+        113,
+        124
+      ],
+      "match_terms": [
+        "delete"
+      ],
+      "match_any": [
+        "deletewithconfirm",
+        "fswriteerror",
+        "silent",
+        "swallow",
+        "retry",
+        "return value"
+      ],
+      "summary": "FileUtils.delete replaces deleteWithConfirm: failed deletes are silent and the tidier no longer retries"
+    },
+    {
+      "id": "K2",
+      "source": "https://issues.apache.org/jira/browse/CASSANDRA-21649",
+      "severity": "major",
+      "hard": false,
+      "files": [
+        "src/java/org/apache/cassandra/db/lifecycle/LogTransaction.java"
+      ],
+      "lines": [
+        389,
+        401
+      ],
+      "match_terms": [
+        "tidier"
+      ],
+      "match_any": [
+        "data",
+        "first",
+        "order",
+        "mtime",
+        "timestamp"
+      ],
+      "summary": "SSTableTidier.run still deletes the DATA file first, so the ticket's scenario survives"
+    },
+    {
+      "id": "K3",
+      "source": "https://github.com/apache/cassandra/pull/5201",
+      "severity": "major",
+      "hard": false,
+      "files": [],
+      "lines": null,
+      "match_terms": [
+        "logtransactiontest"
+      ],
+      "match_any": [
+        "test",
+        "regression",
+        "mtime",
+        "partial",
+        "staggered"
+      ],
+      "summary": "No regression test in LogTransactionTest for a partial delete with staggered mtimes (reported at location 'ticket')"
+    }
+  ]
+}
