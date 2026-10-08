@@ -107,6 +107,33 @@ def _branch_rows(bundle):
     return rows, unmapped
 
 
+COMPLEXITY_YELLOW = 10  # cognitive complexity bands for the Code style table; red starts at the PMD threshold
+
+
+def complexity_table(bundle):
+    """Changed methods with a cognitive complexity score after the patch, most complex first.
+
+    Each row: score, base (None for a new method), method, class, file, test, band (red/yellow/green).
+    Red is at or above the PMD threshold (15), yellow from COMPLEXITY_YELLOW, green below.
+    """
+    sa = bundle.get("static_analysis") or {}
+    if sa.get("status") != "ran" or ((sa.get("tools") or {}).get("pmd") or {}).get("status") != "ran":
+        return {"status": "unavailable", "threshold": None, "yellow": COMPLEXITY_YELLOW, "rows": [], "removed": 0}
+    cx = sa.get("complexity") or {}
+    thr = cx.get("threshold", 15)
+    rows, removed = [], 0
+    for m in cx.get("methods") or []:
+        if m.get("head") is None:
+            removed += 1
+            continue
+        h = m["head"]
+        rows.append({"score": h, "base": m.get("base"), "method": m.get("method_sig"), "class": m.get("class"),
+                     "file": m.get("file"), "test": str(m.get("file") or "").startswith("test/"),
+                     "band": "red" if h >= thr else "yellow" if h >= COMPLEXITY_YELLOW else "green"})
+    rows.sort(key=lambda r: (-r["score"], r["test"], str(r["file"]), str(r["method"])))
+    return {"status": "ran", "threshold": thr, "yellow": COMPLEXITY_YELLOW, "rows": rows, "removed": removed}
+
+
 def build(bundle, checks, triage, docs, diffview, review=None, context=None):
     """Assemble the report model. `review` is None until review lenses exist."""
     pr = bundle["pr"]
@@ -181,6 +208,7 @@ def build(bundle, checks, triage, docs, diffview, review=None, context=None):
                    "kind": _file_kind(f["path"]), "suite": paths.test_suite(f["path"])}
                   for f in bundle["files"]],
         "compat_surfaces": touched_surfaces([f["path"] for f in bundle["files"]]),
+        "complexity": complexity_table(bundle),
         "checks": checks,
         "recommendation": rec,
         "triage": triage,

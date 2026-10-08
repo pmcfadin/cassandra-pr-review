@@ -119,7 +119,6 @@ def checkstyle(bundle, ctx):
     return Result("pass", f"No checkstyle errors introduced ({ver})", counts)
 
 
-METHOD_ROWS = 200
 
 
 def _partial(t):
@@ -146,18 +145,7 @@ def complexity(bundle, ctx):
     methods = sorted(cx.get("methods") or [],
                      key=lambda m: (not str(m.get("classification", "")).startswith("introduced"),
                                     str(m.get("file")), _sig(m)))
-    def weight(m):
-        b, h = m.get("base") or 0, m.get("head") or 0
-        return (-(h >= thr), -abs(h - b), str(m.get("file")), _sig(m))
-
-    shown = sorted(methods, key=weight)
-    rows = []
-    for m in shown[:METHOD_ROWS]:
-        b = "new" if m.get("base") is None else m["base"]
-        h = "removed" if m.get("head") is None else m["head"]
-        rows.append(ev(f"`{_sig(m)}`: {b} → {h}", location=m.get("file")))
-    if len(shown) > METHOD_ROWS:
-        rows.append(ev(f"… and {len(shown) - METHOD_ROWS} more changed method(s) with unchanged scores"))
+    rows = []  # per-method scores are in the report's Method complexity table (model["complexity"])
     intro = [f for f in cx.get("findings") or [] if _intro(f)]
     over = sorted((f for f in intro if f.get("rule") == "CognitiveComplexity" and (f.get("score") or 0) >= thr),
                   key=lambda f: -(f.get("score") or 0))

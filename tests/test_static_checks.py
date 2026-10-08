@@ -91,7 +91,7 @@ class Complexity(unittest.TestCase):
         m = self.method(6, 2, "pre-existing-improved", "delete(Descriptor, Set<Component>)")
         r = get(with_sa(complexity={"threshold": 15, "methods": [m], "findings": []}), "static.complexity")
         self.assertEqual(r["status"], "pass")
-        self.assertIn("A.delete(Descriptor, Set<Component>)`: 6 → 2", r["evidence"][0]["text"])
+        self.assertEqual(r["evidence"], [])  # per-method scores live in the Method complexity table
 
     def test_introduced_over_threshold_is_a_note(self):
         m1 = self.method(None, 20, name="big()")
@@ -100,8 +100,7 @@ class Complexity(unittest.TestCase):
         r = get(with_sa(complexity={"threshold": 15, "methods": [m2, m1], "findings": [f]}), "static.complexity")
         self.assertEqual(r["status"], "warn")
         self.assertFalse(r["action_required"])
-        self.assertIn("new → 20", r["evidence"][0]["text"])
-        self.assertIn("3 → 4", r["evidence"][1]["text"])
+        self.assertIn("`A.big()` 20", r["summary"])
 
     def test_other_rules_do_not_count_as_cognitive(self):
         m1 = self.method(None, 20, name="big()")
@@ -115,7 +114,6 @@ class Complexity(unittest.TestCase):
         f = finding("pre-existing-touched", tool="pmd", score=30)
         r = get(with_sa(complexity={"threshold": 15, "methods": [m], "findings": [f]}), "static.complexity")
         self.assertEqual(r["status"], "pass")
-        self.assertIn("9 → removed", r["evidence"][0]["text"])
 
     def test_skipped_files_never_pass(self):
         pmd = tool(version="7.0", files_expected=3, files_analyzed=2,
@@ -249,3 +247,20 @@ class ComplexityTests(unittest.TestCase):
         r = get(with_sa(complexity={"threshold": 15, "methods": [], "findings": [f]}), "static.complexity")
         self.assertEqual(r["status"], "pass")
         self.assertIn("1 test method(s)", r["evidence"][0]["text"])
+
+
+class ComplexityTable(unittest.TestCase):
+    def test_sorted_most_complex_first_with_bands(self):
+        from cpr import model
+        ms = [{"file": "src/java/A.java", "class": "A", "method_sig": f"m{h}()", "base": b, "head": h}
+              for b, h in ((None, 4), (12, 12), (3, 22), (9, None), (None, 15), (14, 9))]
+        t = model.complexity_table({"static_analysis": with_sa(
+            complexity={"threshold": 15, "methods": ms, "findings": []})["static_analysis"]})
+        self.assertEqual([r["score"] for r in t["rows"]], [22, 15, 12, 9, 4])
+        self.assertEqual([r["band"] for r in t["rows"]], ["red", "red", "yellow", "green", "green"])
+        self.assertEqual(t["removed"], 1)
+
+    def test_unavailable_when_pmd_did_not_run(self):
+        from cpr import model
+        b = with_sa(tools={"checkstyle": tool(), "pmd": tool("unknown"), "cpd": tool()})
+        self.assertEqual(model.complexity_table(b)["status"], "unavailable")

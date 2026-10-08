@@ -131,6 +131,12 @@ h2.sec { font-size: 22px; font-weight: 600; }
 .gx .blk > h4 { font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-3); margin: 8px 0 4px; }
 .panel { background: var(--panel); border: 1px solid var(--rule-2); border-radius: 6px; padding: 12px 16px; }
 /* Tables (.dtable), field lists, details */
+.cx-score { display: inline-block; min-width: 34px; text-align: center; font-family: var(--mono); font-weight: 700; font-size: var(--fs-sm); padding: 2px 8px; border-radius: var(--r-chip); color: var(--c-fg); background: var(--c-bg); border-left: 3px solid var(--c-icon); }
+.cx-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: var(--fs-sm); color: var(--ink-2); margin: 6px 0 10px; }
+.cx-table td:first-child { width: 64px; }
+.cx-table .tag { margin-left: 8px; }
+.cx-file { font-size: var(--fs-sm); margin-top: 2px; overflow-wrap: anywhere; }
+.cx-table td:nth-child(2) { width: 90px; }
 .dtable { overflow-x: auto; border: 1px solid var(--rule); border-radius: var(--r-card); background: var(--panel); max-width: 100%; }
 .dtable table { border-collapse: collapse; width: 100%; font-size: var(--fs-md); }
 .dtable th, .dtable td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--rule-2); vertical-align: top; overflow-wrap: break-word; }
@@ -937,6 +943,35 @@ body.no-data #no-data { display: block; }
     })) : empty("No compatibility surfaces touched.", "A change to a wire, disk or API surface would be listed here.")], names.length)];
   }
 
+  // Cognitive complexity per changed method (PMD), score first, most complex first, coloured by band.
+  var BAND = { red: ["fail", "High"], yellow: ["should", "Medium"], green: ["pass", "Low"] };
+  function extraStatic() {
+    var cx = M.complexity;
+    if (!cx || cx.status !== "ran") {
+      return [gblock("Method complexity", [empty("No complexity scores for this head.",
+        "PMD scores each changed method when static analysis runs on the PR.")])];
+    }
+    var rows = cx.rows || [];
+    var thr = cx.threshold, yel = cx.yellow;
+    var legend = h("p", "cx-legend", [
+      h("span", "cx-score s-fail", "≥ " + thr), " high, split it  ",
+      h("span", "cx-score s-should", yel + "–" + (thr - 1)), " getting hard to follow  ",
+      h("span", "cx-score s-pass", "< " + yel), " fine"]);
+    var body = rows.length ? table(["Score", "Before", "Method"], rows.map(function (r) {
+      var b = BAND[r.band] || BAND.green;
+      var score = h("span", "cx-score s-" + b[0], String(r.score));
+      score.title = b[1] + " complexity";
+      var before = r.base === null || r.base === undefined ? h("span", "muted", "new")
+        : r.base === r.score ? h("span", "muted", String(r.base) + " (same)") : String(r.base);
+      var method = [h("span", "mono", (r["class"] ? r["class"] + "." : "") + (r.method || ""))];
+      if (r.test) method.push(h("span", "tag", "test"));
+      method.push(h("div", "mono muted cx-file", String(r.file || "")));
+      return { cls: "cx-" + r.band, cells: [{ node: score }, { node: before }, { node: method }] };
+    }), { cls: "cx-table" }) : empty("No changed methods to score.", "Only methods the PR adds or edits are scored.");
+    var notes = cx.removed ? h("p", "muted", cx.removed + " removed method(s) not listed.") : null;
+    return [gblock("Method complexity", [h("p", "muted", "Cognitive complexity from PMD for each method the PR adds or edits, after the change. Higher is harder to read."), legend, body, notes], rows.length)];
+  }
+
   function extraVotes() {
     var rv = M.github_reviews || [];
     return [gblock("GitHub reviews", [rv.length ? table(["Reviewer", "State", "Association", "Submitted", "Link"], rv.map(function (r) {
@@ -1018,7 +1053,7 @@ body.no-data #no-data { display: block; }
   }
 
   var EXTRAS = { ticket: extraTicket, ci: extraCi, testing: extraTesting, build: extraBuild, commits: extraCommits,
-    compatibility: extraCompat, votes: extraVotes };
+    compatibility: extraCompat, votes: extraVotes, static: extraStatic };
 
   // -------------------------------------------------------------------------
   // Header
