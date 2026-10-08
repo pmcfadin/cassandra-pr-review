@@ -43,6 +43,7 @@ bin/publish-pages    # builds the site from reports/ and pushes the gh-pages bra
 | Code style | checkstyle-banned APIs (read from the base branch), licence headers, generated or bundled files, `@Deprecated(since=)` |
 | Compatibility | both yaml files updated together, system properties, nodetool help fixtures, touched compatibility surfaces |
 | Reviews & votes | two committer +1s, matched against the public ASF roster |
+| Lab plan | informational: a generated, never-run easy-db-lab plan (`plan.md`) to compare the merge-base and the PR head on a cluster |
 
 `docs/report/` explains each aspect: what is checked, why (with project sources), how each status
 is decided, how to fix it, and limits. The same text appears in the report under "How this is

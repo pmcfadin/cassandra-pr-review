@@ -150,6 +150,9 @@ button.tool:hover { border-color: var(--accent); }
 .block > h3 .count { font: 500 12px var(--mono); color: var(--ink-3); }
 .panel { background: var(--panel); border: 1px solid var(--rule); border-radius: var(--radius); padding: 14px 16px; }
 .empty { color: var(--ink-3); font-style: italic; }
+.labplan-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
+.labplan-plan .md { overflow-x: auto; }
+.lead { font-size: 15px; margin-bottom: 10px; }
 .notice { border: 1px solid var(--rule-strong); border-left-width: 4px; border-radius: var(--radius); padding: 10px 14px; background: var(--panel); margin: 10px 0; }
 .notice.s-fail { border-left-color: var(--fail); }
 .notice.s-warn { border-left-color: var(--warn); }
@@ -1249,12 +1252,76 @@ body.no-data #no-data { display: block; }
     return out;
   }
 
+  function copyText(text, done) {
+    function fallback() {
+      var ta = document.createElement("textarea");
+      ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+      document.body.removeChild(ta);
+      done(ok);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { done(true); }, fallback);
+    } else { fallback(); }
+  }
+  function downloadText(name, text) {
+    var url = URL.createObjectURL(new Blob([text], { type: "text/markdown;charset=utf-8" }));
+    var a = document.createElement("a");
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  function renderLabplan(sec) {
+    var lp = M.lab_plan || {};
+    var out = [];
+    if (sec.summary) out.push(h("p", "lead", sec.summary));
+    if (lp.status !== "plan") {
+      out.push(block("Lab plan", [h("div", "notice s-info", "No lab plan: " + (lp.reason || "not applicable") + ".")]));
+      out.push(docsBlock(sec));
+      return out;
+    }
+    out.push(h("div", "notice s-warn labplan-banner", [h("strong", null, "Not run. "),
+      "This plan was generated from the diff. No cluster was created and no command was executed. Run it with ",
+      h("code", null, "/easy-db-lab:run plan.md <cluster-dir>"), " only after reading it."]));
+    var scn = (lp.scenarios || []).map(function (s) {
+      return h("li", null, [h("strong", null, s.title), " (rule ", h("code", null, (s.rules || []).join(", ")), "; " +
+        plural(s.files, "file") + ", " + plural(s.lines, "line") + ")"]);
+    });
+    out.push(block("Scenarios", [h("div", "panel", [h("ul", null, scn), fields([
+      ["Cluster name", h("span", "mono", lp.cluster)],
+      ["Estimated wall clock", lp.hours + " h"],
+      ["Not chosen (cap)", (lp.dropped || []).map(function (d) { return d.title; }).join(", ") || null]
+    ])])], scn.length));
+    var status = h("span", "muted", "");
+    status.setAttribute("role", "status");
+    var copy = h("button", "tool", "Copy plan");
+    copy.type = "button";
+    copy.id = "labplan-copy";
+    copy.addEventListener("click", function () {
+      copyText(lp.markdown, function (ok) { status.textContent = ok ? "Copied." : "Copy failed: select the text below."; });
+    });
+    var dl = h("button", "tool", "Download " + lp.filename);
+    dl.type = "button";
+    dl.id = "labplan-download";
+    dl.addEventListener("click", function () { downloadText(lp.filename, lp.markdown); });
+    out.push(h("div", "labplan-actions no-print", [copy, dl, status]));
+    // The plan's own leading blockquote repeats the banner above; drop the "> " marker, keep the words.
+    var shown = String(lp.markdown).split("\n").map(function (l) { return l.replace(/^>\s?/, ""); }).join("\n");
+    out.push(block("Plan", [h("div", "panel labplan-plan", md(shown))]));
+    out.push(block("Raw plan.md", [details("Show raw markdown", h("pre", null, lp.markdown), {})]));
+    out.push(docsBlock(sec));
+    return out;
+  }
+
   function renderGeneric(sec) { return [checksBlock(sec), docsBlock(sec)]; }
 
   var RENDERERS = {
     summary: function (s) { return renderSummary().concat([docsBlock(s)]); },
     ticket: function (s) { return renderTicket().concat([docsBlock(s)]); },
-    ci: renderCi, testing: renderTesting, commits: renderCommits, compatibility: renderCompat,
+    ci: renderCi, testing: renderTesting, labplan: renderLabplan, commits: renderCommits, compatibility: renderCompat,
     votes: renderVotes, triage: renderTriage, context: renderContext, review: renderReview, changes: renderChanges, about: renderAbout
   };
 

@@ -51,14 +51,26 @@ def lens_status(model):
     return m
 
 
+def no_plan(model):
+    """5201 as if it were a docs-only PR: the Lab plan section explains why there is no plan."""
+    m = copy.deepcopy(model)
+    m["lab_plan"] = {"status": "none", "reason": "documentation-only change", "scenarios": [], "dropped": [],
+                     "markdown": "", "filename": None}
+    sec = next(s for s in m["sections"] if s["id"] == "labplan")
+    sec.update(status="not-applicable", summary="No lab plan: documentation-only change")
+    return m
+
+
 def main(out_dir):
     os.makedirs(out_dir, exist_ok=True)
     model = load_model()
     render.write(model, os.path.join(out_dir, "report.html"))
     render.write(hostile(model), os.path.join(out_dir, "hostile.html"))
     render.write(lens_status(model), os.path.join(out_dir, "lens-status.html"))
+    render.write(no_plan(model), os.path.join(out_dir, "labplan-none.html"))
     print(json.dumps({"report": os.path.join(out_dir, "report.html"), "hostile": os.path.join(out_dir, "hostile.html"),
                       "lens_status": os.path.join(out_dir, "lens-status.html"),
+                      "labplan_none": os.path.join(out_dir, "labplan-none.html"),
                       "hostile_title": HOSTILE_TITLE, "hostile_evidence": HOSTILE_EVIDENCE}))
 
 

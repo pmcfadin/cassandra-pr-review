@@ -1,0 +1,389 @@
+easy-db-lab - Tool to create Cassandra lab environments in AWS
+  aws - AWS resource discovery and management operations
+    region - Get AWS region for the current cluster
+    s3-bucket - Get S3 bucket name for the current cluster
+    vpcs - List all easy-db-lab VPCs
+  build-base - Build the base image
+      --release <<release>> - Release flag
+      --region, -r <<region>> - AWS region to build the image in
+      --arch, -a, --cpu <<arch>> - CPU architecture
+      --keep-on-error <<keepOnError>> - On build failure, leave the instance and temporary SSH key running for debugging (packer -on-error=abort) instead of terminating it
+  build-cassandra - Build the Cassandra image
+      --release <<release>> - Release flag
+      --region, -r <<region>> - AWS region to build the image in
+      --arch, -a, --cpu <<arch>> - CPU architecture
+      --keep-on-error <<keepOnError>> - On build failure, leave the instance and temporary SSH key running for debugging (packer -on-error=abort) instead of terminating it
+  build-image - Build both the base and Cassandra image
+      --release <<release>> - Release flag
+      --region, -r <<region>> - AWS region to build the image in
+      --arch, -a, --cpu <<arch>> - CPU architecture
+      --keep-on-error <<keepOnError>> - On build failure, leave the instance and temporary SSH key running for debugging (packer -on-error=abort) instead of terminating it
+  cassandra - Cassandra cluster management and tooling operations
+    build - Build a Cassandra branch locally and publish it to S3
+        --java, -j <<javaVersion>> (required) - JDK major version to build with, e.g. 11, 17, 21
+        --jira <<jira>> - Ticket this build is for, e.g. CASSANDRA-19000
+        --name <<label>> - Label folded into the build's name, to tell your builds apart at a glance
+        --ant-flags <<antFlags>> - Extra flags passed to ant
+        <<sourceDir>> - Cassandra source checkout to build (default: current directory)
+    cql - Execute CQL on the Cassandra cluster
+        --file, -f <<file>> - Execute CQL from a local file
+        <<statement>> - CQL statement to execute
+    download-config - Download JVM and YAML config files
+        --hosts <<hostList>> - Hosts to run this on, leave blank for all hosts.
+        --version <<version>> - Version to download, default is current
+    download-config - Download JVM and YAML config files
+        --hosts <<hostList>> - Hosts to run this on, leave blank for all hosts.
+        --version <<version>> - Version to download, default is current
+    install - Install a Cassandra version onto a running cluster
+        --hosts <<hostList>> - Hosts to run this on, leave blank for all hosts.
+        --url <<url>> - Tarball URL (.tar.gz) or git repository URL (with --branch)
+        --branch <<branch>> - Git branch to clone and build, requires --url
+        --java, -j <<javaVersion>> - Java version to build and run this version with, e.g. 8, 11, 17, 21
+        --python <<pythonVersion>> - Python version cqlsh runs under (default: 3.11.9)
+        --ant-flags <<antFlags>> - Extra flags passed to ant when building from a branch
+        <<version>> (required) - Cassandra version to install
+    list - List available versions
+    list - List available versions
+    nt - Execute nodetool on Cassandra nodes
+        --hosts <<hostList>> - Hosts to run this on, leave blank for all hosts.
+        <<args>> - Nodetool command and arguments
+    profile - Runtime async-profiler control for Cassandra nodes
+      fetch - Download completed JFR chunks from Cassandra nodes
+          --hosts <<hostList>> - Hosts to run this on, leave blank for all hosts.
+          --last <<last>> - How many of the most recent completed chunks to download (default: 5)
+      flamegraph - Convert recent JFR chunks into a flame graph on the node and download it.
+          --hosts <<hostList>> - Hosts to run this on, leave blank for all hosts.
+          --last <<last>> - How many of the most recent completed chunks to convert (default: 5)
+          --format <<format>> - Output format handed to jfrconv, e.g. html or collapsed (default: html)
+          <<jfrconvArgs>> - jfrconv arguments, after --.
+      start - Enable continuous profiling on Cassandra nodes.
+          --hosts <<hostList>> - Hosts to run this on, leave blank for all hosts.
+          --loop <<loopInterval>> - JFR rotation interval (default: 1m). A whole number of seconds (30)
+          --retention <<retentionMinutes>> - Minutes of profile data to keep on each node (default: 60)
+          --max-bytes <<maxBytes>> - Byte ceiling for each node's profile directory (default: 2147483648)
+          <<asprofArgs>> - async-profiler arguments, after --. Defaults to '-e cpu'.
+      status - Report profiling state for each Cassandra node
+          --hosts <<hostList>> - Hosts to run this on, leave blank for all hosts.
+      stop - Disable continuous profiling on Cassandra nodes
+          --hosts <<hostList>> - Hosts to run this on, leave blank for all hosts.
+    profile - Runtime async-profiler control for Cassandra nodes
+      fetch - Download completed JFR chunks from Cassandra nodes
+          --hosts <<hostList>> - Hosts to run this on, leave blank for all hosts.
+          --last <<last>> - How many of the most recent completed chunks to download (default: 5)
+      flamegraph - Convert recent JFR chunks into a flame graph on the node and download it.
+          --hosts <<hostList>> - Hosts to run this on, leave blank for all hosts.
+          --last <<last>> - How many of the most recent completed chunks to convert (default: 5)
+          --format <<format>> - Output format handed to jfrconv, e.g. html or collapsed (default: html)
+          <<jfrconvArgs>> - jfrconv arguments, after --.
+      start - Enable continuous profiling on Cassandra nodes.
+          --hosts <<hostList>> - Hosts to run this on, leave blank for all hosts.
+          --loop <<loopInterval>> - JFR rotation interval (default: 1m). A whole number of seconds (30)
+          --retention <<retentionMinutes>> - Minutes of profile data to keep on each node (default: 60)
+          --max-bytes <<maxBytes>> - Byte ceiling for each node's profile directory (default: 2147483648)
+          <<asprofArgs>> - async-profiler arguments, after --. Defaults to '-e cpu'.
+      status - Report profiling state for each Cassandra node
+          --hosts <<hostList>> - Hosts to run this on, leave blank for all hosts.
+      stop - Disable continuous profiling on Cassandra nodes
+          --hosts <<hostList>> - Hosts to run this on, leave blank for all hosts.
+    restart - Restart cassandra
+        --hosts <<hostList>> - Hosts to run this on, leave blank for all hosts.
+    start - Start cassandra on all nodes via service command
+        --sleep <<sleep>> - Time to sleep between starts in seconds
+        --sidecar-image <<sidecarImage>> - Container image for the Cassandra sidecar DaemonSet (default: ghcr.io/apache/cassandra-sidecar:latest)
+        --hosts <<hostList>> - Hosts to run this on, leave blank for all hosts.
+    stop - Stop cassandra on all nodes via service command
+        --hosts <<hostList>> - Hosts to run this on, leave blank for all hosts.
+    stress - Cassandra stress testing operations on K8s
+      fields - List available cassandra-easy-stress field generators
+          --image <<image>> - Container image (default: ghcr.io/apache/cassandra-easy-stress:latest)
+          <<stressArgs>> - Additional arguments passed to cassandra-easy-stress fields
+      info - Show information about a cassandra-easy-stress workload
+          --image <<image>> - Container image (default: ghcr.io/apache/cassandra-easy-stress:latest)
+          <<stressArgs>> - Workload name and additional arguments passed to cassandra-easy-stress info
+      list - List available cassandra-easy-stress workloads
+          --image <<image>> - Container image (default: ghcr.io/apache/cassandra-easy-stress:latest)
+          <<stressArgs>> - Additional arguments passed to cassandra-easy-stress list
+      logs - View logs from stress jobs
+          --tail <<tailLines>> - Number of lines to show from the end
+          <<jobName>> (required) - Job name
+      start - Start a cassandra-easy-stress job on K8s. Args are passed to cassandra-easy-stress.
+          --name, -n <<jobName>> - Job name (auto-generated from workload name if not provided)
+          --image <<image>> - Container image (default: ghcr.io/apache/cassandra-easy-stress:latest)
+          --tags <<tags>> - Custom tags added to metrics (format: key=value,key=value)
+          <<stressArgs>> - Arguments passed directly to cassandra-easy-stress (e.g., KeyValue -d 1h --threads 100)
+      start - Start a cassandra-easy-stress job on K8s. Args are passed to cassandra-easy-stress.
+          --name, -n <<jobName>> - Job name (auto-generated from workload name if not provided)
+          --image <<image>> - Container image (default: ghcr.io/apache/cassandra-easy-stress:latest)
+          --tags <<tags>> - Custom tags added to metrics (format: key=value,key=value)
+          <<stressArgs>> - Arguments passed directly to cassandra-easy-stress (e.g., KeyValue -d 1h --threads 100)
+      status - Check status of stress jobs
+          --name, -n <<jobName>> - Filter by job name (partial match)
+      stop - Stop and delete stress jobs
+          --all <<deleteAll>> - Delete all stress jobs
+          --force, -f <<force>> - Force deletion without confirmation
+          <<jobName>> - Job name to stop
+    update-config - Upload the cassandra.yaml fragment to all nodes and apply to cassandra.yaml
+        --hosts <<hostList>> - Hosts to run this on, leave blank for all hosts.
+        --version <<version>> - Version to upload, default is current
+        --restart, -r <<restart>> - Restart cassandra after patching
+        <<file>> - Patch file to upload
+    update-config - Upload the cassandra.yaml fragment to all nodes and apply to cassandra.yaml
+        --hosts <<hostList>> - Hosts to run this on, leave blank for all hosts.
+        --version <<version>> - Version to upload, default is current
+        --restart, -r <<restart>> - Restart cassandra after patching
+        <<file>> - Patch file to upload
+    use - Use a Cassandra version (3.0, 3.11, 4.0, 4.1)
+        --hosts <<hostList>> - Hosts to run this on, leave blank for all hosts.
+        --java, -j <<javaVersion>> - Java Version Override, 8, 11 or 17 accepted
+        <<version>> (required) - Cassandra version
+    write-config - Write a new cassandra configuration patch file
+        -t, --tokens <<tokens>> - Number of tokens
+        <<file>> - Patch file name
+    write-config - Write a new cassandra configuration patch file
+        -t, --tokens <<tokens>> - Number of tokens
+        <<file>> - Patch file name
+  clean - Clean up generated files from the current directory
+  cleanup - Delete kit data directories from cluster nodes via SSH
+      --kit <<kit>> (required) - Kit name (e.g. clickhouse, presto)
+      --node-type <<nodeType>> - Node pool to clean: cassandra or stress (default: cassandra)
+  commands - Display all commands, subcommands, and options
+  configure-aws - Configure AWS infrastructure (IAM roles, S3 bucket) for easy-db-lab
+  configure-axonops - Setup / configure axon-agent for use with the Cassandra cluster
+      --org <<org>> - AxonOps Organization Name
+      --key <<key>> - AxonOps API Key
+      --hosts <<hostList>> - Hosts to run this on, leave blank for all hosts.
+  down - Shut down AWS infrastructure
+      --all <<teardownAll>> - Tear down all VPCs tagged with easy_cass_lab
+      --packer <<teardownPacker>> - Tear down the packer infrastructure VPC
+      --dry-run <<dryRun>> - Preview what would be deleted without actually deleting
+      --auto-approve, -a, --yes <<autoApprove>> - Auto approve changes without confirmation prompt
+      --retention-days <<retentionDays>> - Days to retain S3 data after teardown (default: 1)
+      <<vpcId>> - Optional VPC ID to tear down a specific VPC
+  exec - Execute commands on remote hosts with systemd logging
+    list - List running background tools on remote hosts
+        --hosts <<hostList>> - Hosts to run this on, leave blank for all hosts.
+        --type, -t <<serverType>> - Server type (cassandra, stress, control). Lists all types if not specified.
+    run - Execute a command on remote hosts via systemd-run
+        --hosts <<hostList>> - Hosts to run this on, leave blank for all hosts.
+        --type, -t <<serverType>> - Server type (cassandra, stress, control)
+        --bg <<background>> - Run in background (returns immediately)
+        --name <<unitNameOverride>> - Name for the systemd unit (auto-derived if not provided)
+        -p <<parallel>> - Execute in parallel
+        <<command>> (required) - Command to execute
+    stop - Stop a running background tool on remote hosts
+        --hosts <<hostList>> - Hosts to run this on, leave blank for all hosts.
+        --type, -t <<serverType>> - Server type (cassandra, stress, control). Stops on all types if not specified.
+        <<name>> (required) - Name of the tool to stop (without edl-exec- prefix)
+  grafana - Grafana operations
+    install - Upload a Grafana dashboard JSON file to the running Grafana instance
+        --folder <<folderName>> - Grafana folder name (created if it doesn't exist)
+        <<dashboardPath>> (required) - Path to the dashboard JSON file
+    update-config - Build and apply the full observability stack to K8s cluster
+  help - Show task-oriented help topics
+      <<topic>> - The topic to show. Omit to list all topics.
+  hosts - List all hosts in the cluster
+      -c <<cassandra>> - Show db nodes as a comma delimited list (deprecated: use --db)
+      --db <<db>> - Show db nodes as a comma delimited list
+      --app <<app>> - Show app nodes as a comma delimited list
+      --private <<usePrivateIp>> - Use private IPs (default: public)
+  init - Initialize this directory for easy-db-lab
+      --db, --cassandra, -c <<cassandraInstances>> - Legacy alias for --db.count. Number of database instances
+      --db.count <<dbCount>> - Number of database instances. Takes precedence over the legacy --db/--cassandra/-c alias
+      --app, --stress, -s <<stressInstances>> - Legacy alias for --app.count. Number of application instances
+      --app.count <<appCount>> - Number of application instances. Takes precedence over the legacy --app/--stress/-s alias
+      --up <<start>> - Start instances automatically
+      --instance, -i <<instanceType>> - Legacy alias for --db.instance-type. Database instance type. Set EASY_DB_LAB_INSTANCE_TYPE to set a default.
+      --db.instance-type <<dbInstanceType>> - Database instance type. Takes precedence over the legacy --instance/-i alias.
+      --stress-instance, -si, --si <<stressInstanceType>> - Legacy alias for --app.instance-type. Application (stress) instance type. Set EASY_DB_LAB_STRESS_INSTANCE_TYPE to set a default.
+      --app.instance-type <<appInstanceType>> - Application (stress) instance type. Takes precedence over the legacy --stress-instance/-si alias.
+      --azs, --az, -z <<azs>> - Limit to specified availability zones
+      --until <<until>> - Specify when the instances can be deleted
+      --ami <<ami>> - AMI. Set EASY_DB_LAB_AMI to override the default.
+      --open <<open>> - Unrestricted SSH access
+      --ebs.type <<ebsType>> - EBS Volume Type (NONE, gp2, gp3, io1, io2)
+      --ebs.size <<ebsSize>> - EBS Volume Size (in GB)
+      --ebs.iops <<ebsIops>> - EBS Volume IOPS (note: only applies if '--ebs.type gp3'
+      --ebs.throughput <<ebsThroughput>> - EBS Volume Throughput (note: only applies if '--ebs.type gp3')
+      --ebs.optimized <<ebsOptimized>> - Set EBS-Optimized instance (only supported for EBS-optimized instance types
+      --spark.enable <<enable>> - Enable Spark EMR Cluster
+      --spark.master.instance.type <<masterInstanceType>> - Master Instance Type
+      --spark.worker.instance.type <<workerInstanceType>> - Worker Instance Type
+      --spark.worker.instance.count <<workerCount>> - Worker Instance Count
+      --spark.release-label <<releaseLabel>> - EMR release label (e.g. emr-spark-8.0.0)
+      --opensearch.enable <<enable>> - Enable AWS OpenSearch domain
+      --opensearch.instance.type <<instanceType>> - OpenSearch instance type (e.g., t3.small.search, r5.large.search)
+      --opensearch.instance.count <<instanceCount>> - Number of OpenSearch data nodes
+      --opensearch.version <<version>> - OpenSearch engine version (e.g., 2.11, 2.9)
+      --opensearch.ebs.size <<ebsSize>> - EBS volume size in GB per node
+      --tag <<String=String>> - Tag instances (format: key=value, can be repeated)
+      --clean <<clean>> - Clean existing configuration before initializing
+      --no-tailscale <<noTailscale>> - Disable Tailscale even if credentials are configured in profile
+      --vpc <<existingVpcId>> - Use an existing VPC ID instead of creating a new one
+      --cidr <<cidr>> - VPC CIDR block (e.g. 10.2.0.0/16). Must be /20 or larger. Omit to auto-select a non-conflicting block.
+      --cni <<cni>> - Pod-network CNI: 'flannel' (default) uses K3s's built-in Flannel overlay; 'cilium' uses Cilium (opt-in, installed in the standard VXLAN-tunnel mode).
+      <<name>> - Cluster name
+  ip - Get IP address for a host by alias
+      --public <<publicIp>> - Return public IP (default)
+      --private <<privateIp>> - Return private IP
+      <<host>> (required) - Host alias (e.g., db0, stress0)
+  kit - Kit management: install, list, and uninstall database workload kits
+    info - Show details about an available kit before installing
+        <<kitName>> (required) - Name of the kit to inspect (e.g. clickhouse, presto)
+    install - Scaffold kit installation files from built-in or custom templates
+        --from <<from>> - Path to a custom (ad-hoc) template directory
+        --kit <<kit>> - Kit name — used as output directory and substituted as __KIT_NAME__
+        --size <<size>> - Storage size per node (e.g. 100Gi) substituted as __STORAGE_SIZE__
+      clickhouse - Scaffold ClickHouse workload files using the Altinity operator
+          --force - Overwrite scaffold even if the kit directory already exists
+          --version - ClickHouse server image version (e.g. 25.4, 24.8)
+          --size - Storage size per node (e.g. 100Gi)
+          --replicas - Number of ClickHouse replicas (default: db node count)
+          --s3-cache - NVMe cache size for S3-backed storage policies (e.g. 10Gi, 50Gi)
+          --s3-cache-on-write - Populate S3 disk cache on write
+          --s3-tier-move-factor - S3 tier move factor
+      flink - Apache Flink session cluster via the Flink Kubernetes Operator (stateless, targets app nodes)
+          --force - Overwrite scaffold even if the kit directory already exists
+          --version - Flink image version (e.g. 1.20). Must stay in sync with the flinkVersion enum in flinkdeployment.yaml.template
+          --taskmanagers - Number of TaskManager replicas (default: app node count)
+          --task-slots - Task slots per TaskManager
+      ignite3 - Apache Ignite 3 distributed database with configurable storage profiles
+          --force - Overwrite scaffold even if the kit directory already exists
+          --replicas - Number of Ignite 3 server nodes (default: db node count)
+          --storage - Storage profile: aimem (volatile), aipersist (in-memory+disk), rocksdb (disk-based LSM)
+          --version - Apache Ignite 3 Docker image version
+      kafka - Apache Kafka in KRaft mode via Strimzi operator (quay.io/strimzi — Apache 2.0)
+          --force - Overwrite scaffold even if the kit directory already exists
+          --version - Kafka version (e.g. 4.0.0)
+          --brokers - Number of broker/controller nodes
+          --storage-size - Persistent volume size per broker
+      postgres - Deploy PostgreSQL via the CloudNativePG operator
+          --force - Overwrite scaffold even if the kit directory already exists
+          --version - PostgreSQL major version (e.g. 17, 16)
+          --instances - Number of PostgreSQL instances (1 = single node, >1 enables replication)
+          --size - Storage size per node (e.g. 100Gi)
+          --extension - Extension alias to activate (e.g. duckdb, postgis, timescaledb). Run 'postgres extensions' to list available aliases.
+      presto - Scaffold Presto workload files (stateless, targets app nodes)
+          --workers - Number of Presto workers (default: app node count)
+      sysbench - sysbench SQL benchmarking kit — install with --target to point at a running database kit
+          --force - Overwrite scaffold even if the kit directory already exists
+          --target (required) - Name of the running database kit to benchmark (e.g. tidb); must expose a MySQL or PostgreSQL wire endpoint
+      tidb - Deploy a TiDB HTAP cluster (TiKV row store + TiFlash columnar store) via TiDB Operator
+          --force - Overwrite scaffold even if the kit directory already exists
+          --version - TiDB version (e.g. v8.5.2)
+          --replicas - Number of TiKV and TiFlash replicas (one per db node)
+      trino - Scaffold Trino workload files (stateless, targets app nodes)
+          --version - Trino release version (e.g. 474, 469)
+          --workers - Number of Trino workers (default: app node count)
+    list - List all discoverable kit install templates (profile + built-in)
+    source - Manage additional kit source directories
+      add - Register a named kit source directory (e.g. kit source add myproject ~/myproject/kits)
+          <<name>> (required) - Name for this source (e.g. myproject)
+          <<path>> (required) - Path to a directory containing kit subdirectories
+      list - List registered kit source directories
+      remove - Remove a registered kit source by name
+          <<name>> (required) - Name of the source to remove (e.g. myproject)
+    uninstall - Remove an installed kit and its local files
+        <<kit>> (required) - Name of the kit to uninstall (e.g. kafka, clickhouse)
+  logs - Query logs from Victoria Logs
+    backup - Backup VictoriaLogs data to S3
+        --dest <<dest>> - Destination S3 URI (default: cluster S3 bucket)
+    import - Import logs from cluster VictoriaLogs to an external instance
+        --target <<target>> (required) - Target VictoriaLogs URL (e.g., http://victorialogs:9428)
+        --query <<query>> - LogsQL query (default: all logs)
+    ls - List VictoriaLogs backups in S3
+    query - Query logs from Victoria Logs
+        --source, -s <<source>> - Log source: emr, cassandra, clickhouse, systemd, system
+        --host, -H <<host>> - Filter by hostname (db0, app0, control0)
+        --unit <<unit>> - systemd unit name (e.g., cassandra.service, docker.service)
+        --since <<since>> - Time range: 1h, 30m, 1d (default: 1h)
+        --limit, -n <<limit>> - Max lines to return (default: 100)
+        --grep, -g <<grep>> - Filter logs containing text
+        --query, -q <<rawQuery>> - Raw Victoria Logs query (LogsQL syntax)
+  metrics - Manage VictoriaMetrics observability data
+    backup - Backup VictoriaMetrics data to S3
+        --dest <<dest>> - Destination S3 URI (default: cluster S3 bucket)
+    import - Import metrics from cluster VictoriaMetrics to an external instance
+        --target <<target>> (required) - Target VictoriaMetrics URL (e.g., http://victoria:8428)
+        --match <<match>> - Metric selector (default: all metrics)
+    ls - List VictoriaMetrics backups in S3
+  opensearch - AWS OpenSearch domain operations
+    start - Create an AWS OpenSearch domain
+        --instance-type <<instanceType>> - OpenSearch instance type (e.g., t3.small.search, r5.large.search)
+        --instance-count <<instanceCount>> - Number of OpenSearch data nodes
+        --version <<version>> - OpenSearch engine version (e.g., 2.11, 2.9)
+        --ebs-size <<ebsSize>> - EBS volume size in GB per node
+        --wait <<wait>> - Wait for domain to become active (can take 10-30 minutes)
+    status - Check OpenSearch domain status
+        --endpoint <<endpointOnly>> - Output only the endpoint URL (for scripting)
+    stop - Delete the OpenSearch domain
+        --force <<force>> - Force deletion without confirmation
+  platform - K8s platform substrate operations
+    create-pvs - Create per-kit local PersistentVolumes on cluster nodes
+        --kit <<kit>> (required) - Kit name (used as PV name prefix and disk path component)
+        --size <<size>> (required) - Storage size per PV (e.g. 100Gi, 500Gi)
+        --node-type <<nodeType>> - Node pool to create PVs on: db or app (default: db)
+        --pvc-name <<pvcTemplateName>> - PVC template name to bind (default: data)
+    info - Show K8s platform substrate details: StorageClasses, node pools, selectors
+  profile - Profile management: show the active profile or set one up
+    setup - Set up user profile interactively
+    show - Show the active profile's name, directory, and settings
+  prune-amis - Prune older private AMIs while keeping the newest N per architecture and type
+      --pattern <<pattern>> - Name pattern for AMIs to prune (supports wildcards)
+      --keep <<keep>> - Number of newest AMIs to keep per architecture/type combination
+      --dry-run <<dryRun>> - Show what would be deleted without actually deleting
+      --type <<type>> - Filter to only prune AMIs of specific type (e.g., 'cassandra', 'base')
+  repl - Start interactive REPL with full tab completion
+  server - Start server for AI assistant integration. Add to claude with: claude mcp add --transport sse easy-db-lab http://127.0.0.1:<port>/sse
+      --port, -p <<port>> - Server port (0 = any free port)
+      --bind, -b <<bind>> - Address to bind the server to (default: 127.0.0.1)
+      --refresh, -r <<refreshInterval>> - Status cache refresh interval in seconds (default: 30)
+      --auto-shutdown <<autoShutdown>> - Shut down the server if the cluster VPC is removed
+  setup-instances - Runs setup_instance.sh on all Cassandra instances
+      --hosts <<hostList>> - Hosts to run this on, leave blank for all hosts.
+  show-iam-policies - Display IAM policies with account ID populated
+      <<policyName>> - Policy name filter (optional): ec2, iam, emr
+  setup-instances - Runs setup_instance.sh on all Cassandra instances
+      --hosts <<hostList>> - Hosts to run this on, leave blank for all hosts.
+  show-iam-policies - Display IAM policies with account ID populated
+      <<policyName>> - Policy name filter (optional): ec2, iam, emr
+  spark - Spark EMR cluster operations
+    down - Terminate the Spark EMR cluster
+    init - Provision Spark EMR cluster on existing environment
+        --master.instance.type <<masterInstanceType>> - Master instance type
+        --worker.instance.type <<workerInstanceType>> - Worker instance type
+        --worker.instance.count <<workerCount>> - Worker instance count
+        --release-label <<releaseLabel>> - EMR release label (e.g. emr-spark-8.0.0)
+    jobs - List recent Spark jobs on the cluster
+        --limit <<limit>> - Maximum number of jobs to display (default: 10)
+    logs - Query Spark/EMR logs from Victoria Logs
+        --step-id <<stepId>> - EMR step ID (defaults to most recent job)
+        --limit, -n <<limit>> - Maximum number of log lines to return (default: 100)
+        --since <<since>> - Time range: 1h, 30m, 1d (default: 1d)
+    status - Check status of a Spark job
+        --step-id <<stepId>> - EMR step ID (defaults to most recent job)
+        --verbose, -v <<verbose>> - Show detailed step information (equivalent to aws emr describe-step)
+    stop - Cancel a running or pending Spark job
+        --step-id <<stepId>> - EMR step ID (defaults to most recent job)
+    submit - Submit Spark job to EMR cluster
+        --jar <<jarPath>> (required) - Path to JAR file (local path or s3://bucket/key)
+        --main-class <<mainClass>> (required) - Main class to execute
+        --args <<jobArgs>> - Arguments to pass to the Spark application
+        --wait <<wait>> - Wait for job completion
+        --name <<jobName>> - Job name (defaults to main class)
+        --conf <<sparkConf>> - Spark configuration (key=value), can be repeated
+        --env <<envVars>> - Environment variable (KEY=value), can be repeated
+  status - Display full environment status
+  tailscale - Tailscale VPN operations for secure cluster access
+    start - Start Tailscale VPN on the control node
+        --client-id <<clientId>> - Tailscale OAuth client ID (overrides config)
+        --client-secret <<clientSecret>> - Tailscale OAuth client secret (overrides config)
+        --tag <<tag>> - Tailscale device tag (default: tag:easy-db-lab)
+    status - Show Tailscale connection status
+    stop - Stop Tailscale VPN on the control node
+  up - Starts instances
+      --no-setup, -n <<noSetup>> - 
+      --hosts <<hostList>> - Hosts to run this on, leave blank for all hosts.
+  upload-keys - Upload authorized (public) keys from the ./authorized_keys directory
+      --hosts <<hostList>> - Hosts to run this on, leave blank for all hosts.
+      <<localDir>> - Local directory of authorized keys
+  version - Display the easy-db-lab version

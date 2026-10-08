@@ -40,6 +40,19 @@ def build_report(bundle, work_dir, offline=False, review=None, log=print):
     return model_mod.build(bundle, results, tri, docs, dv, review=review, context=context_mod.build(bundle))
 
 
+def write_plan(model, report_path):
+    """Write the lab plan next to the report as plan.md; remove a stale one when there is no plan now."""
+    target = os.path.join(os.path.dirname(os.path.abspath(report_path)), "plan.md")
+    lp = model["lab_plan"]
+    if lp["status"] != "plan":
+        if os.path.exists(target):
+            os.remove(target)
+        return None
+    with open(target, "w") as f:
+        f.write(lp["markdown"])
+    return target
+
+
 def write_context(bundle, path):
     """A plain-text brief for review lenses: the PR, its ticket, and the requirement results."""
     pr = bundle["pr"]
@@ -160,6 +173,7 @@ def cmd_review(args):
         model = build_report(bundle, work_dir, offline=args.offline, review=review, log=log)
         out = args.out or os.path.join(ROOT, "reports", str(args.pr), "index.html")
         path = render.write(model, out)
+        plan_path = write_plan(model, path)
     except PRNotFound as e:
         print(f"error: {e}", file=sys.stderr)
         return 2
@@ -174,6 +188,8 @@ def cmd_review(args):
     if review:
         print("review: " + ", ".join(f"{l['name']}={l['status']}{'' if l['status'] != 'ran' else ('/approve' if l['approve'] else '/decline')}"
                                      for l in review["lenses"]) + f" · findings {review['counts']}")
+    if plan_path:
+        print(f"lab plan: {plan_path}")
     print(path)
     return 0
 
