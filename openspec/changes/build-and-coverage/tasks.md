@@ -15,4 +15,4 @@
 
 ## 3. Ship
 
-- [x] 3.1 Run on a committer's PR and on 5201 (approved), render, review with the owner
+- [ ] 3.1 Run on a committer's PR and on 5201 (approved), render, review with the owner
