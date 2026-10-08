@@ -1,0 +1,267 @@
+{
+ "status": "unknown",
+ "pr": 5201,
+ "head": "d1095cbdca4173277488e6e93abeb06a35ea0bb8",
+ "base_branch": "cassandra-4.0",
+ "merge_base": "3ccf94763b9f67d3508389d96060c2b127f4767a",
+ "jdk": "Temurin 11.0.32 (CASSANDRA_USE_JDK11=true)",
+ "timings_s": {
+  "resolve_trusted": 3,
+  "build_jar_and_build_test": 39,
+  "select": 3,
+  "jacoco_run": 245,
+  "jacoco_report": 6,
+  "total_wall": 331
+ },
+ "tests": {
+  "classes": 25,
+  "run": 328,
+  "failed": 0,
+  "errors": 1,
+  "skipped": 2,
+  "failures": [
+   {
+    "class": "org.apache.cassandra.streaming.StreamingTransferTest",
+    "test": "testTransferRangeTombstones",
+    "message": "org.apache.cassandra.streaming.StreamException: Stream failed"
+   }
+  ]
+ },
+ "selected": [
+  {
+   "class": "org.apache.cassandra.io.sstable.SSTableReaderTest",
+   "reasons": [
+    "name prefix: SSTable",
+    "references SSTable",
+    "calls changed method(s) (2 hits)",
+    "references subtype SSTableReader"
+   ],
+   "score": 52
+  },
+  {
+   "class": "org.apache.cassandra.db.compaction.CompactionTaskTest",
+   "reasons": [
+    "references SSTable",
+    "references subtype SSTableReader"
+   ],
+   "score": 37
+  },
+  {
+   "class": "org.apache.cassandra.io.sstable.SSTableRewriterTest",
+   "reasons": [
+    "name prefix: SSTable",
+    "references SSTable",
+    "references subtype SSTableReader,SSTableWriter"
+   ],
+   "score": 34
+  },
+  {
+   "class": "org.apache.cassandra.io.sstable.SSTableWriterTest",
+   "reasons": [
+    "name prefix: SSTable",
+    "references subtype SSTableWriter,SSTableReader"
+   ],
+   "score": 29
+  },
+  {
+   "class": "org.apache.cassandra.db.CleanupTest",
+   "reasons": [
+    "references SSTable",
+    "references subtype SSTableReader"
+   ],
+   "score": 27
+  },
+  {
+   "class": "org.apache.cassandra.db.ScrubTest",
+   "reasons": [
+    "references SSTable",
+    "calls changed method(s) (1 hits)",
+    "references subtype SSTableReader,SSTableWriter"
+   ],
+   "score": 26
+  },
+  {
+   "class": "org.apache.cassandra.db.lifecycle.LogTransactionTest",
+   "reasons": [
+    "references SSTable",
+    "calls changed method(s) (1 hits)",
+    "references subtype SSTableReader"
+   ],
+   "score": 26
+  },
+  {
+   "class": "org.apache.cassandra.io.sstable.SSTableMetadataTest",
+   "reasons": [
+    "name prefix: SSTable",
+    "references SSTable",
+    "references subtype SSTableReader"
+   ],
+   "score": 26
+  },
+  {
+   "class": "org.apache.cassandra.db.compaction.CompactionStrategyManagerTest",
+   "reasons": [
+    "references SSTable",
+    "references subtype SSTableReader"
+   ],
+   "score": 25
+  },
+  {
+   "class": "org.apache.cassandra.io.sstable.SSTableCorruptionDetectionTest",
+   "reasons": [
+    "name prefix: SSTable",
+    "references subtype SSTableReader,SSTableWriter"
+   ],
+   "score": 25
+  },
+  {
+   "class": "org.apache.cassandra.db.compaction.LeveledCompactionStrategyTest",
+   "reasons": [
+    "references SSTable",
+    "references subtype SSTableReader"
+   ],
+   "score": 23
+  },
+  {
+   "class": "org.apache.cassandra.streaming.StreamingTransferTest",
+   "reasons": [
+    "references SSTable",
+    "references subtype SSTableReader"
+   ],
+   "score": 23
+  },
+  {
+   "class": "org.apache.cassandra.cql3.validation.miscellaneous.SSTablesIteratedTest",
+   "reasons": [
+    "references SSTable"
+   ],
+   "score": 22
+  },
+  {
+   "class": "org.apache.cassandra.db.compaction.CompactionsTest",
+   "reasons": [
+    "references SSTable",
+    "calls changed method(s) (1 hits)",
+    "references subtype SSTableReader"
+   ],
+   "score": 22
+  },
+  {
+   "class": "org.apache.cassandra.io.sstable.SSTableScannerTest",
+   "reasons": [
+    "name prefix: SSTable",
+    "references subtype SSTableReader"
+   ],
+   "score": 21
+  },
+  {
+   "class": "org.apache.cassandra.db.columniterator.SSTableReverseIteratorTest",
+   "reasons": [
+    "name prefix: SSTable",
+    "references subtype SSTableReader"
+   ],
+   "score": 18
+  },
+  {
+   "class": "org.apache.cassandra.cql3.validation.miscellaneous.SSTableMetadataTrackingTest",
+   "reasons": [
+    "name prefix: SSTable",
+    "references SSTable"
+   ],
+   "score": 17
+  },
+  {
+   "class": "org.apache.cassandra.tools.SSTableExportTest",
+   "reasons": [
+    "name prefix: SSTable",
+    "references SSTable"
+   ],
+   "score": 17
+  },
+  {
+   "class": "org.apache.cassandra.tools.SSTableMetadataViewerTest",
+   "reasons": [
+    "name prefix: SSTable",
+    "references SSTable"
+   ],
+   "score": 17
+  },
+  {
+   "class": "org.apache.cassandra.io.sstable.format.SSTableFlushObserverTest",
+   "reasons": [
+    "name prefix: SSTable",
+    "references subtype SSTableReader"
+   ],
+   "score": 16
+  },
+  {
+   "class": "org.apache.cassandra.cql3.GcCompactionTest",
+   "reasons": [
+    "references subtype SSTableReader"
+   ],
+   "score": 15
+  },
+  {
+   "class": "org.apache.cassandra.db.ImportTest",
+   "reasons": [
+    "references subtype SSTableReader"
+   ],
+   "score": 15
+  },
+  {
+   "class": "org.apache.cassandra.db.SSTableAndMemTableDigestMatchTest",
+   "reasons": [
+    "name prefix: SSTable"
+   ],
+   "score": 15
+  },
+  {
+   "class": "org.apache.cassandra.db.VerifyTest",
+   "reasons": [
+    "references subtype SSTableReader"
+   ],
+   "score": 15
+  },
+  {
+   "class": "org.apache.cassandra.db.compaction.AntiCompactionTest",
+   "reasons": [
+    "references subtype SSTableReader"
+   ],
+   "score": 15
+  }
+ ],
+ "changed_lines": {
+  "src/java/org/apache/cassandra/io/sstable/SSTable.java": {
+   "covered": [
+    114,
+    115,
+    116,
+    117,
+    118,
+    120,
+    121
+   ],
+   "partial": [],
+   "missed": [],
+   "nonexec_count": 3
+  }
+ },
+ "changed_total": {
+  "covered": 7,
+  "partial": 0,
+  "missed": 0,
+  "nonexec": 3,
+  "executable": 7,
+  "pct_executed": 100.0
+ },
+ "sandbox_unknowns": [],
+ "notes": [
+  "Only failure is StreamingTransferTest.testTransferRangeTombstones, a known sandbox artifact (transferTo0 Operation not permitted); status set to unknown per research 5.1, not tests-failed. Not rerun unsandboxed.",
+  "JNA 5.6.0 swapped for 5.13.0 (arm64). Coverage is from the 25 auto-selected classes only.",
+  "Sandbox profile = research profile plus deny file-read-data on the repo (allow run dir and shared .git/objects for alternates). file-read* deny on the repo broke ant canonicalize, so read-data was used.",
+  "Build clone (268 MB build/) and m2 copy removed after run; jacoco HTML not kept."
+ ],
+ "reason": "Only failure is a sandbox artifact (transferTo0: Operation not permitted)",
+ "approved": true,
+ "author_is_committer": false
+}

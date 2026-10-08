@@ -9,9 +9,9 @@
 
 ## 2. Report
 
-- [ ] 2.1 Checks `build.compiles`, `build.tests-pass`, `build.changed-line-coverage` (tests per status)
-- [ ] 2.2 Section "Build & coverage" from the saved run for the current head (tests: stale run; browser test)
-- [ ] 2.3 docs/report/build.md; review-pr skill runs `cpr build` for committer PRs
+- [x] 2.1 Checks `build.compiles`, `build.tests-pass`, `build.changed-line-coverage` (tests per status)
+- [x] 2.2 Section "Build & coverage" from the saved run for the current head (tests: stale run; browser test)
+- [x] 2.3 docs/report/build.md; review-pr skill runs `cpr build` for committer PRs
 
 ## 3. Ship
 

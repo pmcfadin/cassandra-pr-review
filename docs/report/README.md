@@ -31,6 +31,7 @@ Every aspect document uses this outline, in this order:
 | [ci.md](ci.md) | Branches & CI | `ci.evidence`, `ci.freshness`, `ci.profile`, `ci.failures` |
 | [branches.md](branches.md) | Branches & CI | `branches.coverage` |
 | [testing.md](testing.md) | Testing | `tests.present` |
+| [build.md](build.md) | Build & coverage | `build.compiles`, `build.tests-pass`, `build.changed-line-coverage` |
 | [labplan.md](labplan.md) | Lab plan | none (informational plan) |
 | [commits.md](commits.md) | Commits & changelog | `commits.message-format`, `commits.provenance`, `changelog.entry` |
 | [static.md](static.md) | Code style | `static.banned-api`, `static.license-header`, `static.protected-paths`, `static.deprecated-since` |

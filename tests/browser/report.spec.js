@@ -289,3 +289,45 @@ test("Lab plan without a plan says why and offers no buttons", async ({ page }) 
   await expect(sec.getByRole("button", { name: /Copy plan|Download/ })).toHaveCount(0);
   await expect(sec.locator(".labplan-banner")).toHaveCount(0);
 });
+
+const BUILD_NOTE = "Line coverage shows which changed lines ran under the selected tests; it does not show that the fix's behaviour is tested. Read with the test regime lens.";
+
+test("Build & coverage renders the saved 5201 run", async ({ page }) => {
+  const run = JSON.parse(fs.readFileSync(require("path").resolve(__dirname, "..", "fixtures", "build", "5201-status.json"), "utf8"));
+  await page.goto(fileUrl(fixtures().build, "#build"));
+  const sec = sectionLocator(page, "build");
+  await expect(sec).toBeVisible();
+  await expect(sec.locator("h2")).toHaveText("Build & coverage");
+  await expect(sec.locator(".build-banner")).toContainText("Inconclusive.");
+  await expect(sec.locator(".build-banner")).toContainText("cassandra-4.0");
+  const tests = sec.locator(".build-tests");
+  await expect(tests.locator("th")).toHaveText(["Classes", "Run", "Failed", "Errors", "Skipped"]);
+  await expect(tests.locator("td")).toHaveText(["25", "328", "0", "1", "2"]);
+  await expect(sec).toContainText("StreamingTransferTest.testTransferRangeTombstones");
+  const cov = sec.locator(".build-cov");
+  await expect(cov).toContainText("src/java/org/apache/cassandra/io/sstable/SSTable.java");
+  await expect(cov).toContainText("7/7");
+  await expect(sec).toContainText("7 of 7 added executable lines ran");
+  const sel = sec.locator("details.build-selected");
+  await expect(sel).toHaveCount(1);
+  await expect(sel.locator("li").first()).toBeHidden();
+  await sel.locator("summary").click();
+  await expect(sel.locator("li")).toHaveCount(run.selected.length);
+  await expect(sel).toContainText("LogTransactionTest");
+  await expect(sel).toContainText("calls changed method(s)");
+  await expect(sec.locator(".build-note")).toHaveText(BUILD_NOTE);
+  await expect(sec.locator("article.check")).toHaveCount(3);
+  await expect(sec.locator("article.check").filter({ hasText: "The PR branch compiled" })).toHaveCount(1);
+});
+
+test("Build & coverage without a result says not built for this head", async ({ page }) => {
+  await page.goto(fileUrl(fixtures().build_none, "#build"));
+  const sec = sectionLocator(page, "build");
+  await expect(sec.locator(".sec-head .badge")).toContainText("N/A");
+  await expect(sec.locator(".build-banner")).toContainText("Not built for this head.");
+  await expect(sec.locator(".build-banner")).toContainText("committers");
+  await expect(sec.locator(".build-banner code")).toContainText("cpr build 5201 --approve");
+  await expect(sec.locator(".build-tests")).toHaveCount(0);
+  await expect(sec.locator(".build-cov")).toHaveCount(0);
+  await expect(sec.locator(".build-note")).toHaveText(BUILD_NOTE);
+});

@@ -5,7 +5,7 @@ import json
 import os
 import sys
 
-from cpr import VERSION, checks as checks_mod, context as context_mod, diffview, lenses as lenses_mod, model as model_mod, \
+from cpr import VERSION, buildresult, checks as checks_mod, context as context_mod, diffview, lenses as lenses_mod, model as model_mod, \
     render, review as review_mod
 from cpr.ingest import bundle as bundle_mod, clone
 from cpr.ingest.clone import CloneError
@@ -21,6 +21,9 @@ def sha_dir(work_dir, bundle):
 
 
 def build_report(bundle, work_dir, offline=False, review=None, log=print):
+    # The saved `cpr build` result for exactly this head (None: not built for this head). Never builds here.
+    pr = bundle["pr"]
+    bundle = {**bundle, "build": buildresult.load(work_dir, pr["number"], pr["head_sha"])}
     results = checks_mod.run_all(bundle)
     tri = triage(bundle)
     dv_cache = os.path.join(sha_dir(work_dir, bundle), "diffview.json")
@@ -142,6 +145,8 @@ def cmd_prepare(args):
         "worktree": wt,
         "base": bundle["git"]["merge_base"],
         "head": bundle["pr"]["head_sha"],
+        "author": bundle["pr"]["author"],
+        "author_is_committer": buildresult.author_is_committer(bundle),
         "context_file": context,
         "lens_dir": lens_dir,
         "panel": review_mod.load_panel(),

@@ -299,7 +299,7 @@ class Section(unittest.TestCase):
 
     def section(self, m):
         ids = [s["id"] for s in m["sections"]]
-        self.assertEqual(ids[ids.index("testing") + 1], "labplan")
+        self.assertEqual(ids[ids.index("testing") + 1:ids.index("testing") + 3], ["build", "labplan"])
         return m["sections"][ids.index("labplan")]
 
     def test_plan_status_and_summary(self):

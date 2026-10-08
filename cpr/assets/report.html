@@ -1274,6 +1274,80 @@ body.no-data #no-data { display: block; }
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
   }
 
+  var BUILD_BANNER = {
+    "pass": ["pass", "Built and tested.", "The branch compiled and the selected tests passed."],
+    "tests-failed": ["fail", "Tests failed.", "The branch compiled; some selected tests failed."],
+    "build-failed": ["fail", "Build failed.", "The branch did not compile; no tests ran."],
+    "timeout": ["unknown", "Timed out.", "The run hit its time limit; results are incomplete."],
+    "unknown": ["unknown", "Inconclusive.", "The run could not prove a pass or a failure."],
+    "not-built": ["info", "Not built for this head.", ""]
+  };
+  var BUILD_NOTE = "Line coverage shows which changed lines ran under the selected tests; it does not show that the fix's behaviour is tested. Read with the test regime lens.";
+
+  function buildItemText(u) {
+    if (u && typeof u === "object") return (u["class"] ? u["class"] + (u.test ? "." + u.test : "") : "") + (u.message ? ": " + u.message : "");
+    return String(u);
+  }
+  function renderBuild(sec) {
+    var b = M.build || { status: "not-built" };
+    var out = [];
+    var ban = BUILD_BANNER[b.status] || BUILD_BANNER.unknown;
+    if (b.status === "not-built") {
+      out.push(h("div", "notice s-info build-banner", [h("strong", null, ban[1] + " "),
+        b.reason || "No build result for this head.",
+        h("div", "muted", "Builds run automatically only for PRs by committers" + (b.author_is_committer === false ? " (this PR’s author is not on the committer roster)" : "") +
+          ". The owner can approve one head with "), h("code", null, "cpr build " + (pr.number || "<N>") + " --approve"), "."]));
+      out.push(block("Build & coverage", [empty("Nothing was built, so no test or coverage numbers are shown.")]));
+      out.push(checksBlock(sec));
+      out.push(h("p", "muted build-note", BUILD_NOTE));
+      out.push(docsBlock(sec));
+      return out;
+    }
+    out.push(h("div", "notice s-" + ban[0] + " build-banner", [h("strong", null, ban[1] + " "), ban[2],
+      b.reason ? h("div", null, b.reason) : null,
+      h("div", "muted", [b.base_branch ? "Base " + b.base_branch : null, b.jdk ? " · " + b.jdk : null,
+        b.timings_s && b.timings_s.total_wall ? " · " + b.timings_s.total_wall + " s wall clock" : null,
+        b.approved ? " · owner-approved" : null])]));
+    out.push(checksBlock(sec));
+    var t = b.tests;
+    if (t) {
+      out.push(block("Tests", [table(["Classes", "Run", "Failed", "Errors", "Skipped"],
+        [{ cells: [{ num: true, node: String(t.classes) }, { num: true, node: String(t.run) }, { num: true, node: String(t.failed) },
+          { num: true, node: String(t.errors) }, { num: true, node: String(t.skipped) }] }], { cls: "build-tests" }),
+        (t.failures || []).length ? list(t.failures, function (f) {
+          return [h("span", "mono", f["class"] + "." + f.test), f.message ? h("div", "muted", f.message) : null];
+        }) : h("p", "empty", "No test failed.")], (t.failures || []).length));
+    }
+    var files = b.changed_lines ? Object.keys(b.changed_lines).sort() : [];
+    if (b.changed_lines) {
+      var rows = files.map(function (path) {
+        var i = b.changed_lines[path] || {};
+        var cov = (i.covered || []).length, part = (i.partial || []).length, miss = (i.missed || []).length;
+        var n = cov + part + miss;
+        return { cells: [{ node: h("span", "mono", path) },
+          n ? (cov + part) + "/" + n + (part ? " (" + part + " partly)" : "") : "no executable lines",
+          miss ? h("span", "mono del", (i.missed || []).join(", ")) : h("span", "muted", n ? "none" : "")] };
+      });
+      var tot = b.changed_total || {};
+      out.push(block("Changed-line coverage", [
+        h("p", null, tot.executable ? (tot.covered + (tot.partial || 0)) + " of " + plural(tot.executable, "added executable line") + " ran under the selected tests."
+          : "No added executable lines under src/java."),
+        files.length ? table(["File", "Covered", "Missed lines"], rows, { cls: "build-cov" }) : null], files.length));
+    } else {
+      out.push(block("Changed-line coverage", [empty("Coverage was not measured for this run.")]));
+    }
+    var sel = b.selected || [];
+    out.push(block("Selected tests", [sel.length ? details("Show " + plural(sel.length, "selected test class") + " and why", list(sel, function (c) {
+      return [h("span", "mono", c["class"]), h("span", "muted", " — " + (c.reasons || []).join("; "))];
+    }), { cls: "build-selected" }) : empty("No test classes were selected.")], sel.length));
+    var unk = b.sandbox_unknowns || [];
+    if (unk.length) out.push(block("Sandbox artifacts (unknown, not failures)", [h("div", "build-unknowns", list(unk, function (u) { return buildItemText(u); }))], unk.length));
+    if ((b.notes || []).length) out.push(block("Notes", [details("Show run notes", list(b.notes, function (n) { return String(n); }), {})]));
+    out.push(h("p", "muted build-note", BUILD_NOTE));
+    out.push(docsBlock(sec));
+    return out;
+  }
+
   function renderLabplan(sec) {
     var lp = M.lab_plan || {};
     var out = [];
@@ -1320,7 +1394,7 @@ body.no-data #no-data { display: block; }
   var RENDERERS = {
     summary: function (s) { return renderSummary().concat([docsBlock(s)]); },
     ticket: function (s) { return renderTicket().concat([docsBlock(s)]); },
-    ci: renderCi, testing: renderTesting, labplan: renderLabplan, commits: renderCommits, compatibility: renderCompat,
+    ci: renderCi, testing: renderTesting, build: renderBuild, labplan: renderLabplan, commits: renderCommits, compatibility: renderCompat,
     votes: renderVotes, triage: renderTriage, context: renderContext, review: renderReview, changes: renderChanges, about: renderAbout
   };
 

@@ -61,6 +61,39 @@ def no_plan(model):
     return m
 
 
+def with_build(model, run):
+    """5201 with the Build & coverage section filled from a saved `cpr build` result (or not built when None)."""
+    from cpr import buildresult, checks as checks_mod, model as model_mod
+    from cpr.checks import build as _build  # noqa: F401  (registers the build.* checks)
+    m = copy.deepcopy(model)
+    head = m["pr"]["head_sha"]
+    run = {**run, "head": head} if run else buildresult.not_built()
+    bundle = {"pr": {"head_sha": head}, "build": run}
+    for spec in [c for c in checks_mod.REGISTRY if c["id"].startswith("build.")]:
+        r = spec["fn"](bundle, None)
+        m["checks"].append({"id": spec["id"], "title": spec["title"], "category": spec["category"], "aspect": spec["aspect"],
+                            "blocking": spec["blocking"] if r.blocking is None else r.blocking, "owner": spec["owner"],
+                            "status": r.status, "summary": r.summary, "evidence": r.evidence,
+                            "action": r.action if r.status not in ("pass", "not-applicable") else None,
+                            "action_required": r.status in ("fail", "warn") if r.action_required is None else r.action_required})
+    mine = [c for c in m["checks"] if c["id"].startswith("build.")]
+    live = [c["status"] for c in mine if c["status"] != "not-applicable"]
+    status = "not-applicable" if run["status"] == "not-built" else (
+        min(live, key=lambda x: model_mod._RANK[x]) if live else "info")
+    sec = {"id": "build", "title": "Build & coverage", "status": status, "docs": ["build"], "checks": [c["id"] for c in mine]}
+    ids = [x["id"] for x in m["sections"]]
+    m["sections"].insert(ids.index("testing") + 1, sec)
+    m["build"] = {**run, "author_is_committer": False}
+    with open(os.path.join(REPO, "docs", "report", "build.md")) as f:
+        m["docs"]["build"] = f.read()
+    return m
+
+
+def load_build_run():
+    with open(os.path.join(REPO, "tests", "fixtures", "build", "5201-status.json")) as f:
+        return json.load(f)
+
+
 def main(out_dir):
     os.makedirs(out_dir, exist_ok=True)
     model = load_model()
@@ -68,7 +101,10 @@ def main(out_dir):
     render.write(hostile(model), os.path.join(out_dir, "hostile.html"))
     render.write(lens_status(model), os.path.join(out_dir, "lens-status.html"))
     render.write(no_plan(model), os.path.join(out_dir, "labplan-none.html"))
-    print(json.dumps({"report": os.path.join(out_dir, "report.html"), "hostile": os.path.join(out_dir, "hostile.html"),
+    render.write(with_build(model, load_build_run()), os.path.join(out_dir, "build.html"))
+    render.write(with_build(model, None), os.path.join(out_dir, "build-none.html"))
+    print(json.dumps({"build": os.path.join(out_dir, "build.html"), "build_none": os.path.join(out_dir, "build-none.html"),
+                      "report": os.path.join(out_dir, "report.html"), "hostile": os.path.join(out_dir, "hostile.html"),
                       "lens_status": os.path.join(out_dir, "lens-status.html"),
                       "labplan_none": os.path.join(out_dir, "labplan-none.html"),
                       "hostile_title": HOSTILE_TITLE, "hostile_evidence": HOSTILE_EVIDENCE}))

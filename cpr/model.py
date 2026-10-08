@@ -2,7 +2,7 @@
 
 import time
 
-from cpr import VERSION, labplan, paths
+from cpr import VERSION, buildresult, labplan, paths
 from cpr.checks import STATUSES
 from cpr.checks.compat import touched_surfaces
 from cpr.merge import issues_of
@@ -18,6 +18,7 @@ SECTIONS = [
     ("ticket", "JIRA ticket", ["jira"], ["jira"]),
     ("ci", "Branches & CI", ["ci", "branches"], ["ci", "branches"]),
     ("testing", "Testing", ["testing"], ["testing"]),
+    ("build", "Build & coverage", ["build"], ["build"]),
     ("labplan", "Lab plan", ["labplan"], []),
     ("commits", "Commits & changelog", ["commits"], ["commits"]),
     ("static", "Code style", ["static"], ["static"]),
@@ -33,7 +34,8 @@ ASPECTS = sorted({a for _, _, docs, _ in SECTIONS for a in docs})
 
 NOT_CHECKED = [
     "`ant check` (checkstyle and RAT) was not run; the static checks here approximate it from the diff.",
-    "No tests were built or run; CI evidence comes only from summaries attached to JIRA.",
+    "Tests are built and run only for committers' PRs (or a PR the owner approved) and only a selection of unit "
+    "tests; otherwise CI evidence comes only from summaries attached to JIRA.",
     "CI failures are counted, not compared against known flaky tests (Butler) yet.",
     "Code review lenses read the diff; they do not build or run tests.",
 ]
@@ -111,6 +113,10 @@ def build(bundle, checks, triage, docs, diffview, review=None, context=None):
     rec = recommend(pr, checks, review)
     branches, unmapped = _branch_rows(bundle)
     lab_plan = labplan.build_plan(bundle)
+    run = bundle.get("build")
+    if not (isinstance(run, dict) and run.get("head") == pr["head_sha"] and run.get("status") != "not-built"):
+        run = buildresult.not_built(run.get("reason") if isinstance(run, dict) and run.get("status") == "not-built" else None)
+    run = {**run, "author_is_committer": buildresult.author_is_committer(bundle)}
 
     sections = []
     for sid, title, doc_aspects, check_aspects in SECTIONS:
@@ -133,6 +139,11 @@ def build(bundle, checks, triage, docs, diffview, review=None, context=None):
             status = "info" if context and context.get("status") == "ok" else "unknown"
         elif sid == "changes":
             status = "info" if diffview.get("status") == "ok" else "unknown"
+        elif sid == "build":
+            if run["status"] == "not-built":
+                status = "not-applicable"
+            elif status == "info":
+                status = "unknown" if run["status"] in ("unknown", "timeout") else "info"
         elif sid == "labplan":
             status = "info" if lab_plan["status"] == "plan" else "not-applicable"
         sec = {"id": sid, "title": title, "status": status, "docs": doc_aspects, "checks": [c["id"] for c in sec_checks]}
@@ -177,6 +188,7 @@ def build(bundle, checks, triage, docs, diffview, review=None, context=None):
         "github_reviews": [{k: r.get(k) for k in ("user", "state", "association", "submitted_at", "url")}
                            for r in bundle.get("reviews", [])],
         "lab_plan": lab_plan,
+        "build": run,
         "sections": sections,
         "docs": docs,
         "diffview": diffview,
@@ -247,6 +259,8 @@ def validate(model):
     need(lp["status"] == "none" or (lp["markdown"] and lp["scenarios"] and isinstance(lp.get("filename"), str)),
          "lab_plan.markdown")
     need(lp["status"] == "plan" or isinstance(lp.get("reason"), str), "lab_plan.reason")
+    if "build" in model:
+        need((model["build"] or {}).get("status") in buildresult.STATUSES, "build.status")
     need(model.get("diffview", {}).get("status") in ("ok", "unavailable"), "diffview.status")
     ctx = model.get("context") or {}
     need(ctx.get("status") in ("ok", "unavailable"), "context.status")

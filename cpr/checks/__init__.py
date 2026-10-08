@@ -11,7 +11,7 @@ the recommendation.
 """
 
 STATUSES = ("pass", "fail", "warn", "unknown", "not-applicable")
-CATEGORIES = ("ticket", "ci", "commit", "changelog", "tests", "static", "compatibility", "governance")
+CATEGORIES = ("ticket", "ci", "commit", "changelog", "tests", "build", "static", "compatibility", "governance")
 OWNERS = ("contributor", "reviewer", "committer")
 
 REGISTRY = []
@@ -53,7 +53,7 @@ class Result:
 
 def run_all(bundle, ctx=None):
     # Import the check modules so they register themselves.
-    from cpr.checks import ticket, ci, commits, tests_presence, static, compat, votes  # noqa: F401
+    from cpr.checks import ticket, ci, commits, tests_presence, build, static, compat, votes  # noqa: F401
 
     ctx = ctx or Context(bundle)
     results = []
@@ -79,7 +79,7 @@ def run_all(bundle, ctx=None):
 
 
 def registered_ids():
-    from cpr.checks import ticket, ci, commits, tests_presence, static, compat, votes  # noqa: F401
+    from cpr.checks import ticket, ci, commits, tests_presence, build, static, compat, votes  # noqa: F401
     return [(c["id"], c["aspect"]) for c in REGISTRY]
 
 

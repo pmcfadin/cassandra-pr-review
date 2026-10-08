@@ -22,6 +22,16 @@ review checklists from apache/cassandra trunk into a trusted `refdir`, and print
 `tier` (`none`, `small`, `medium`, `large`), and `bundle` (per lens: `status`, `files`,
 `categories`, `focus`, `not_reviewed`, `error`). Stop and report if it exits non-zero.
 
+The JSON also carries `author` and `author_is_committer` (from the committer roster). Building runs the
+PR author's code, so it is gated:
+
+- If `author_is_committer` is true, start `bin/cpr build <N>` **in the background** right away
+  (`run_in_background`; it takes about 5 minutes and runs sandboxed) and let it run while the lenses work.
+  It saves `.work/build-runs/<N>/<head>/status.json`; step 4 reads it. Do not start a second build for the
+  same head.
+- If it is false, do not build. The report will say "Not built for this head". Tell the owner that they can
+  approve this exact head with `bin/cpr build <N> --approve` and then re-render (step 4).
+
 Delete any `*.json` already in `lens_dir` for this head sha before running lenses, so a stale lens
 output can never be merged.
 
@@ -75,10 +85,16 @@ never count as approval. Do not edit, fix up, or summarise a lens's output.
 
 ## 4. Render
 
+If a background build was started in step 1, wait for it to finish before rendering (its completion
+notification arrives on its own; do not poll). A build that failed or timed out still writes a result, which the
+report shows; if it wrote none, render anyway and the section says "Not built for this head". Never build
+inside `cpr review`.
+
 ```bash
 bin/cpr review <N> --lenses <lens_dir>
 ```
 
 This merges the lens outputs under the panel rules in `cpr/review.py` and writes the report. Tell
-the user the report path, the recommendation line, and the per-lens status line it prints. Offer
+the user the report path, the recommendation line, the per-lens status line it prints, and the build status
+(or that the PR was not built and how to approve it). Offer
 `open reports/<N>/index.html`.
