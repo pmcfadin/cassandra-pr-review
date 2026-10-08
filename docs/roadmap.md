@@ -7,13 +7,13 @@ reviewer feedback on the first published reports (2026-10-07).
    and CI summaries; checks merge requirements; rates review difficulty; renders one HTML report.
 2. **review-lenses** (done): `/review-pr` runs a parallel panel of AI review lenses and renders
    their findings; verdicts split by who must act.
-3. **reviewer-context** (next): related tickets from `git blame` of the changed lines, suggested
+3. **reviewer-context** (done): related tickets from `git blame` of the changed lines, suggested
    reviewers, and the people most experienced with each file, from `patch by` / `reviewed by` history.
-4. **cassandra-lenses**: replace the generic spec-flow lenses with Cassandra-native lenses built from
+4. **cassandra-lenses** (done; every lens on Sonnet, see the archived change's benchmark.md): replace the generic spec-flow lenses with Cassandra-native lenses built from
    apache/cassandra's own `.claude/skills` review methods and bug-pattern catalog (concurrency,
    serialization and versioning, lifecycle and ordering, IO and crash safety); dedupe overlapping
    findings into one list. Removes the spec-flow dependency.
-5. **static-analysis**: PMD (cognitive complexity, copy-paste) and the project's real checkstyle on
+5. **static-analysis** (next): PMD (cognitive complexity, copy-paste) and the project's real checkstyle on
    changed files, split into introduced-by-this-PR vs already-there; perf commit-structure check
    (benchmark commit first, then the change).
 6. **build-and-coverage**: build the branch and run the tests the PR touches or affects with JaCoCo
