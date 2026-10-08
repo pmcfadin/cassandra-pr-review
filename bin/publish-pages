@@ -29,6 +29,13 @@ for n, a in sorted(actions.items()):
 print(f"{len(rows)} report(s) on the site")
 PY
 
+# Never publish local paths (home directory or this checkout).
+if grep -rlF -e "$HOME/" -e "$ROOT/" "$SITE/pr" "$SITE/index.html" 2>/dev/null; then
+  echo "refusing to publish: the files above contain local paths" >&2
+  git -C "$ROOT" worktree remove --force "$SITE"
+  exit 1
+fi
+
 git -C "$SITE" add -A
 if git -C "$SITE" diff --cached --quiet; then
   echo "site unchanged"
