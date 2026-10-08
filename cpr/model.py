@@ -1,5 +1,6 @@
 """Build and validate the report model: the one JSON object the HTML template renders."""
 
+import re
 import time
 
 from cpr import VERSION, buildresult, labplan, paths
@@ -205,6 +206,7 @@ def build(bundle, checks, triage, docs, diffview, review=None, context=None):
             },
         },
     }
+    model["view"] = derive_view(model)
     validate(model)
     return model
 
@@ -262,9 +264,250 @@ def validate(model):
     if "build" in model:
         need((model["build"] or {}).get("status") in buildresult.STATUSES, "build.status")
     need(model.get("diffview", {}).get("status") in ("ok", "unavailable"), "diffview.status")
+    view = model.get("view")
+    if view is not None:
+        need(isinstance(view, dict), "view")
+        need((view.get("verdict") or {}).get("kind") in ("blocked", "waiting", "ready", "unknown", "draft"), "view.verdict.kind")
+        need(isinstance(view.get("steps"), list), "view.steps")
+        need(isinstance((view.get("todo") or {}).get("roles"), list), "view.todo.roles")
+        need(isinstance(view.get("groups"), list), "view.groups")
+        need(isinstance(view.get("words"), dict), "view.words")
     ctx = model.get("context") or {}
     need(ctx.get("status") in ("ok", "unavailable"), "context.status")
     if ctx.get("status") == "ok":
         for k in ("related_tickets", "untracked_commits", "linked_issues", "suggested_reviewers", "already_reviewing"):
             need(isinstance(ctx.get(k), list), f"context.{k}")
         need(isinstance(ctx.get("experts"), dict), "context.experts")
+
+
+# ---------------------------------------------------------------------------------------------
+# Derived view fields. Pure functions of the model above; they change no check or verdict, they
+# only phrase the existing facts for the report's layout (design D1 and D2 of report-redesign).
+# ---------------------------------------------------------------------------------------------
+
+WORD_FAIL, WORD_SHOULD, WORD_NOTE = "Must fix", "Should fix", "Note"
+WORD_UNKNOWN, WORD_PASS, WORD_NA = "Unknown", "Passed", "Not needed"
+_GROUP_RANK = {"fail": 0, "warn": 1, "unknown": 2, "pass": 3, "not-applicable": 4, "info": 4}
+ROLE_ORDER = ("contributor", "committer", "reviewer", "other")
+ROLE_NAMES = {"contributor": "Contributor", "committer": "Committer", "reviewer": "Reviewers", "other": "Other"}
+
+
+def status_word(status, action_required=False):
+    """The plain word for a check status: fail is Must fix, warn is Should fix only when action is required."""
+    if status == "fail":
+        return WORD_FAIL
+    if status == "warn":
+        return WORD_SHOULD if action_required else WORD_NOTE
+    if status == "pass":
+        return WORD_PASS
+    if status == "not-applicable":
+        return WORD_NA
+    return WORD_UNKNOWN
+
+
+def first_sentence(text, limit=150):
+    """First sentence or clause of `text`, cut at a word boundary under `limit` characters."""
+    s = " ".join(str(text or "").split())
+    i = s.find(". ")
+    if i > 0:
+        s = s[:i]
+    s = s.rstrip(".:;")
+    if len(s) > limit:
+        s = s[:limit].rsplit(" ", 1)[0]
+        if s.count("`") % 2:  # never cut inside an inline-code span
+            s = s[:s.rindex("`")]
+        s = s.rstrip(" ,;:") + "…"
+    return s
+
+
+def _plural(n, word):
+    return f"{n} {word}{'' if n == 1 else 's'}"
+
+
+def _check_rank(c):
+    return {"fail": 0, "unknown": 1, "warn": 2, "pass": 3, "not-applicable": 4}.get(c["status"], 1)
+
+
+def _issue_counts_text(ic):
+    parts = [(ic[k], k) for k in ("blocker", "major", "minor", "nit") if ic.get(k)]
+    if not parts:
+        return "No issues found."
+    bits = [f"{n} {k}" for n, k in parts]
+    text = bits[0] if len(bits) == 1 else ", ".join(bits[:-1]) + " and " + bits[-1]
+    return text + (" issue found." if len(bits) == 1 and parts[0][0] == 1 else " issues found.")
+
+
+def _group_summary(sec, cs, review):
+    if sec["id"] == "review":
+        if review.get("status") != "ran":
+            return "Code review has not run for this PR."
+        return _issue_counts_text(review.get("issue_counts") or {})
+    live = sorted((c for c in cs if c["status"] in ("fail", "unknown", "warn")), key=_check_rank)
+    if live:
+        return live[0]["summary"] or live[0]["title"]
+    passed = [c for c in cs if c["status"] == "pass"]
+    if passed:
+        return "All checks passed." if len(passed) == len(cs) else f"{_plural(len(passed), 'check')} passed; the rest are not needed."
+    return "Nothing to check for this change."
+
+
+def _derive_groups(model, by_id):
+    review = model.get("review") or {}
+    groups = []
+    for sec in model["sections"]:
+        cs = [by_id[i] for i in sec.get("checks", []) if i in by_id]
+        if not cs and sec["id"] != "review":
+            continue
+        status = "not-applicable" if sec["status"] == "info" else sec["status"]
+        if sec["id"] == "review":
+            word = {"fail": WORD_FAIL, "warn": WORD_NOTE, "pass": WORD_PASS}.get(status, WORD_UNKNOWN)
+            count = _plural(len(review.get("issues") or []), "finding") if review.get("status") == "ran" else "not run"
+        else:
+            word = status_word(status, any(c["status"] == "warn" and c.get("action_required") for c in cs))
+            open_n = sum(1 for c in cs if c["status"] in ("fail", "warn", "unknown"))
+            passed = sum(1 for c in cs if c["status"] == "pass")
+            count = (f"{open_n} open · " if open_n else "") + (
+                f"{passed} passed" if passed or open_n else f"{_plural(len(cs), 'check')} not needed")
+        groups.append({"id": sec["id"], "title": sec["title"], "status": status, "word": word,
+                       "summary": _group_summary(sec, cs, review), "count_label": count,
+                       "is_review": sec["id"] == "review"})
+    groups.sort(key=lambda g: _GROUP_RANK.get(g["status"], 2))  # stable: ties keep section order
+    return groups
+
+
+def _derive_steps(model, groups):
+    g = {x["id"]: x for x in groups}
+
+    def step(label, ids, note_ok):
+        gs = [g[i] for i in ids if i in g]
+        bad = [x for x in gs if x["status"] == "fail"]
+        unk = [x for x in gs if x["status"] == "unknown"]
+        if bad:
+            return {"label": label, "state": "bad", "note": bad[0]["summary"]}
+        if unk:
+            return {"label": label, "state": "unknown", "note": unk[0]["summary"]}
+        return {"label": label, "state": "ok", "note": note_ok}
+
+    steps = [step("Ticket", ["ticket"], "Ticket checks pass"), step("Tests", ["testing", "build"], "Tests accompany the change"),
+             step("Code review", ["review"], "No must-fix review issues"), step("CI", ["ci"], "CI is in order")]
+    votes = step("+1 votes", ["votes"], "Enough committer +1 votes")
+    vc = next((c for c in model["checks"] if c["id"] == "votes.committer-plus-ones"), None)
+    if vc:
+        summary = vc.get("summary") or ""
+        have = re.search(r"\bhas (\d+)\b|^(\d+) committer", summary)
+        need = re.search(r"needs (\d+)", summary)
+        if have:
+            votes["label"] = f"+1 votes ({have.group(1) or have.group(2)} of {need.group(1) if need else 2})"
+    steps.append(votes)
+    return steps
+
+
+def _role_of(owner):
+    return owner if owner in ROLE_ORDER[:3] else "other"
+
+
+def _derive_todo(model, by_id):
+    rec = model["recommendation"]
+    group_of = {cid: sec["title"] for sec in model["sections"] for cid in sec.get("checks", [])}
+    items, seen = [], set()
+    for r in rec.get("reasons", []):
+        if r.get("status") == "pass":
+            continue
+        c = by_id.get(r.get("check")) if r.get("check") else None
+        must = bool(r.get("blocking")) or r.get("status") in ("fail", "unknown")
+        if c:
+            seen.add(c["id"])
+            word = status_word(r["status"], c.get("action_required"))
+            where = group_of.get(c["id"], "")
+        elif r.get("finding"):
+            word, where = WORD_FAIL, f"Code review {r.get('severity', '')}".strip()
+        else:
+            word, where = (WORD_UNKNOWN if r["status"] == "unknown" else WORD_NOTE), "Note"
+        items.append({"id": f"todo-{len(items)}", "must": must, "word": word, "tag": f"{word} · {where}" if where else word,
+                      "text": first_sentence(r.get("action")) or r.get("title") or "", "title": r.get("title") or "",
+                      "summary": r.get("summary") or "", "action": r.get("action") or "", "owner": _role_of(r.get("owner")),
+                      "check": c["id"] if c else None, "finding": r.get("finding")})
+    for c in model["checks"]:
+        if c["id"] in seen or c["status"] not in ("fail", "warn", "unknown"):
+            continue
+        word = status_word(c["status"], c.get("action_required"))
+        where = group_of.get(c["id"], "")
+        items.append({"id": f"todo-{len(items)}", "must": False, "word": word, "tag": f"{word} · {where}" if where else word,
+                      "text": first_sentence(c.get("action")) or c["title"], "title": c["title"], "summary": c["summary"] or "",
+                      "action": c.get("action") or "", "owner": _role_of(c.get("owner")), "check": c["id"], "finding": None})
+    ctx = model.get("context") or {}
+    sug = [p.get("name") for p in (ctx.get("suggested_reviewers") or []) if p.get("name")]
+    who = {"contributor": model["pr"].get("author") or "", "committer": "Any Cassandra committer",
+           "reviewer": ("Suggested: " + ", ".join(sug)) if sug else "", "other": ""}
+    roles = []
+    for key in ROLE_ORDER:
+        mine = sorted((i for i in items if i["owner"] == key), key=lambda i: not i["must"])  # must first, then stable
+        if mine:
+            roles.append({"id": key, "role": ROLE_NAMES[key], "who": who[key],
+                          "must_count": sum(1 for i in mine if i["must"]), "items": mine})
+    return {"roles": roles, "must_count": sum(1 for i in items if i["must"]),
+            "optional_count": sum(1 for i in items if not i["must"])}
+
+
+def _derive_verdict(model, todo):
+    v = model["recommendation"]["verdict"]
+    n = todo["must_count"]
+    people = sum(1 for r in todo["roles"] if r["must_count"])
+    todo_n = sum(len(r["items"]) for r in todo["roles"])
+
+    def act(p):
+        return "1 person needs to act." if p == 1 else f"{p} people need to act."
+
+    out = {"kind": "waiting", "headline": "Waiting for review", "sentence": "", "note": "",
+           "must_count": n, "people_count": people}
+    if v == "needs-contributor-work":
+        out.update(kind="blocked", headline="Not ready to merge",
+                   sentence=f"{_plural(n, 'must-fix item')}." + (" " + act(people) if people else ""),
+                   note="The contributor has blocking items to fix before this can move forward. They are listed first.")
+    elif v == "needs-work":
+        out.update(kind="waiting", headline="Needs changes",
+                   sentence=f"{_plural(todo_n, 'item')} to fix before merge. {act(len(todo['roles']))}")
+    elif v == "awaiting-review":
+        out.update(headline="Waiting for review",
+                   sentence="The contributor's part is done. What remains is with reviewers or committers: votes, CI runs, or both.")
+    elif v == "requirements-met-unreviewed":
+        out.update(headline="Not reviewed yet", sentence="Every merge requirement passes, but no review lens has read the code.",
+                   note="Code review has not completed, so this is not a ready-to-merge verdict.")
+    elif v == "insufficient-evidence":
+        out.update(kind="unknown", headline="Cannot tell yet",
+                   sentence="Some required inputs could not be read, so the tool cannot say whether the requirements are met.")
+    elif v == "draft":
+        out.update(kind="draft", headline="Draft", sentence="Early feedback only. This is not a merge decision.",
+                   note="This PR is a draft. Treat everything here as early feedback.")
+    else:
+        out.update(kind="ready", headline="Ready to merge", sentence="A committer can merge it.",
+                   note="Every blocking requirement passes and every code review lens approved. A committer makes the final call.")
+    return out
+
+
+def _effort_text(tr):
+    lines, files = tr.get("lines"), tr.get("files")
+    base = f"{_plural(lines, 'changed line')} in {_plural(files, 'file')}" if lines is not None and files is not None else ""
+    if tr.get("forced_by"):
+        return f"Rated hard because it {tr['forced_by']}." + (f" ({base})" if base else "")
+    raised = [s["signal"] for s in tr.get("signals", []) if (s.get("points") or 0) > 0]
+    text = base[:1].upper() + base[1:] if base else "Rated by its signals"
+    return text + (". Raised by: " + ", ".join(raised) + "." if raised else ".")
+
+
+def derive_view(model):
+    """Fields the report layout needs, computed from the model alone (no check or verdict logic changes)."""
+    by_id = {c["id"]: c for c in model["checks"]}
+    groups = _derive_groups(model, by_id)
+    todo = _derive_todo(model, by_id)
+    tr = model.get("triage") or {}
+    return {
+        "header": {"first_time_contributor": model["pr"].get("author_association") in ("FIRST_TIME_CONTRIBUTOR", "FIRST_TIMER")},
+        "verdict": _derive_verdict(model, todo),
+        "steps": _derive_steps(model, groups),
+        "todo": todo,
+        "groups": groups,
+        "headlines": {i["id"]: first_sentence(i["problem"], 110) for i in (model.get("review") or {}).get("issues") or []},
+        "words": {c["id"]: status_word(c["status"], c.get("action_required")) for c in model["checks"]},
+        "effort": {"level": {"easy": 1, "moderate": 2, "hard": 3}.get(tr.get("rating"), 0), "text": _effort_text(tr)},
+    }
