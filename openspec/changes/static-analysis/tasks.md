@@ -1,14 +1,14 @@
 ## 1. Tools
 
-- [ ] 1.1 `cpr/config/static.json` (versions, URLs, sha256, branch families, thresholds, caps) and `cpr/staticanalysis/tools.py` (install, verify, locate java) (test: digest mismatch)
-- [ ] 1.2 `cpr tools install` command (test: already installed is a no-op)
+- [x] 1.1 `cpr/config/static.json` (versions, URLs, sha256, branch families, thresholds, caps) and `cpr/staticanalysis/tools.py` (install, verify, locate java) (test: digest mismatch)
+- [x] 1.2 `cpr tools install` command (test: already installed is a no-op)
 
 ## 2. Collect and run
 
-- [ ] 2.1 Inputs: rename map, changed lines, base/head blob extraction, commit list with paths (test: rename map and changed lines on a temp repo)
-- [ ] 2.2 Runners for checkstyle, PMD, CPD with exit-code handling, caps, and file-coverage proof (tests: parse recorded XML; missing file → unknown)
-- [ ] 2.3 Classifier (tests: 5201 delta 6 → 2; renamed class; new file; moved method; CPD introduced)
-- [ ] 2.4 Wire into ingest with caches (head sha, base blob sha); offline replay (test: offline re-render runs no tool)
+- [x] 2.1 Inputs: rename map, changed lines, base/head blob extraction, commit list with paths (test: rename map and changed lines on a temp repo)
+- [x] 2.2 Runners for checkstyle, PMD, CPD with exit-code handling, caps, and file-coverage proof (tests: parse recorded XML; missing file → unknown)
+- [x] 2.3 Classifier (tests: 5201 delta 6 → 2; renamed class; new file; moved method; CPD introduced)
+- [x] 2.4 Wire into ingest with caches (head sha, base blob sha); offline replay (test: offline re-render runs no tool)
 
 ## 3. Checks
 

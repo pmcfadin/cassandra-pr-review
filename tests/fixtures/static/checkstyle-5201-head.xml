@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<checkstyle version="8.40">
+<file name="/work/head/src/java/org/apache/cassandra/io/sstable/SSTable.java">
+<error line="117" column="41" severity="error" message="Instantiation of java.io.File should be avoided." source="com.puppycrawl.tools.checkstyle.checks.coding.IllegalInstantiationCheck"/>
+<error line="258" column="17" severity="error" message="Instantiation of java.io.File should be avoided." source="com.puppycrawl.tools.checkstyle.checks.coding.IllegalInstantiationCheck"/>
+<error line="287" column="22" severity="error" message="Instantiation of java.io.File should be avoided." source="com.puppycrawl.tools.checkstyle.checks.coding.IllegalInstantiationCheck"/>
+<error line="316" column="24" severity="error" message="Instantiation of java.io.File should be avoided." source="com.puppycrawl.tools.checkstyle.checks.coding.IllegalInstantiationCheck"/>
+<error line="322" column="33" severity="error" message="Instantiation of java.io.File should be avoided." source="com.puppycrawl.tools.checkstyle.checks.coding.IllegalInstantiationCheck"/>
+<error line="335" column="24" severity="error" message="Instantiation of java.io.File should be avoided." source="com.puppycrawl.tools.checkstyle.checks.coding.IllegalInstantiationCheck"/>
+</file>
+</checkstyle>

@@ -9,7 +9,7 @@ import os
 import re
 import time
 
-from cpr import REPO, VERSION
+from cpr import REPO, VERSION, staticanalysis
 from cpr.ingest import ci_summary, clone, github, history as history_mod, jira, keys, roster
 from cpr.net import NetError, Recorder, http_get
 
@@ -167,6 +167,10 @@ def ingest(number, work_dir, log=print):
     roster_info = roster.load(os.path.join(work_dir, "roster.json"))
     emails = voter_emails(pr, reviews, raw)
 
+    git_info = {"merge_base": mb, "head_ref": clone.pr_ref(number), "clone": clone_path}
+    log("running static analysis")
+    static = staticanalysis.analyze({"pr": pr, "git": git_info}, work_dir, log=log)
+
     return {
         "schema": BUNDLE_SCHEMA,
         "meta": {"tool_version": VERSION, "fetched_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -180,7 +184,7 @@ def ingest(number, work_dir, log=print):
         "jira": jira_info,
         "siblings": siblings,
         "ci": ci,
-        "git": {"merge_base": mb, "head_ref": clone.pr_ref(number), "clone": clone_path},
+        "git": git_info,
         "release_branches": clone.release_branches(clone_path),
         "files": files,
         "diff": diff_text,
@@ -190,6 +194,7 @@ def ingest(number, work_dir, log=print):
             "has_cassandra_latest_yaml": clone.show(clone_path, clone.base_ref(pr["base"]), "conf/cassandra_latest.yaml") is not None,
         },
         "history": history,
+        "static_analysis": static,
         "roster": roster_info,
         "voter_emails": emails,
         "overrides": roster.load_overrides(),
@@ -212,4 +217,6 @@ def load_cached(work_dir, number):
     if not os.path.exists(path):
         raise IngestError(f"no cached ingest for PR #{number} in {work_dir}; run without --offline first")
     with open(path) as f:
-        return json.load(f)
+        bundle = json.load(f)
+    bundle["static_analysis"] = staticanalysis.load_cached(bundle)
+    return bundle

@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pmd xmlns="http://pmd.sourceforge.net/report/2.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pmd.sourceforge.net/report/2.0.0 https://pmd.github.io/schema/report_2_0_0.xsd" version="7.28.0" timestamp="2026-10-07T18:25:08.603">
+<file name="/work/base/src/java/org/apache/cassandra/io/sstable/SSTable.java">
+<violation beginline="84" endline="96" begincolumn="5" endcolumn="6" rule="MethodBody" ruleset="pr" package="org.apache.cassandra.io.sstable" class="SSTable" method="SSTable" priority="5">
+body
+</violation>
+<violation beginline="109" endline="109" begincolumn="27" endcolumn="33" rule="CognitiveComplexity" ruleset="Design" package="org.apache.cassandra.io.sstable" class="SSTable" method="delete" externalInfoUrl="https://docs.pmd-code.org/snapshot/pmd_rules_java_design.html#cognitivecomplexity" priority="3">
+The method 'delete(Descriptor, Set&lt;Component&gt;)' has a cognitive complexity of 6, current threshold is 1
+</violation>
+<violation beginline="110" endline="127" begincolumn="5" endcolumn="6" rule="MethodBody" ruleset="pr" package="org.apache.cassandra.io.sstable" class="SSTable" method="delete" priority="5">
+body
+</violation>
+<violation beginline="130" endline="132" begincolumn="5" endcolumn="6" rule="MethodBody" ruleset="pr" package="org.apache.cassandra.io.sstable" class="SSTable" method="metadata" priority="5">
+body
+</violation>
+<violation beginline="135" endline="137" begincolumn="5" endcolumn="6" rule="MethodBody" ruleset="pr" package="org.apache.cassandra.io.sstable" class="SSTable" method="getPartitioner" priority="5">
+body
+</violation>
+<violation beginline="140" endline="142" begincolumn="5" endcolumn="6" rule="MethodBody" ruleset="pr" package="org.apache.cassandra.io.sstable" class="SSTable" method="decorateKey" priority="5">
+body
+</violation>
+<violation beginline="148" endline="148" begincolumn="32" endcolumn="45" rule="CognitiveComplexity" ruleset="Design" package="org.apache.cassandra.io.sstable" class="SSTable" method="getMinimalKey" externalInfoUrl="https://docs.pmd-code.org/snapshot/pmd_rules_java_design.html#cognitivecomplexity" priority="3">
+The method 'getMinimalKey(DecoratedKey)' has a cognitive complexity of 2, current threshold is 1
+</violation>
+<violation beginline="149" endline="153" begincolumn="5" endcolumn="6" rule="MethodBody" ruleset="pr" package="org.apache.cassandra.io.sstable" class="SSTable" method="getMinimalKey" priority="5">
+body
+</violation>
+<violation beginline="156" endline="158" begincolumn="5" endcolumn="6" rule="MethodBody" ruleset="pr" package="org.apache.cassandra.io.sstable" class="SSTable" method="getFilename" priority="5">
+body
+</violation>
+<violation beginline="161" endline="163" begincolumn="5" endcolumn="6" rule="MethodBody" ruleset="pr" package="org.apache.cassandra.io.sstable" class="SSTable" method="getIndexFilename" priority="5">
+body
+</violation>
+<violation beginline="166" endline="168" begincolumn="5" endcolumn="6" rule="MethodBody" ruleset="pr" package="org.apache.cassandra.io.sstable" class="SSTable" method="getColumnFamilyName" priority="5">
+body
+</violation>
+<violation beginline="171" endline="173" begincolumn="5" endcolumn="6" rule="MethodBody" ruleset="pr" package="org.apache.cassandra.io.sstable" class="SSTable" method="getKeyspaceName" priority="5">
+body
+</violation>
+<violation beginline="175" endline="175" begincolumn="25" endcolumn="40" rule="CognitiveComplexity" ruleset="Design" package="org.apache.cassandra.io.sstable" class="SSTable" method="getAllFilePaths" externalInfoUrl="https://docs.pmd-code.org/snapshot/pmd_rules_java_design.html#cognitivecomplexity" priority="3">
+The method 'getAllFilePaths()' has a cognitive complexity of 1, current threshold is 1
+</violation>
+<violation beginline="176" endline="181" begincolumn="5" endcolumn="6" rule="MethodBody" ruleset="pr" package="org.apache.cassandra.io.sstable" class="SSTable" method="getAllFilePaths" priority="5">
+body
+</violation>
+<violation beginline="191" endline="191" begincolumn="47" endcolumn="71" rule="CognitiveComplexity" ruleset="Design" package="org.apache.cassandra.io.sstable" class="SSTable" method="tryComponentFromFilename" externalInfoUrl="https://docs.pmd-code.org/snapshot/pmd_rules_java_design.html#cognitivecomplexity" priority="3">
+The method 'tryComponentFromFilename(File)' has a cognitive complexity of 1, current threshold is 1
+</violation>
+<violation beginline="192" endline="201" begincolumn="5" endcolumn="6" rule="MethodBody" ruleset="pr" package="org.apache.cassandra.io.sstable" class="SSTable" method="tryComponentFromFilename" priority="5">
+body
+</violation>
+<violation beginline="213" endline="213" begincolumn="30" endcolumn="55" rule="CognitiveComplexity" ruleset="Design" package="org.apache.cassandra.io.sstable" class="SSTable" method="tryDescriptorFromFilename" externalInfoUrl="https://docs.pmd-code.org/snapshot/pmd_rules_java_design.html#cognitivecomplexity" priority="3">
+The method 'tryDescriptorFromFilename(File)' has a cognitive complexity of 1, current threshold is 1
+</violation>
+<violation beginline="214" endline="223" begincolumn="5" endcolumn="6" rule="MethodBody" ruleset="pr" package="org.apache.cassandra.io.sstable" class="SSTable" method="tryDescriptorFromFilename" priority="5">
+body
+</violation>
+<violation beginline="228" endline="228" begincolumn="34" endcolumn="47" rule="CognitiveComplexity" ruleset="Design" package="org.apache.cassandra.io.sstable" class="SSTable" method="componentsFor" externalInfoUrl="https://docs.pmd-code.org/snapshot/pmd_rules_java_design.html#cognitivecomplexity" priority="3">
+The method 'componentsFor(Descriptor)' has a cognitive complexity of 6, current threshold is 1
+</violation>
+<violation beginline="229" endline="252" begincolumn="5" endcolumn="6" rule="MethodBody" ruleset="pr" package="org.apache.cassandra.io.sstable" class="SSTable" method="componentsFor" priority="5">
+body
+</violation>
+<violation beginline="254" endline="254" begincolumn="34" endcolumn="55" rule="CognitiveComplexity" ruleset="Design" package="org.apache.cassandra.io.sstable" class="SSTable" method="discoverComponentsFor" externalInfoUrl="https://docs.pmd-code.org/snapshot/pmd_rules_java_design.html#cognitivecomplexity" priority="3">
+The method 'discoverComponentsFor(Descriptor)' has a cognitive complexity of 3, current threshold is 1
+</violation>
+<violation beginline="255" endline="265" begincolumn="5" endcolumn="6" rule="MethodBody" ruleset="pr" package="org.apache.cassandra.io.sstable" class="SSTable" method="discoverComponentsFor" priority="5">
+body
+</violation>
+<violation beginline="268" endline="268" begincolumn="24" endcolumn="45" rule="CognitiveComplexity" ruleset="Design" package="org.apache.cassandra.io.sstable" class="SSTable" method="estimateRowsFromIndex" externalInfoUrl="https://docs.pmd-code.org/snapshot/pmd_rules_java_design.html#cognitivecomplexity" priority="3">
+The method 'estimateRowsFromIndex(RandomAccessReader, Descriptor)' has a cognitive complexity of 3, current threshold is 1
+</violation>
+<violation beginline="269" endline="283" begincolumn="5" endcolumn="6" rule="MethodBody" ruleset="pr" package="org.apache.cassandra.io.sstable" class="SSTable" method="estimateRowsFromIndex" priority="5">
+body
+</violation>
+<violation beginline="285" endline="285" begincolumn="17" endcolumn="28" rule="CognitiveComplexity" ruleset="Design" package="org.apache.cassandra.io.sstable" class="SSTable" method="bytesOnDisk" externalInfoUrl="https://docs.pmd-code.org/snapshot/pmd_rules_java_design.html#cognitivecomplexity" priority="3">
+The method 'bytesOnDisk()' has a cognitive complexity of 1, current threshold is 1
+</violation>
+<violation beginline="286" endline="293" begincolumn="5" endcolumn="6" rule="MethodBody" ruleset="pr" package="org.apache.cassandra.io.sstable" class="SSTable" method="bytesOnDisk" priority="5">
+body
+</violation>
+<violation beginline="297" endline="301" begincolumn="5" endcolumn="6" rule="MethodBody" ruleset="pr" package="org.apache.cassandra.io.sstable" class="SSTable" method="toString" priority="5">
+body
+</violation>
+<violation beginline="308" endline="310" begincolumn="5" endcolumn="6" rule="MethodBody" ruleset="pr" package="org.apache.cassandra.io.sstable" class="SSTable" method="readTOC" priority="5">
+body
+</violation>
+<violation beginline="317" endline="317" begincolumn="37" endcolumn="44" rule="CognitiveComplexity" ruleset="Design" package="org.apache.cassandra.io.sstable" class="SSTable" method="readTOC" externalInfoUrl="https://docs.pmd-code.org/snapshot/pmd_rules_java_design.html#cognitivecomplexity" priority="3">
+The method 'readTOC(Descriptor, boolean)' has a cognitive complexity of 5, current threshold is 1
+</violation>
+<violation beginline="318" endline="331" begincolumn="5" endcolumn="6" rule="MethodBody" ruleset="pr" package="org.apache.cassandra.io.sstable" class="SSTable" method="readTOC" priority="5">
+body
+</violation>
+<violation beginline="336" endline="336" begincolumn="27" endcolumn="36" rule="CognitiveComplexity" ruleset="Design" package="org.apache.cassandra.io.sstable" class="SSTable" method="appendTOC" externalInfoUrl="https://docs.pmd-code.org/snapshot/pmd_rules_java_design.html#cognitivecomplexity" priority="3">
+The method 'appendTOC(Descriptor, Collection&lt;Component&gt;)' has a cognitive complexity of 2, current threshold is 1
+</violation>
+<violation beginline="337" endline="351" begincolumn="5" endcolumn="6" rule="MethodBody" ruleset="pr" package="org.apache.cassandra.io.sstable" class="SSTable" method="appendTOC" priority="5">
+body
+</violation>
+<violation beginline="360" endline="364" begincolumn="5" endcolumn="6" rule="MethodBody" ruleset="pr" package="org.apache.cassandra.io.sstable" class="SSTable" method="addComponents" priority="5">
+body
+</violation>
+<violation beginline="367" endline="369" begincolumn="5" endcolumn="6" rule="MethodBody" ruleset="pr" package="org.apache.cassandra.io.sstable" class="SSTable" method="getBounds" priority="5">
+body
+</violation>
+<violation beginline="371" endline="371" begincolumn="24" endcolumn="48" rule="CognitiveComplexity" ruleset="Design" package="org.apache.cassandra.io.sstable" class="SSTable" method="validateRepairedMetadata" externalInfoUrl="https://docs.pmd-code.org/snapshot/pmd_rules_java_design.html#cognitivecomplexity" priority="3">
+The method 'validateRepairedMetadata(long, UUID, boolean)' has a cognitive complexity of 2, current threshold is 1
+</violation>
+<violation beginline="372" endline="378" begincolumn="5" endcolumn="6" rule="MethodBody" ruleset="pr" package="org.apache.cassandra.io.sstable" class="SSTable" method="validateRepairedMetadata" priority="5">
+body
+</violation>
+</file>
+</pmd>
