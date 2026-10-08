@@ -3,173 +3,191 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light dark">
+<meta name="color-scheme" content="light">
 <title>Cassandra PR Reviews</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Mono:wght@400;500&amp;family=Red+Hat+Text:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
 <style>
+/* ---------------------------------------------------------------------------
+   Design tokens and shared components. One source for the report and the site index: render.py
+   inlines this file into both. Colours come from the owner's design (docs/design/report-v2.dc.html).
+   No other hex value appears anywhere else in either page. Light theme only. Fonts load from Google
+   Fonts when online; the system fallbacks keep both pages readable offline.
+   --------------------------------------------------------------------------- */
 :root {
-  --bg: #e9edf1; --panel: #ffffff; --ink: #16202a; --ink-2: #44525f; --rule: #d3d9df; --accent: #245a8c;
-  --pass: #17663f; --pass-bg: #e2f1e8; --warn: #855600; --warn-bg: #fbefd6; --fail: #b0251d; --fail-bg: #fbe5e2;
-  --unknown: #5c4799; --unknown-bg: #ebe6f6; --info: #2c5d7f; --info-bg: #e2edf5;
-  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Surfaces and ink */
+  --bg: #F3F5F8; --panel: #FFFFFF; --soft: #F8FAFC; --soft-2: #F4F6FA; --code-bg: #F0F3F7;
+  --ink: #0F2236; --ink-2: #34445A; --ink-3: #56657A;
+  --rule: #D9DEE5; --rule-2: #E4E8EE; --rule-3: #EEF1F5; --chip-line: #C9D1DC; --bar-off: #DDE1E7;
+  --link: #0B5CAD; --link-hover: #083F78; --hover: #F3F6FA; --flash: rgba(11, 92, 173, .35);
+
+  /* Navigation (dark column) */
+  --navy: #0F2236; --navy-active: #1F3A5C; --navy-hover: #172C45; --navy-line: #3A5373;
+  --navy-ink: #D3DDEA; --navy-mute: #9DB0C7; --navy-dot: #7E94AF; --on-navy: #FFFFFF;
+  --nav-fail: #FF8A5C; --nav-should: #F2C14E; --nav-note: #8FB8EA; --nav-unknown: #C9BDF2; --nav-pass: #4FD1C0; --nav-na: #8A9BB0;
+
+  /* Status chips: text on tint is at least 4.5:1. icon is the stroke colour on light backgrounds. */
+  --fail-fg: #8A2606; --fail-bg: #FDEDE6; --fail-icon: #C0360C;
+  --should-fg: #5E4300; --should-bg: #FBF3DC; --should-icon: #8C6400;
+  --note-fg: #083F78; --note-bg: #E6EEF8; --note-icon: #0B5CAD;
+  --pass-fg: #005A52; --pass-bg: #E3F4F1; --pass-icon: #00766C;
+  --unknown-fg: #4B3A8C; --unknown-bg: #ECE8F6; --unknown-icon: #5B49A8;
+  --na-fg: #56657A; --na-bg: #EEF1F5; --na-icon: #6B7684;
+
+  /* Type scale */
+  --sans: 'Red Hat Text', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: 'Red Hat Mono', ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --fs-xs: 12px; --fs-sm: 13px; --fs-md: 14px; --fs-base: 16px; --fs-lg: 17px; --fs-h2: 22px; --fs-h1: 24px; --fs-verdict: 26px;
+
+  /* Spacing and radii (chips 3px, cards 6px, buttons 8px) */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px; --sp-6: 24px;
+  --r-chip: 3px; --r-card: 6px; --r-btn: 8px;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0d1217; --panel: #151c23; --ink: #e3e9ef; --ink-2: #a3b0bc; --rule: #2a343e; --accent: #7fb2e5;
-    --pass: #6fcf97; --pass-bg: #15301f; --warn: #f0b955; --warn-bg: #33270f; --fail: #ff8a80; --fail-bg: #3a1714;
-    --unknown: #b9a6f2; --unknown-bg: #241d3a; --info: #8cc4ea; --info-bg: #13283a;
-  }
-}
-* { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--sans); }
-main { max-width: 980px; margin: 0 auto; padding: 32px 16px 64px; }
-h1 { margin: 0 0 4px; font-size: 28px; letter-spacing: -0.02em; }
-.lede { margin: 0 0 24px; color: var(--ink-2); }
-a { color: var(--accent); }
-ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.row { background: var(--panel); border: 1px solid var(--rule); border-left: 5px solid var(--c, var(--rule));
-        border-radius: 6px; padding: 14px 16px; }
-.s-pass { --c: var(--pass); --cb: var(--pass-bg); } .s-warn { --c: var(--warn); --cb: var(--warn-bg); }
-.s-fail { --c: var(--fail); --cb: var(--fail-bg); } .s-unknown { --c: var(--unknown); --cb: var(--unknown-bg); }
-.s-info { --c: var(--info); --cb: var(--info-bg); }
-.main { display: flex; gap: 10px; text-decoration: none; color: var(--ink); font-weight: 650; font-size: 16px; }
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--fs-base)/1.55 var(--sans); }
+a { color: var(--link); text-underline-offset: 2px; }
+a:hover { color: var(--link-hover); }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; cursor: pointer; text-align: left; }
+button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; border-radius: var(--r-card); }
+code, .mono { font-family: var(--mono); font-size: 0.9em; overflow-wrap: anywhere; }
+code { background: var(--code-bg); border: 1px solid var(--rule-2); border-radius: 4px; padding: 0 4px; overflow-wrap: anywhere; }
+h1, h2, h3, h4 { margin: 0; line-height: 1.3; }
+p { margin: 6px 0; }
+.muted { color: var(--ink-3); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+svg { flex: none; }
+[hidden] { display: none !important; }
+
+/* Cards, status chips, counts, tags, buttons: the pieces both pages share */
+.card { background: var(--panel); border: 1px solid var(--rule); border-radius: var(--r-card); overflow: hidden; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-sm); font-weight: 600; padding: 3px 10px; border-radius: var(--r-chip); white-space: nowrap; color: var(--c-fg); background: var(--c-bg); }
+.chip.wide { width: 104px; flex: none; }
+.s-fail { --c-fg: var(--fail-fg); --c-bg: var(--fail-bg); --c-icon: var(--fail-icon); }
+.s-should { --c-fg: var(--should-fg); --c-bg: var(--should-bg); --c-icon: var(--should-icon); }
+.s-note { --c-fg: var(--note-fg); --c-bg: var(--note-bg); --c-icon: var(--note-icon); }
+.s-pass { --c-fg: var(--pass-fg); --c-bg: var(--pass-bg); --c-icon: var(--pass-icon); }
+.s-unknown { --c-fg: var(--unknown-fg); --c-bg: var(--unknown-bg); --c-icon: var(--unknown-icon); }
+.s-na { --c-fg: var(--na-fg); --c-bg: var(--na-bg); --c-icon: var(--na-icon); }
+.tag { display: inline-block; font-size: var(--fs-xs); color: var(--ink-3); border: 1px solid var(--rule); border-radius: var(--r-chip); padding: 1px 8px; white-space: nowrap; height: fit-content; }
+.tag.strong { color: var(--ink); border-color: var(--ink-3); }
+.count { min-width: 22px; text-align: center; font-size: var(--fs-sm); font-weight: 600; padding: 1px 6px; border-radius: var(--r-chip); color: var(--na-fg); background: var(--na-bg); }
+.count.must { color: var(--fail-fg); background: var(--fail-bg); }
+.outline-btn { display: inline-flex; align-items: center; gap: 8px; font-size: var(--fs-md); font-weight: 500; color: var(--link); padding: 10px 14px; min-height: 44px; border: 1px solid var(--chip-line); border-radius: var(--r-btn); background: var(--panel); text-decoration: none; }
+.outline-btn:hover { background: var(--hover); color: var(--link); }
+.linkbtn { font-size: var(--fs-md); font-weight: 500; color: var(--link); min-height: 44px; display: inline-flex; align-items: center; gap: 6px; }
+.linkbtn:hover { color: var(--link-hover); text-decoration: underline; }
+.notice { border: 1px solid var(--rule); border-left-width: 4px; border-radius: var(--r-card); padding: 10px 14px; background: var(--panel); margin: 6px 0; font-size: 15px; overflow-wrap: anywhere; }
+.notice.s-fail { border-left-color: var(--fail-icon); } .notice.s-should { border-left-color: var(--should-icon); }
+.notice.s-unknown { border-left-color: var(--unknown-icon); } .notice.s-note { border-left-color: var(--note-icon); }
+.notice.s-pass { border-left-color: var(--pass-icon); } .notice.s-na { border-left-color: var(--na-icon); }
+.notice .why { display: block; color: var(--ink-3); font-size: var(--fs-md); margin-top: 2px; }
+.empty { color: var(--ink-3); font-style: italic; }
+</style>
+<style>
+main { max-width: 1040px; margin: 0 auto; padding: 28px 24px 64px; display: flex; flex-direction: column; gap: 20px; }
+header.top { display: flex; flex-direction: column; gap: 6px; }
+header.top .eyebrow { font-size: var(--fs-xs); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+h1 { font-size: var(--fs-h1); font-weight: 600; }
+.lede { margin: 0; color: var(--ink-3); max-width: 70ch; }
+.stats { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.stat { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 12px; background: var(--panel); border: 1px solid var(--rule); border-radius: var(--r-card); color: var(--ink); text-decoration: none; font-size: var(--fs-md); font-weight: 500; }
+.stat:hover { background: var(--hover); }
+.group-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 16px 20px; background: var(--soft); border-bottom: 1px solid var(--rule-2); }
+.group-head h2 { font-size: var(--fs-lg); font-weight: 600; }
+.group-head .hint { margin: 0; flex: 1 1 280px; color: var(--ink-3); font-size: var(--fs-md); }
+ul { list-style: none; margin: 0; padding: 0; }
+.item { padding: 14px 20px; border-bottom: 1px solid var(--rule-2); display: flex; flex-direction: column; gap: 6px; }
+.item:last-child { border-bottom: 0; }
+.item:hover { background: var(--hover); }
+.main { display: flex; gap: 10px; align-items: baseline; color: var(--ink); text-decoration: none; font-weight: 600; font-size: var(--fs-lg); overflow-wrap: anywhere; }
 .main:hover .title { text-decoration: underline; }
-.num { font-family: var(--mono); color: var(--ink-2); flex: none; }
-.meta { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 6px; }
-.badge { background: var(--cb); color: var(--c); border: 1px solid var(--c); border-radius: 999px; padding: 1px 10px;
-          font-size: 13px; font-weight: 650; }
-.tag { border: 1px solid var(--rule); border-radius: 999px; padding: 1px 10px; font-size: 13px; color: var(--ink-2); }
-.sub { font-size: 13px; color: var(--ink-2); overflow-wrap: anywhere; }
-code { font-family: var(--mono); font-size: 12.5px; }
-footer { margin-top: 28px; font-size: 13px; color: var(--ink-2); }
+.num { font-family: var(--mono); font-size: var(--fs-md); font-weight: 500; color: var(--ink-3); flex: none; }
+.meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font-size: var(--fs-md); color: var(--ink-2); }
+.meta b { font-weight: 600; color: var(--ink); }
+.sub { font-size: var(--fs-sm); color: var(--ink-3); overflow-wrap: anywhere; }
+.empty { padding: 20px; }
+footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var(--rule); padding-top: 16px; }
+@media (max-width: 639.98px) {
+  main { padding: 20px 16px 48px; }
+  .group-head, .item { padding-left: 16px; padding-right: 16px; }
+  .stat { flex: 1 1 100%; }
+  .main { min-height: 40px; }
+}
 </style>
 </head>
 <body>
 <main>
-  <h1>Cassandra PR Reviews</h1>
-  <p class="lede">Reports on <a href="https://github.com/apache/cassandra/pulls">apache/cassandra</a> pull requests:
-    merge requirements, review difficulty, and AI code review findings. Each report is advisory; committers decide.</p>
-  <ul>
-      <li class="row s-info">
-        <a class="main" href="pr/5238/">
-          <span class="num">#5238</span>
-          <span class="title">CEP-36 draft</span>
-        </a>
-        <div class="meta">
-          <span class="badge s-info">Draft</span>
-          <span class="tag">triage: hard</span>
-          <span class="tag">code review: not run</span>
-          <span class="tag">build: not built</span>
-        </div>
-        <div class="sub">smiklosovic → <code>trunk</code> · no ticket ·
-          <a href="https://github.com/apache/cassandra/pull/5238">GitHub PR</a> · generated 2026-10-08 19:30 UTC</div>
+  <header class="top">
+    <div class="eyebrow">Cassandra PR review</div>
+    <h1>Pull request reviews</h1>
+    <p class="lede">Reports on <a href="https://github.com/apache/cassandra/pulls">apache/cassandra</a> pull requests, grouped by who acts next.
+      Each report is advisory; committers decide.</p>
+    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">1</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">6</span> Waiting on the contributor</a><a class="stat" href="#g-draft"><span class="count">1</span> Drafts</a></nav>
+  </header>
+  <section class="card group" id="g-ready" aria-labelledby="h-ready">
+    <div class="group-head"><h2 id="h-ready">Ready for a committer</h2><span class="count">1</span><p class="hint">A committer can act now: merge it, or run CI or vote.</p></div>
+    <ul>
+      <li class="item" data-pr="5125">
+        <a class="main" href="pr/5125/"><span class="num">#5125</span><span class="title">CASSANDRA-21663 Failed force repair should clear force repair flag</span></a>
+        <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Committer</b></span><span class="effort">Review effort: Large · 1037 lines in 5 files</span></div>
+        <div class="sub">tommystendahl into <code>cassandra-5.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21663">CASSANDRA-21663</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5125">GitHub PR</a> · Updated 2026-10-08</div>
       </li>
-
-      <li class="row s-warn">
-        <a class="main" href="pr/5228/">
-          <span class="num">#5228</span>
-          <span class="title">CASSANDRA-21520 Isolate SAI index rebuilds from ZCS</span>
-        </a>
-        <div class="meta">
-          <span class="badge s-warn">Needs changes</span>
-          <span class="tag">triage: hard</span>
-          <span class="tag">code review: not run</span>
-          <span class="tag">build: not built</span>
-        </div>
-        <div class="sub">maedhroz → <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21520">CASSANDRA-21520</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5228">GitHub PR</a> · generated 2026-10-08 19:30 UTC</div>
+    </ul>
+  </section>
+  <section class="card group" id="g-contributor" aria-labelledby="h-contributor">
+    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">6</span><p class="hint">The contributor has fixes to make first.</p></div>
+    <ul>
+      <li class="item" data-pr="5228">
+        <a class="main" href="pr/5228/"><span class="num">#5228</span><span class="title">CASSANDRA-21520 Isolate SAI index rebuilds from ZCS</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 2086 lines in 19 files</span></div>
+        <div class="sub">maedhroz into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21520">CASSANDRA-21520</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5228">GitHub PR</a> · Updated 2026-10-08</div>
       </li>
-
-      <li class="row s-fail">
-        <a class="main" href="pr/5212/">
-          <span class="num">#5212</span>
-          <span class="title">Restore interrupted status in 9 InterruptedException catch blocks</span>
-        </a>
-        <div class="meta">
-          <span class="badge s-fail">Not ready to merge</span>
-          <span class="tag">triage: moderate</span>
-          <span class="tag">code review: not run</span>
-          <span class="tag">build: not built</span>
-        </div>
-        <div class="sub">TimurRakhmatullin86 → <code>trunk</code> · no ticket ·
-          <a href="https://github.com/apache/cassandra/pull/5212">GitHub PR</a> · generated 2026-10-08 19:30 UTC</div>
+      <li class="item" data-pr="5212">
+        <a class="main" href="pr/5212/"><span class="num">#5212</span><span class="title">Restore interrupted status in 9 InterruptedException catch blocks</span></a>
+        <div class="meta"><span class="chip s-fail">Not ready to merge</span><span class="count must">2 must fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 12 lines in 9 files</span></div>
+        <div class="sub">TimurRakhmatullin86 into <code>trunk</code> · no ticket ·
+          <a href="https://github.com/apache/cassandra/pull/5212">GitHub PR</a> · Updated 2026-10-08</div>
       </li>
-
-      <li class="row s-fail">
-        <a class="main" href="pr/5201/">
-          <span class="num">#5201</span>
-          <span class="title">CASSANDRA-21649: Ensure SSTable files are deleted in order of last-updated timestamp (4.0)</span>
-        </a>
-        <div class="meta">
-          <span class="badge s-fail">Not ready to merge</span>
-          <span class="tag">triage: moderate</span>
-          <span class="tag">code review: 0 blocker · 4 major · 0 minor · 1 nit issues</span>
-          <span class="tag">build: unknown</span>
-        </div>
-        <div class="sub">nivykani → <code>cassandra-4.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21649">CASSANDRA-21649</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5201">GitHub PR</a> · generated 2026-10-08 19:30 UTC</div>
+      <li class="item" data-pr="5201">
+        <a class="main" href="pr/5201/"><span class="num">#5201</span><span class="title">CASSANDRA-21649: Ensure SSTable files are deleted in order of last-updated timestamp (4.0)</span></a>
+        <div class="meta"><span class="chip s-fail">Not ready to merge</span><span class="count must">4 must fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 19 lines in 1 file</span><span class="chip s-fail">Code review: 4 major, 1 nit</span><span class="chip s-unknown">Build inconclusive</span></div>
+        <div class="sub">nivykani into <code>cassandra-4.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21649">CASSANDRA-21649</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5201">GitHub PR</a> · Updated 2026-10-08</div>
       </li>
-
-      <li class="row s-warn">
-        <a class="main" href="pr/5128/">
-          <span class="num">#5128</span>
-          <span class="title">CASSANDRA-21664: Make schema changes cost O(1) in the number of tables and fail loudly at schema limits</span>
-        </a>
-        <div class="meta">
-          <span class="badge s-warn">Needs changes</span>
-          <span class="tag">triage: hard</span>
-          <span class="tag">code review: not run</span>
-          <span class="tag">build: not built</span>
-        </div>
-        <div class="sub">pmcfadin → <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21664">CASSANDRA-21664</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5128">GitHub PR</a> · generated 2026-10-08 18:45 UTC</div>
+      <li class="item" data-pr="4967">
+        <a class="main" href="pr/4967/"><span class="num">#4967</span><span class="title">Executor QoS</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 37763 lines in 172 files</span><span class="chip s-pass">Built, tests passed</span></div>
+        <div class="sub">belliottsmith into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21662">CASSANDRA-21662</a> ·
+          <a href="https://github.com/apache/cassandra/pull/4967">GitHub PR</a> · Updated 2026-10-08</div>
       </li>
-
-      <li class="row s-info">
-        <a class="main" href="pr/5125/">
-          <span class="num">#5125</span>
-          <span class="title">CASSANDRA-21663 Failed force repair should clear force repair flag</span>
-        </a>
-        <div class="meta">
-          <span class="badge s-info">Waiting for review</span>
-          <span class="tag">triage: hard</span>
-          <span class="tag">code review: not run</span>
-          <span class="tag">build: not built</span>
-        </div>
-        <div class="sub">tommystendahl → <code>cassandra-5.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21663">CASSANDRA-21663</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5125">GitHub PR</a> · generated 2026-10-08 18:45 UTC</div>
+      <li class="item" data-pr="5128">
+        <a class="main" href="pr/5128/"><span class="num">#5128</span><span class="title">CASSANDRA-21664: Make schema changes cost O(1) in the number of tables and fail loudly at schema limits</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">3 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 2749 lines in 29 files</span></div>
+        <div class="sub">pmcfadin into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21664">CASSANDRA-21664</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5128">GitHub PR</a> · Updated 2026-10-08</div>
       </li>
-
-      <li class="row s-warn">
-        <a class="main" href="pr/4967/">
-          <span class="num">#4967</span>
-          <span class="title">Executor QoS</span>
-        </a>
-        <div class="meta">
-          <span class="badge s-warn">Needs changes</span>
-          <span class="tag">triage: hard</span>
-          <span class="tag">code review: not run</span>
-          <span class="tag">build: pass</span>
-        </div>
-        <div class="sub">belliottsmith → <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21662">CASSANDRA-21662</a> ·
-          <a href="https://github.com/apache/cassandra/pull/4967">GitHub PR</a> · generated 2026-10-08 19:30 UTC</div>
+      <li class="item" data-pr="4921">
+        <a class="main" href="pr/4921/"><span class="num">#4921</span><span class="title">CASSANDRA-21484 - Support IF, ELSE IF, and ELSE for transaction statements</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 1751 lines in 18 files</span></div>
+        <div class="sub">alanwang67 into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21484">CASSANDRA-21484</a> ·
+          <a href="https://github.com/apache/cassandra/pull/4921">GitHub PR</a> · Updated 2026-10-08</div>
       </li>
-
-      <li class="row s-warn">
-        <a class="main" href="pr/4921/">
-          <span class="num">#4921</span>
-          <span class="title">CASSANDRA-21484 - Support IF, ELSE IF, and ELSE for transaction statements</span>
-        </a>
-        <div class="meta">
-          <span class="badge s-warn">Needs changes</span>
-          <span class="tag">triage: hard</span>
-          <span class="tag">code review: not run</span>
-          <span class="tag">build: not built</span>
-        </div>
-        <div class="sub">alanwang67 → <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21484">CASSANDRA-21484</a> ·
-          <a href="https://github.com/apache/cassandra/pull/4921">GitHub PR</a> · generated 2026-10-08 18:44 UTC</div>
+    </ul>
+  </section>
+  <section class="card group" id="g-draft" aria-labelledby="h-draft">
+    <div class="group-head"><h2 id="h-draft">Drafts</h2><span class="count">1</span><p class="hint">Early feedback only. Not a merge decision.</p></div>
+    <ul>
+      <li class="item" data-pr="5238">
+        <a class="main" href="pr/5238/"><span class="num">#5238</span><span class="title">CEP-36 draft</span></a>
+        <div class="meta"><span class="chip s-na">Draft</span><span class="count must">2 must fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 482 lines in 14 files</span></div>
+        <div class="sub">smiklosovic into <code>trunk</code> · no ticket ·
+          <a href="https://github.com/apache/cassandra/pull/5238">GitHub PR</a> · Updated 2026-10-08</div>
       </li>
-  </ul>
+    </ul>
+  </section>
   <footer>Generated by <a href="https://github.com/pmcfadin/cassandra-pr-review">cassandra-pr-review</a> 0.1.0.</footer>
 </main>
 </body>

@@ -9,14 +9,22 @@
 <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Mono:wght@400;500&amp;family=Red+Hat+Text:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
 <style>
 /* ---------------------------------------------------------------------------
-   Tokens. Light theme only. Fonts load from Google Fonts when online; the system
-   fallbacks keep the report readable offline.
+   Design tokens and shared components. One source for the report and the site index: render.py
+   inlines this file into both. Colours come from the owner's design (docs/design/report-v2.dc.html).
+   No other hex value appears anywhere else in either page. Light theme only. Fonts load from Google
+   Fonts when online; the system fallbacks keep both pages readable offline.
    --------------------------------------------------------------------------- */
 :root {
-  --bg: #F3F5F8; --panel: #FFFFFF; --soft: #F8FAFC; --ink: #0F2236; --ink-2: #34445A; --ink-3: #56657A;
-  --rule: #D9DEE5; --rule-2: #E4E8EE; --link: #0B5CAD; --link-hover: #083F78; --hover: #F3F6FA;
-  --navy: #0F2236; --navy-active: #1F3A5C; --navy-ink: #D3DDEA; --navy-mute: #9DB0C7;
-  --chip-line: #C9D1DC;
+  /* Surfaces and ink */
+  --bg: #F3F5F8; --panel: #FFFFFF; --soft: #F8FAFC; --soft-2: #F4F6FA; --code-bg: #F0F3F7;
+  --ink: #0F2236; --ink-2: #34445A; --ink-3: #56657A;
+  --rule: #D9DEE5; --rule-2: #E4E8EE; --rule-3: #EEF1F5; --chip-line: #C9D1DC; --bar-off: #DDE1E7;
+  --link: #0B5CAD; --link-hover: #083F78; --hover: #F3F6FA; --flash: rgba(11, 92, 173, .35);
+
+  /* Navigation (dark column) */
+  --navy: #0F2236; --navy-active: #1F3A5C; --navy-hover: #172C45; --navy-line: #3A5373;
+  --navy-ink: #D3DDEA; --navy-mute: #9DB0C7; --navy-dot: #7E94AF; --on-navy: #FFFFFF;
+  --nav-fail: #FF8A5C; --nav-should: #F2C14E; --nav-note: #8FB8EA; --nav-unknown: #C9BDF2; --nav-pass: #4FD1C0; --nav-na: #8A9BB0;
 
   /* Status chips: text on tint is at least 4.5:1. icon is the stroke colour on light backgrounds. */
   --fail-fg: #8A2606; --fail-bg: #FDEDE6; --fail-icon: #C0360C;
@@ -26,29 +34,62 @@
   --unknown-fg: #4B3A8C; --unknown-bg: #ECE8F6; --unknown-icon: #5B49A8;
   --na-fg: #56657A; --na-bg: #EEF1F5; --na-icon: #6B7684;
 
+  /* Type scale */
   --sans: 'Red Hat Text', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: 'Red Hat Mono', ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --fs-xs: 12px; --fs-sm: 13px; --fs-md: 14px; --fs-base: 16px; --fs-lg: 17px; --fs-h2: 22px; --fs-h1: 24px; --fs-verdict: 26px;
+
+  /* Spacing and radii (chips 3px, cards 6px, buttons 8px) */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px; --sp-6: 24px;
+  --r-chip: 3px; --r-card: 6px; --r-btn: 8px;
 }
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 var(--sans); }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--fs-base)/1.55 var(--sans); }
 a { color: var(--link); text-underline-offset: 2px; }
 a:hover { color: var(--link-hover); }
 button { font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; cursor: pointer; text-align: left; }
-button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; border-radius: 6px; }
-code, .mono { font-family: var(--mono); font-size: 0.9em; }
-code { background: #F0F3F7; border: 1px solid var(--rule-2); border-radius: 4px; padding: 0 4px; overflow-wrap: anywhere; }
-pre { font-family: var(--mono); font-size: 13px; line-height: 1.5; background: var(--soft); border: 1px solid var(--rule-2);
-  border-radius: 6px; padding: 12px 14px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; margin: 8px 0; max-width: 100%; }
-pre code { background: none; border: 0; padding: 0; }
+button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; border-radius: var(--r-card); }
+code, .mono { font-family: var(--mono); font-size: 0.9em; overflow-wrap: anywhere; }
+code { background: var(--code-bg); border: 1px solid var(--rule-2); border-radius: 4px; padding: 0 4px; overflow-wrap: anywhere; }
 h1, h2, h3, h4 { margin: 0; line-height: 1.3; }
 p { margin: 6px 0; }
-ul, ol { margin: 6px 0; padding-left: 22px; }
-li { margin: 2px 0; }
 .muted { color: var(--ink-3); }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
 svg { flex: none; }
 [hidden] { display: none !important; }
+
+/* Cards, status chips, counts, tags, buttons: the pieces both pages share */
+.card { background: var(--panel); border: 1px solid var(--rule); border-radius: var(--r-card); overflow: hidden; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-sm); font-weight: 600; padding: 3px 10px; border-radius: var(--r-chip); white-space: nowrap; color: var(--c-fg); background: var(--c-bg); }
+.chip.wide { width: 104px; flex: none; }
+.s-fail { --c-fg: var(--fail-fg); --c-bg: var(--fail-bg); --c-icon: var(--fail-icon); }
+.s-should { --c-fg: var(--should-fg); --c-bg: var(--should-bg); --c-icon: var(--should-icon); }
+.s-note { --c-fg: var(--note-fg); --c-bg: var(--note-bg); --c-icon: var(--note-icon); }
+.s-pass { --c-fg: var(--pass-fg); --c-bg: var(--pass-bg); --c-icon: var(--pass-icon); }
+.s-unknown { --c-fg: var(--unknown-fg); --c-bg: var(--unknown-bg); --c-icon: var(--unknown-icon); }
+.s-na { --c-fg: var(--na-fg); --c-bg: var(--na-bg); --c-icon: var(--na-icon); }
+.tag { display: inline-block; font-size: var(--fs-xs); color: var(--ink-3); border: 1px solid var(--rule); border-radius: var(--r-chip); padding: 1px 8px; white-space: nowrap; height: fit-content; }
+.tag.strong { color: var(--ink); border-color: var(--ink-3); }
+.count { min-width: 22px; text-align: center; font-size: var(--fs-sm); font-weight: 600; padding: 1px 6px; border-radius: var(--r-chip); color: var(--na-fg); background: var(--na-bg); }
+.count.must { color: var(--fail-fg); background: var(--fail-bg); }
+.outline-btn { display: inline-flex; align-items: center; gap: 8px; font-size: var(--fs-md); font-weight: 500; color: var(--link); padding: 10px 14px; min-height: 44px; border: 1px solid var(--chip-line); border-radius: var(--r-btn); background: var(--panel); text-decoration: none; }
+.outline-btn:hover { background: var(--hover); color: var(--link); }
+.linkbtn { font-size: var(--fs-md); font-weight: 500; color: var(--link); min-height: 44px; display: inline-flex; align-items: center; gap: 6px; }
+.linkbtn:hover { color: var(--link-hover); text-decoration: underline; }
+.notice { border: 1px solid var(--rule); border-left-width: 4px; border-radius: var(--r-card); padding: 10px 14px; background: var(--panel); margin: 6px 0; font-size: 15px; overflow-wrap: anywhere; }
+.notice.s-fail { border-left-color: var(--fail-icon); } .notice.s-should { border-left-color: var(--should-icon); }
+.notice.s-unknown { border-left-color: var(--unknown-icon); } .notice.s-note { border-left-color: var(--note-icon); }
+.notice.s-pass { border-left-color: var(--pass-icon); } .notice.s-na { border-left-color: var(--na-icon); }
+.notice .why { display: block; color: var(--ink-3); font-size: var(--fs-md); margin-top: 2px; }
+.empty { color: var(--ink-3); font-style: italic; }
+</style>
+<style>
+pre { font-family: var(--mono); font-size: var(--fs-sm); line-height: 1.5; background: var(--soft); border: 1px solid var(--rule-2);
+  border-radius: var(--r-card); padding: 12px 14px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; margin: 8px 0; max-width: 100%; }
+pre code { background: none; border: 0; padding: 0; }
+ul, ol { margin: 6px 0; padding-left: 22px; }
+li { margin: 2px 0; }
 .chev { transition: transform .15s; }
 [aria-expanded="true"] > .chev, [aria-expanded="true"] .chev { transform: rotate(180deg); }
 .row:hover { background: var(--hover); }
@@ -62,21 +103,23 @@ svg { flex: none; }
 #nav { position: sticky; top: 0; max-height: 100vh; overflow-y: auto; padding: 24px 14px 24px; display: flex; flex-direction: column; gap: 22px; }
 .nav-head { padding: 0 8px; display: flex; flex-direction: column; gap: 8px; }
 .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--navy-mute); }
-.nav-pr { font-size: 22px; font-weight: 700; color: #fff; text-decoration: none; letter-spacing: -0.01em; }
-.nav-pr:hover { color: #fff; text-decoration: underline; }
+.nav-pr { font-size: 22px; font-weight: 700; color: var(--on-navy); text-decoration: none; letter-spacing: -0.01em; }
+.nav-pr:hover { color: var(--on-navy); text-decoration: underline; }
 .pill { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; padding: 3px 10px; border-radius: 3px; }
-#nav-toggle { display: none; color: var(--navy-ink); border: 1px solid #3A5373; border-radius: 6px; min-height: 44px; padding: 0 14px; align-items: center; gap: 8px; font-size: 15px; }
+#nav-toggle { display: none; color: var(--navy-ink); border: 1px solid var(--navy-line); border-radius: 6px; min-height: 44px; padding: 0 14px; align-items: center; gap: 8px; font-size: 15px; }
 #nav-body { display: flex; flex-direction: column; gap: 22px; }
 .nav-group { display: flex; flex-direction: column; gap: 2px; }
 .nav-group .eyebrow { padding: 0 8px 6px; }
 .nav-link { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border-radius: 3px; text-decoration: none; font-size: 15px; color: var(--navy-ink); }
-.nav-link:hover { background: #172C45; color: #fff; }
-.nav-link[aria-current="location"] { background: var(--navy-active); color: #fff; font-weight: 600; }
-.nav-link:focus-visible { outline-color: #fff; }
+.nav-link:hover { background: var(--navy-hover); color: var(--on-navy); }
+.nav-link[aria-current="location"] { background: var(--navy-active); color: var(--on-navy); font-weight: 600; }
+.nav-link:focus-visible { outline-color: var(--on-navy); }
 .nav-link .lbl { flex: 1; min-width: 0; }
 .nav-link .cnt { font-size: 12px; color: var(--navy-mute); }
+.nav-ic.nav-fail { color: var(--nav-fail); } .nav-ic.nav-should { color: var(--nav-should); } .nav-ic.nav-note { color: var(--nav-note); }
+.nav-ic.nav-unknown { color: var(--nav-unknown); } .nav-ic.nav-pass { color: var(--nav-pass); } .nav-ic.nav-na { color: var(--nav-na); }
 .nav-dot { flex: none; width: 14px; display: flex; justify-content: center; }
-.nav-dot i { width: 6px; height: 6px; border-radius: 50%; background: #7E94AF; display: block; }
+.nav-dot i { width: 6px; height: 6px; border-radius: 50%; background: var(--navy-dot); display: block; }
 .nav-foot { margin-top: auto; padding: 0 8px; font-size: 12px; color: var(--navy-mute); display: flex; flex-direction: column; gap: 2px; }
 
 .col { min-width: 0; }
@@ -91,29 +134,11 @@ h1.title { font-size: 24px; font-weight: 600; max-width: 52ch; overflow-wrap: an
 .ticket-line { margin: 0; font-size: 14px; color: var(--ink-3); }
 main { max-width: 1040px; margin: 0 auto; padding: 24px 24px 64px; display: flex; flex-direction: column; gap: 36px; }
 section[id], div[id^="sec-"], div[id^="bg-"], div[id^="check-"], li[id^="check-"] { scroll-margin-top: 12px; }
-.card { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
 .sec-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px; }
 .sec-head > div { display: flex; flex-direction: column; gap: 4px; }
 h2.sec { font-size: 22px; font-weight: 600; }
 .sub { margin: 0; color: var(--ink-3); }
 .stack { display: flex; flex-direction: column; gap: 16px; }
-.outline-btn { font-size: 14px; font-weight: 500; color: var(--link); padding: 10px 14px; min-height: 44px; border: 1px solid var(--chip-line); border-radius: 8px; background: #fff; }
-.outline-btn:hover { background: var(--hover); }
-.linkbtn { font-size: 14px; font-weight: 500; color: var(--link); min-height: 44px; display: inline-flex; align-items: center; gap: 6px; }
-.linkbtn:hover { color: var(--link-hover); text-decoration: underline; }
-
-/* Status chips */
-.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; padding: 3px 10px; border-radius: 3px; white-space: nowrap; color: var(--c-fg); background: var(--c-bg); }
-.chip.wide { width: 104px; flex: none; }
-.s-fail { --c-fg: var(--fail-fg); --c-bg: var(--fail-bg); --c-icon: var(--fail-icon); }
-.s-should { --c-fg: var(--should-fg); --c-bg: var(--should-bg); --c-icon: var(--should-icon); }
-.s-note { --c-fg: var(--note-fg); --c-bg: var(--note-bg); --c-icon: var(--note-icon); }
-.s-pass { --c-fg: var(--pass-fg); --c-bg: var(--pass-bg); --c-icon: var(--pass-icon); }
-.s-unknown { --c-fg: var(--unknown-fg); --c-bg: var(--unknown-bg); --c-icon: var(--unknown-icon); }
-.s-na { --c-fg: var(--na-fg); --c-bg: var(--na-bg); --c-icon: var(--na-icon); }
-.tag { display: inline-block; font-size: 12px; color: var(--ink-3); border: 1px solid var(--rule); border-radius: 3px; padding: 1px 8px; white-space: nowrap; height: fit-content; }
-.tag.strong { color: var(--ink); border-color: var(--ink-3); }
-
 /* ---------------------------------------------------------------------------
    Verdict and To do
    --------------------------------------------------------------------------- */
@@ -131,8 +156,6 @@ h2.sec { font-size: 22px; font-weight: 600; }
 .todo-head { width: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; padding: 12px 24px; min-height: 48px; background: var(--soft); }
 .todo-head .t { font-weight: 600; }
 .todo-head .r { display: inline-flex; align-items: center; gap: 6px; font-size: 15px; color: var(--ink-2); }
-.count { min-width: 22px; text-align: center; font-size: 13px; font-weight: 600; padding: 1px 6px; border-radius: 3px; color: var(--na-fg); background: var(--na-bg); }
-.count.must { color: var(--fail-fg); background: var(--fail-bg); }
 .todo-head .toggle { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 500; color: var(--link); }
 .role { display: flex; flex-wrap: wrap; border-top: 1px solid var(--rule-2); }
 .role-name { flex: 0 0 170px; padding: 14px 20px; font-weight: 600; font-size: 15px; display: flex; flex-direction: column; }
@@ -166,49 +189,59 @@ h2.sec { font-size: 22px; font-weight: 600; }
 .group-head .r .n { font-size: 13px; color: var(--ink-3); white-space: nowrap; }
 .group-body { background: var(--soft); padding: 4px 20px 18px; }
 .checklist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.checklist > li { display: flex; gap: 12px; padding: 12px 14px; border: 1px solid var(--rule-2); border-radius: 4px; background: #fff; margin: 0; }
+.checklist > li { display: flex; gap: 12px; padding: 12px 14px; border: 1px solid var(--rule-2); border-radius: 4px; background: var(--panel); margin: 0; }
 .ck-icon { flex: none; margin-top: 2px; width: 20px; display: flex; justify-content: center; }
 .ck-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .ck-title { font-weight: 500; overflow-wrap: anywhere; }
 .ck-sum { font-size: 14px; color: var(--ink-3); overflow-wrap: anywhere; }
 .ck-ev { margin: 2px 0 0; padding-left: 18px; font-size: 13.5px; color: var(--ink-2); overflow-wrap: anywhere; }
-.howfix { margin-top: 6px; font-size: 14px; background: #F4F6FA; border-radius: 8px; padding: 8px 12px; overflow-wrap: anywhere; }
+.ck-ev.capped:not(.all) > li.more { display: none; }
+.ev-more { align-self: flex-start; min-height: 40px; }
+.howfix { margin-top: 6px; font-size: 14px; background: var(--soft-2); border-radius: 8px; padding: 8px 12px; overflow-wrap: anywhere; }
 .ck-tags { flex: none; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
-.ck-flash { box-shadow: 0 0 0 3px rgba(11, 92, 173, .35); }
+.ck-flash { box-shadow: 0 0 0 3px var(--flash); }
 .gx { margin-top: 16px; display: flex; flex-direction: column; gap: 14px; }
 .gx .blk > h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; display: flex; gap: 8px; align-items: baseline; }
 .gx .blk > h3 .count { font-size: 12px; }
+.gx .blk h4 { font-size: var(--fs-md); font-weight: 600; margin: 14px 0 6px; }
 .gx .blk > h4 { font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-3); margin: 8px 0 4px; }
-.panel { background: #fff; border: 1px solid var(--rule-2); border-radius: 6px; padding: 12px 16px; }
-.empty { color: var(--ink-3); font-style: italic; }
-.notice { border: 1px solid var(--rule); border-left-width: 4px; border-radius: 6px; padding: 10px 14px; background: #fff; margin: 6px 0; font-size: 15px; overflow-wrap: anywhere; }
-.notice.s-fail { border-left-color: var(--fail-icon); } .notice.s-should { border-left-color: var(--should-icon); }
-.notice.s-unknown { border-left-color: var(--unknown-icon); } .notice.s-note { border-left-color: var(--note-icon); }
-.notice.s-pass { border-left-color: var(--pass-icon); } .notice.s-na { border-left-color: var(--na-icon); }
-
-/* Tables, field lists, details */
-.table-wrap { overflow-x: auto; border: 1px solid var(--rule-2); border-radius: 6px; background: #fff; max-width: 100%; }
-table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
-th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--rule-2); vertical-align: top; }
-th { font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); background: var(--soft); white-space: nowrap; }
-tbody tr:last-child td { border-bottom: 0; }
-td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.panel { background: var(--panel); border: 1px solid var(--rule-2); border-radius: 6px; padding: 12px 16px; }
+/* Tables (.dtable), field lists, details */
+.dtable { overflow-x: auto; border: 1px solid var(--rule); border-radius: var(--r-card); background: var(--panel); max-width: 100%; }
+.dtable table { border-collapse: collapse; width: 100%; font-size: var(--fs-md); }
+.dtable th, .dtable td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--rule-2); vertical-align: top; overflow-wrap: break-word; }
+.dtable th { font-size: var(--fs-xs); font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-3); background: var(--soft); white-space: nowrap; }
+.dtable tbody tr:last-child td { border-bottom: 0; }
+.dtable td.num, .dtable th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.dtable .mono { font-size: var(--fs-sm); overflow-wrap: break-word; }
+.dtable tr.self td { background: var(--note-bg); }
+.dtable.capped:not(.all) tr.more { display: none; }
+.dtable .dt-more { display: flex; width: 100%; justify-content: center; border-top: 1px solid var(--rule-2); background: var(--soft); min-height: 44px; }
+.dtable .ck-title { font-weight: 500; }
+.dtable .paths { display: flex; flex-direction: column; gap: 2px; }
 .nowrap { white-space: nowrap; }
-tr.self td { background: var(--note-bg); }
 dl.fields { display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; margin: 0; }
-dl.fields dt { color: var(--ink-3); font-size: 14px; }
+dl.fields dt { color: var(--ink-3); font-size: var(--fs-md); }
 dl.fields dd { margin: 0; overflow-wrap: anywhere; }
-details { border: 1px solid var(--rule-2); border-radius: 6px; background: #fff; margin: 8px 0; }
-details > summary { cursor: pointer; padding: 10px 14px; min-height: 44px; display: flex; align-items: center; font-weight: 500; font-size: 14px; color: var(--link); }
+details { border: 1px solid var(--rule-2); border-radius: var(--r-card); background: var(--panel); margin: 8px 0; }
+details > summary { cursor: pointer; padding: 10px 14px; min-height: 44px; display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: var(--fs-md); color: var(--link); list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: ""; flex: none; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); transition: transform .15s; }
+details[open] > summary::before { transform: rotate(45deg); }
 details > summary:hover { background: var(--hover); }
 details[open] > summary { border-bottom: 1px solid var(--rule-2); }
 details > .d-body { padding: 10px 14px; overflow-wrap: anywhere; }
 details.inline { border: 0; background: none; margin: 0; }
-details.inline > summary { padding: 0; min-height: 0; display: list-item; }
+details.inline > summary { padding: 0; min-height: 0; }
 details.inline[open] > summary { border: 0; }
 details.inline > .d-body { padding: 6px 0 0; }
-details.howto > summary { color: var(--ink-2); }
+/* "How this is judged": the same quiet collapsible card in every group */
+details.howto { background: var(--soft); }
+details.howto > summary { color: var(--ink-2); font-weight: 600; }
 details.howto > summary::after { content: " \2014  scoring rules and sources"; font-weight: 400; color: var(--ink-3); white-space: pre; }
+details.howto > .d-body { background: var(--panel); border-radius: 0 0 var(--r-card) var(--r-card); }
+.empty .why { display: block; font-style: normal; font-size: var(--fs-md); }
+.self-start { align-self: flex-start; }
 .comment { border-top: 1px solid var(--rule-2); padding: 10px 0; }
 .comment:first-child { border-top: 0; padding-top: 0; }
 .comment .who { font-size: 13px; color: var(--ink-2); margin-bottom: 4px; }
@@ -221,13 +254,13 @@ details.howto > summary::after { content: " \2014  scoring rules and sources"; f
    Code review findings
    --------------------------------------------------------------------------- */
 .chips { display: flex; flex-wrap: wrap; gap: 8px; font-size: 14px; align-items: center; }
-.sevchip { padding: 4px 12px; border-radius: 3px; font-weight: 600; background: #EEF1F5; color: var(--ink-2); }
-.sevchip.blocker { background: #C0360C; color: #fff; }
+.sevchip { padding: 4px 12px; border-radius: 3px; font-weight: 600; background: var(--rule-3); color: var(--ink-2); }
+.sevchip.blocker { background: var(--fail-icon); color: var(--on-navy); }
 .sevchip.major { background: var(--fail-bg); color: var(--fail-fg); }
-.finding { background: #fff; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
+.finding { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
 .finding-head { width: 100%; display: flex; gap: 14px; align-items: flex-start; padding: 16px 20px; min-height: 56px; }
-.sev { flex: none; width: 70px; text-align: center; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 3px 0; border-radius: 6px; background: #EEF1F5; color: var(--ink-2); }
-.sev.blocker { background: #C0360C; color: #fff; } .sev.major { background: var(--fail-bg); color: var(--fail-fg); }
+.sev { flex: none; width: 70px; text-align: center; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 3px 0; border-radius: 6px; background: var(--rule-3); color: var(--ink-2); }
+.sev.blocker { background: var(--fail-icon); color: var(--on-navy); } .sev.major { background: var(--fail-bg); color: var(--fail-fg); }
 .finding-head .m { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .finding-head .hl { font-weight: 600; overflow-wrap: anywhere; }
 .finding-head .loc { font-family: var(--mono); font-size: 13px; color: var(--ink-3); overflow-wrap: anywhere; }
@@ -235,7 +268,7 @@ details.howto > summary::after { content: " \2014  scoring rules and sources"; f
 .finding-body .lab { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-3); }
 .finding-body p { margin: 6px 0 0; font-size: 15px; color: var(--ink-2); overflow-wrap: anywhere; }
 .finding-body .full { grid-column: 1 / -1; font-size: 13px; color: var(--ink-3); overflow-wrap: anywhere; }
-.lens-card { background: #fff; border: 1px solid var(--rule-2); border-radius: 6px; padding: 12px 16px; margin: 8px 0; }
+.lens-card { background: var(--panel); border: 1px solid var(--rule-2); border-radius: 6px; padding: 12px 16px; margin: 8px 0; }
 .lens-card { overflow-wrap: anywhere; min-width: 0; }
 .lens-card h4 { font-size: 16px; font-weight: 600; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .lens-card .fd { border-top: 1px solid var(--rule-2); padding: 10px 0 0; margin-top: 10px; }
@@ -245,40 +278,46 @@ details.howto > summary::after { content: " \2014  scoring rules and sources"; f
    Background cards
    --------------------------------------------------------------------------- */
 .bg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; align-items: start; }
-.bg-card { background: #fff; border: 1px solid var(--rule); border-radius: 6px; padding: 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.bg-card { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .bg-card.full { grid-column: 1 / -1; }
 .bg-card h3 { font-size: 17px; font-weight: 600; }
 .bg-card .hd { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .rating { font-size: 14px; font-weight: 600; color: var(--note-fg); background: var(--note-bg); padding: 2px 10px; border-radius: 3px; text-transform: capitalize; }
 .bar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-.bar i { height: 6px; border-radius: 3px; background: #DDE1E7; display: block; }
+.bar i { height: 6px; border-radius: 3px; background: var(--bar-off); display: block; }
 .bar i.on { background: var(--link); }
 .bg-card p { margin: 0; font-size: 14px; color: var(--ink-2); }
 .sig { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
-.sig li { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 6px; border-bottom: 1px solid #EEF1F5; margin: 0; }
+.sig li { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--rule-3); margin: 0; }
 .sig li .v { text-align: right; overflow-wrap: anywhere; }
 .sig li .why { display: block; font-size: 13px; color: var(--ink-3); }
 .people { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
 .people li { display: flex; gap: 12px; align-items: center; margin: 0; }
-.avatar { flex: none; width: 36px; height: 36px; border-radius: 50%; background: #EEF1F5; color: var(--ink-2); font-weight: 600; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+.avatar { flex: none; width: 36px; height: 36px; border-radius: 50%; background: var(--rule-3); color: var(--ink-2); font-weight: 600; font-size: 14px; display: flex; align-items: center; justify-content: center; }
 .avatar.involved { background: var(--note-bg); color: var(--note-fg); }
 .people .who { display: flex; flex-direction: column; min-width: 0; }
 .people .who .nm { font-weight: 500; overflow-wrap: anywhere; }
 .people .who small { font-size: 13px; color: var(--ink-3); }
 .hist { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
-.hist + .hist { border-top: 1px solid #EEF1F5; padding-top: 12px; }
+.hist + .hist { border-top: 1px solid var(--rule-3); padding-top: 12px; }
 .hist .a { font-weight: 500; } .hist .b { color: var(--ink-2); overflow-wrap: anywhere; } .hist .c { color: var(--ink-3); font-size: 13px; }
 .filelist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .filelist li { display: flex; gap: 10px; align-items: baseline; font-size: 14px; margin: 0; }
 .filelist .p { font-family: var(--mono); font-size: 13px; overflow-wrap: anywhere; flex: 1; min-width: 0; }
 .filelist .st { font-size: 12px; color: var(--ink-3); }
 .filelist .d { white-space: nowrap; }
-.diff-wrap { display: flex; flex-direction: column; gap: 8px; }
-.diff-frame { display: block; width: 100%; height: 80vh; min-height: 480px; border: 1px solid var(--rule); border-radius: 6px; background: #fff; }
+.diff-wrap { display: flex; flex-direction: column; border: 1px solid var(--rule); border-radius: var(--r-card); overflow: hidden; background: var(--panel); }
+.diff-bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px 12px; padding: 10px 14px; background: var(--soft); border-bottom: 1px solid var(--rule-2); font-size: var(--fs-md); }
+.diff-bar b { font-weight: 600; }
+.diff-bar span { color: var(--ink-3); font-size: var(--fs-sm); }
+.diff-frame { display: block; width: 100%; height: 80vh; min-height: 480px; border: 0; background: var(--panel); }
+.diff-wrap > .notice, .diff-wrap > p { margin: 10px 14px; }
 .actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .bg-card.collapsible-card { padding: 0; gap: 0; }
 .collapsible-card > .cc-head { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 20px; min-height: 56px; }
 .cc-head .tt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cc-head .r { display: inline-flex; align-items: center; gap: 10px; }
+.card > .cc-head { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 20px; min-height: 56px; }
 .cc-head .tt b { font-weight: 600; font-size: 17px; }
 .cc-head .tt span { font-size: 14px; color: var(--ink-3); overflow-wrap: anywhere; }
 .cc-body { padding: 0 20px 20px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
@@ -288,11 +327,11 @@ dl.gloss dt { font-weight: 600; } dl.gloss dd { margin: 0; font-size: 15px; colo
 footer.ft { font-size: 13px; color: var(--ink-3); display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--rule); padding-top: 16px; }
 footer.ft .line { display: flex; flex-wrap: wrap; gap: 6px 20px; }
 footer.ft .mono { color: var(--ink); }
-footer.ft .about { background: #fff; }
+footer.ft .about { background: var(--panel); }
 footer.ft .about ul { margin: 4px 0; }
 .print-only { display: none; }
 
-#no-data { display: none; margin: 40px auto; max-width: 640px; padding: 20px 24px; border: 2px solid var(--fail-icon); border-radius: 6px; background: #fff; }
+#no-data { display: none; margin: 40px auto; max-width: 640px; padding: 20px 24px; border: 2px solid var(--fail-icon); border-radius: 6px; background: var(--panel); }
 #no-data h1 { font-size: 20px; color: var(--fail-fg); margin-bottom: 8px; }
 body.no-data .app { display: none; }
 body.no-data #no-data { display: block; }
@@ -324,6 +363,22 @@ body.no-data #no-data { display: block; }
   .finding-head { padding: 14px 16px; gap: 10px; }
   .sev { width: 62px; }
   .finding-body { padding: 0 16px 16px 16px; }
+  /* Tables stack: each row is a small card of label/value pairs, so nothing scrolls sideways. */
+  .dtable { overflow: visible; border: 0; background: none; }
+  .dtable table, .dtable tbody, .dtable tr, .dtable td { display: block; width: 100%; }
+  .dtable thead { display: none; }
+  .dtable tr { background: var(--panel); border: 1px solid var(--rule); border-radius: var(--r-card); margin-bottom: 8px; padding: 4px 12px; }
+  .dtable.capped:not(.all) tr.more { display: none; }
+  .dtable td { display: block; border: 0; padding: 6px 0; overflow-wrap: anywhere; }
+  .dtable td::before { content: attr(data-label); display: block; font-size: var(--fs-xs); font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 1px; }
+  .dtable td.num { text-align: left; white-space: normal; }
+  .dtable td.blank { display: none; }
+  .dtable tr.self { border-color: var(--note-icon); background: var(--note-bg); }
+  .dtable tr.self td { background: none; }
+  .dtable .dt-more { border: 1px solid var(--rule); border-radius: var(--r-card); min-height: 44px; }
+  .outline-btn, .linkbtn, details > summary { min-height: 44px; }
+  .diff-frame { height: 70vh; min-height: 360px; }
+  .actions .outline-btn { flex: 1 1 auto; justify-content: center; }
   dl.fields { grid-template-columns: 1fr; gap: 0; }
   dl.fields dd { margin-bottom: 8px; }
   .bg-card { padding: 16px; }
@@ -337,7 +392,7 @@ body.no-data #no-data { display: block; }
    Print: everything expanded, no navigation, diff view replaced by the file list
    --------------------------------------------------------------------------- */
 @media print {
-  body { background: #fff; font-size: 11.5pt; }
+  body { background: var(--panel); font-size: 11.5pt; }
   .navcol, .no-print, .diff-wrap, .chev { display: none !important; }
   .app { display: block; }
   main, .wrap { max-width: none; padding-left: 0; padding-right: 0; }
@@ -345,7 +400,11 @@ body.no-data #no-data { display: block; }
   .todo .opt { display: flex !important; }
   .todo .role.only-opt { display: flex !important; }
   details::details-content { content-visibility: visible; display: block; }
-  .card, .finding, .bg-card, .checklist > li { break-inside: avoid; }
+  .card, .finding, .bg-card, .checklist > li, .dtable tr { break-inside: avoid; }
+  .dtable.capped tr.more { display: table-row !important; }
+  .ck-ev.capped > li.more { display: list-item !important; }
+  .ev-more { display: none !important; }
+  .dt-more { display: none !important; }
   .print-only { display: block; }
   a { color: inherit; }
 }
@@ -465,9 +524,9 @@ body.no-data #no-data { display: block; }
         var head = splitTableRow(line), rows = [];
         i += 2;
         while (i < lines.length && lines[i].indexOf("|") !== -1 && !/^\s*$/.test(lines[i])) { rows.push(splitTableRow(lines[i])); i++; }
-        html += '<div class="table-wrap"><table><thead><tr>' +
-          head.map(function (c) { return "<th>" + inlineMD(c) + "</th>"; }).join("") + "</tr></thead><tbody>" +
-          rows.map(function (r) { return "<tr>" + r.map(function (c) { return "<td>" + inlineMD(c) + "</td>"; }).join("") + "</tr>"; }).join("") +
+        html += '<div class="dtable"><table><thead><tr>' +
+          head.map(function (c) { return '<th scope="col">' + inlineMD(c) + "</th>"; }).join("") + "</tr></thead><tbody>" +
+          rows.map(function (r) { return "<tr>" + r.map(function (c, ci) { return '<td data-label="' + escapeHtml(head[ci] || "") + '">' + inlineMD(c) + "</td>"; }).join("") + "</tr>"; }).join("") +
           "</tbody></table></div>";
         continue;
       }
@@ -535,6 +594,10 @@ body.no-data #no-data { display: block; }
   function block(title, children, count) {
     return h("div", "block", [h("h3", null, [title, count !== undefined ? h("span", "count", String(count)) : null])].concat(children));
   }
+  // The one table component (.dtable): design card, uppercase header row, 14px rows, status cells use chips.
+  // Below 640px every row becomes a small card of label/value pairs (the label comes from data-label).
+  // More than TABLE_CAP rows: the first TABLE_CAP show, a "Show all N" button reveals the rest.
+  var TABLE_CAP = 20;
   function table(headers, rows, opts) {
     var t = h("table");
     var tr = h("tr");
@@ -545,17 +608,34 @@ body.no-data #no-data { display: block; }
     });
     append(t, h("thead", null, tr));
     var tb = h("tbody");
-    rows.forEach(function (r) {
-      var row = h("tr", r.cls || null);
-      r.cells.forEach(function (c) {
-        var td = h("td", c && c.num ? "num" : null);
-        append(td, c && c.node !== undefined ? c.node : c);
+    rows.forEach(function (r, n) {
+      var row = h("tr", [r.cls, n >= TABLE_CAP ? "more" : null].filter(Boolean).join(" ") || null);
+      r.cells.forEach(function (c, ci) {
+        var node = c && c.node !== undefined ? c.node : c;
+        var blank = node === "" || node === null || node === undefined;
+        var td = h("td", [c && c.num ? "num" : null, blank ? "blank" : null].filter(Boolean).join(" ") || null);
+        td.setAttribute("data-label", headers[ci] || "");
+        append(td, node);
         row.appendChild(td);
       });
       tb.appendChild(row);
     });
     t.appendChild(tb);
-    return h("div", "table-wrap" + ((opts && opts.cls) ? " " + opts.cls : ""), t);
+    var capped = rows.length > TABLE_CAP;
+    var box = h("div", "dtable" + (capped ? " capped" : "") + ((opts && opts.cls) ? " " + opts.cls : ""), t);
+    if (capped) {
+      var more = h("button", "linkbtn dt-more no-print", "Show all " + rows.length);
+      more.type = "button";
+      more.setAttribute("aria-expanded", "false");
+      more.addEventListener("click", function () {
+        var on = !box.classList.contains("all");
+        box.classList.toggle("all", on);
+        more.setAttribute("aria-expanded", on ? "true" : "false");
+        more.textContent = on ? "Show the first " + TABLE_CAP : "Show all " + rows.length;
+      });
+      box.appendChild(more);
+    }
+    return box;
   }
   function fields(pairs) {
     var dl = h("dl", "fields");
@@ -572,7 +652,7 @@ body.no-data #no-data { display: block; }
     items.forEach(function (it) { ul.appendChild(h("li", null, render(it))); });
     return ul;
   }
-  function empty(text) { return h("p", "empty", text); }
+  function empty(text, fill) { return h("p", "empty", fill ? [text, h("span", "why", fill)] : text); }
 
   // -------------------------------------------------------------------------
   // Status words, kinds and icons (design D2). Colour is never the only signal:
@@ -730,6 +810,7 @@ body.no-data #no-data { display: block; }
   // Check lists
   // -------------------------------------------------------------------------
   var CHECK_ORDER = { "fail": 0, "warn": 1, "unknown": 2, "pass": 3, "not-applicable": 4 };
+  var EV_CAP = 8;
   function checkItem(c) {
     var kind = kindOfWord(checkWord(c));
     var li = h("li");
@@ -756,6 +837,20 @@ body.no-data #no-data { display: block; }
         ul.appendChild(item);
       });
       append(main, ul);
+      if (ev.length > EV_CAP) {
+        ul.classList.add("capped");
+        Array.prototype.forEach.call(ul.children, function (li, n) { if (n >= EV_CAP) li.classList.add("more"); });
+        var evMore = h("button", "linkbtn ev-more no-print", "Show all " + ev.length);
+        evMore.type = "button";
+        evMore.setAttribute("aria-expanded", "false");
+        evMore.addEventListener("click", function () {
+          var on = !ul.classList.contains("all");
+          ul.classList.toggle("all", on);
+          evMore.setAttribute("aria-expanded", on ? "true" : "false");
+          evMore.textContent = on ? "Show the first " + EV_CAP : "Show all " + ev.length;
+        });
+        append(main, evMore);
+      }
     }
     if (c.action) append(main, h("span", "howfix", [h("strong", null, "How to fix: "), mdInline("span", c.action)]));
     append(li, [icon, main, h("span", "ck-tags", [c.blocking ? h("span", "tag strong", "Blocking") : null, h("span", "tag", ownerLabel(c.owner))])]);
@@ -771,7 +866,7 @@ body.no-data #no-data { display: block; }
   // Group details: everything the old report showed besides the check cards
   // -------------------------------------------------------------------------
   function fileTable(files) {
-    if (!files.length) return empty("No files in the model.");
+    if (!files.length) return empty("No files in the model.", "The file list comes from the pull request itself.");
     var word = { A: "added", M: "modified", D: "deleted", R: "renamed", C: "copied", T: "type changed" };
     return table(["Path", "Status", "+ Added", "− Deleted"], files.map(function (f) {
       var path = [h("span", "mono", f.path)];
@@ -817,12 +912,12 @@ body.no-data #no-data { display: block; }
         ["Impacts", (t.impacts || []).join(", ")],
         ["Ticket", link(t.url, "Open " + t.key + " in JIRA")]
       ]))]));
-      out.push(gblock("Description", [t.description ? details("Show description", h("pre", null, t.description)) : empty("No description.")]));
+      out.push(gblock("Description", [t.description ? details("Show description", h("pre", null, t.description)) : empty("No description.", "The ticket has no description text.")]));
       var cms = t.comments || [];
       var body = cms.length ? cms.map(function (c) {
         return h("div", "comment", [h("div", "who", [h("strong", null, c.display || c.author || "unknown"), " · " + (c.created || "").slice(0, 16).replace("T", " ") + " · ",
           link(c.url, "link")]), h("pre", null, c.body || "")]);
-      }) : empty("No comments.");
+      }) : empty("No comments.", "Ticket comments would be listed here.");
       var label = cms.length ? "Show " + (t.comment_count > cms.length ? "the last " + cms.length + " of " + t.comment_count + " comments" : plural(cms.length, "comment")) : "Comments";
       out.push(gblock("Comments", [details(label, body)], t.comment_count || 0));
     }
@@ -859,17 +954,17 @@ body.no-data #no-data { display: block; }
       };
     });
     out.push(gblock("Target branches", [rows.length ? table(["Branch", "PR", "State", "Head", "CI summary", "CI sha", "Passed", "Failed", "Total", "Upgrade tests", "Failures"], rows)
-      : empty("No sibling PRs found for this ticket.")], rows.length));
+      : empty("No sibling PRs found for this ticket.", "Backport PRs for the other branches would be listed here once the ticket links them.")], rows.length));
     var un = M.ci_unmapped || [];
-    out.push(gblock("CI summaries not matched to a branch", [un.length ? list(un, function (u) {
-      return [link(u.url, u.attachment || "attachment"), " — parse: " + (u.parse_status || "?"),
-        u.ref ? [" · ref ", h("span", "mono", u.ref)] : null, u.error ? h("div", "muted", u.error) : null];
-    }) : empty("Every attached CI summary was matched to a branch.")], un.length));
+    out.push(gblock("CI summaries not matched to a branch", [un.length ? table(["Summary", "Parse", "Ref", "Problem"], un.map(function (u) {
+      return { cells: [{ node: link(u.url, u.attachment || "attachment") }, u.parse_status || "?",
+        { node: u.ref ? h("span", "mono", u.ref) : "" }, u.error || ""] };
+    })) : empty("Every attached CI summary was matched to a branch.", "A summary that names no known branch would be listed here.")], un.length));
     var ar = M.ci_archives || [];
-    out.push(gblock("Result archives", [ar.length ? list(ar, function (a) {
-      return [link(a.url, a.filename || "archive"), h("span", "muted", " · " + (a.size ? (a.size / 1048576).toFixed(1) + " MB" : "size unknown") +
-        " · " + (a.target_branch || "branch unknown"))];
-    }) : empty("No result_details archives attached.")], ar.length));
+    out.push(gblock("Result archives", [ar.length ? table(["Archive", "Size", "Target branch"], ar.map(function (a) {
+      return { cells: [{ node: link(a.url, a.filename || "archive") }, { num: true, node: a.size ? (a.size / 1048576).toFixed(1) + " MB" : "unknown" },
+        a.target_branch || "unknown"] };
+    })) : empty("No result_details archives attached.", "Archives attached to the ticket would be listed here with their size and branch.")], ar.length));
     return out;
   }
 
@@ -888,7 +983,7 @@ body.no-data #no-data { display: block; }
       ["Non-test", plural(prodLines, "line") + " in " + plural(prodFiles, "file")],
       ["Test", plural(testLines, "line") + " in " + plural(files.length - prodFiles, "file")]
     ]))])];
-    if (!order.length) out.push(gblock("Test files by suite", [empty("No test files changed.")], 0));
+    if (!order.length) out.push(gblock("Test files by suite", [empty("No test files changed.", "Test files the patch adds or edits would be grouped by suite here.")], 0));
     else out.push(gblock("Test files by suite", order.map(function (s) {
       return h("div", null, [h("h4", null, s + " · " + groups[s].length), fileTable(groups[s])]);
     }), files.length - prodFiles));
@@ -897,26 +992,25 @@ body.no-data #no-data { display: block; }
 
   function extraCommits() {
     var cs = M.commits || [];
-    return [gblock("Commits", [cs.length ? h("div", null, cs.map(function (c) {
+    return [gblock("Commits", [cs.length ? table(["Commit", "Message", "Author"], cs.map(function (c) {
       var msg = String(c.message || "");
       var first = msg.split("\n")[0];
       var rest = msg.slice(first.length).replace(/^\n+/, "");
-      var card = h("div", "panel", [h("div", "ck-title", [link(prCommitUrl(c.sha), short(c.sha), "mono"), " ", first]),
-        h("div", "muted", c.login ? c.author_name + " (@" + c.login + ")" : (c.author_name || ""))]);
-      if (rest) append(card, details("Full message", h("pre", null, msg), { cls: "inline" }));
       var trs = c.trailers || [];
-      if (trs.length) append(card, h("div", null, [h("h4", null, "Trailers"), list(trs, function (t) { return [h("strong", null, t.name + ": "), t.value]; })]));
-      card.style.marginBottom = "8px";
-      return card;
-    })) : empty("No commits in the model.")], cs.length)];
+      var node = [h("div", "ck-title", first)];
+      if (rest) node.push(details("Full message", h("pre", null, msg), { cls: "inline" }));
+      if (trs.length) node.push(h("div", "muted", trs.map(function (t) { return t.name + ": " + t.value; }).join(" · ")));
+      return { cells: [{ node: link(prCommitUrl(c.sha), short(c.sha), "mono") }, { node: node },
+        c.login ? c.author_name + " (@" + c.login + ")" : (c.author_name || "")] };
+    })) : empty("No commits in the model.", "The commit list comes from the pull request itself.")], cs.length)];
   }
 
   function extraCompat() {
     var surf = M.compat_surfaces || {};
     var names = Object.keys(surf);
-    return [gblock("Surfaces touched", [names.length ? list(names, function (n) {
-      return [h("strong", null, n), list(surf[n] || [], function (p) { return h("span", "mono", p); })];
-    }) : empty("No compatibility surfaces touched.")], names.length)];
+    return [gblock("Surfaces touched", [names.length ? table(["Surface", "Files"], names.map(function (n) {
+      return { cells: [{ node: h("strong", null, n) }, { node: h("div", "paths", (surf[n] || []).map(function (p) { return h("div", "mono", p); })) }] };
+    })) : empty("No compatibility surfaces touched.", "A change to a wire, disk or API surface would be listed here.")], names.length)];
   }
 
   function extraVotes() {
@@ -927,7 +1021,7 @@ body.no-data #no-data { display: block; }
         { node: chip(s === "APPROVED" ? "pass" : s === "CHANGES_REQUESTED" ? "fail" : "note", s.toLowerCase().replace(/_/g, " ")) },
         String(r.association || "").toLowerCase().replace(/_/g, " "), String(r.submitted_at || "").replace("T", " ").replace("Z", ""),
         { node: link(r.url, "view") }] };
-    })) : empty("No GitHub reviews yet.")], rv.length)];
+    })) : empty("No GitHub reviews yet.", "Reviews appear here once someone reviews the pull request on GitHub.")], rv.length)];
   }
 
   var BUILD_BANNER = {
@@ -952,7 +1046,7 @@ body.no-data #no-data { display: block; }
         b.reason || "No build result for this head.",
         h("div", "muted", "Builds run automatically only for PRs by committers" + (b.author_is_committer === false ? " (this PR’s author is not on the committer roster)" : "") +
           ". The owner can approve one head with "), h("code", null, "cpr build " + (pr.number || "<N>") + " --approve"), "."]));
-      out.push(gblock("Build & coverage", [empty("Nothing was built, so no test or coverage numbers are shown.")]));
+      out.push(gblock("Build & coverage", [empty("Nothing was built, so no test or coverage numbers are shown.", "A build result for this head would fill the test and coverage tables.")]));
       out.push(h("p", "muted build-note", BUILD_NOTE));
       return out;
     }
@@ -966,9 +1060,9 @@ body.no-data #no-data { display: block; }
       out.push(gblock("Tests", [table(["Classes", "Run", "Failed", "Errors", "Skipped"],
         [{ cells: [{ num: true, node: String(t.classes) }, { num: true, node: String(t.run) }, { num: true, node: String(t.failed) },
           { num: true, node: String(t.errors) }, { num: true, node: String(t.skipped) }] }], { cls: "build-tests" }),
-        (t.failures || []).length ? list(t.failures, function (f) {
-          return [h("span", "mono", f["class"] + "." + f.test), f.message ? h("div", "muted", f.message) : null];
-        }) : h("p", "empty", "No test failed.")], t.run));
+        (t.failures || []).length ? table(["Failing test", "Message"], t.failures.map(function (f) {
+          return { cells: [{ node: h("span", "mono", f["class"] + "." + f.test) }, f.message || ""] };
+        })) : h("p", "empty", "No test failed.")], t.run));
     }
     var files = b.changed_lines ? Object.keys(b.changed_lines).sort() : [];
     if (b.changed_lines) {
@@ -986,12 +1080,12 @@ body.no-data #no-data { display: block; }
           : "No added executable lines under src/java."),
         files.length ? table(["File", "Covered", "Missed lines"], rows, { cls: "build-cov" }) : null], files.length));
     } else {
-      out.push(gblock("Changed-line coverage", [empty("Coverage was not measured for this run.")]));
+      out.push(gblock("Changed-line coverage", [empty("Coverage was not measured for this run.", "A build run with coverage turned on would fill this.")]));
     }
     var sel = b.selected || [];
     out.push(gblock("Selected tests", [sel.length ? details("Show " + (sel.length === 1 ? "1 selected test class" : sel.length + " selected test classes") + " and why", list(sel, function (c) {
       return [h("span", "mono", c["class"]), h("span", "muted", " — " + (c.reasons || []).join("; "))];
-    }), { cls: "build-selected" }) : empty("No test classes were selected.")], sel.length));
+    }), { cls: "build-selected" }) : empty("No test classes were selected.", "Selection follows the files the patch changes.")], sel.length));
     var unk = b.sandbox_unknowns || [];
     if (unk.length) out.push(gblock("Sandbox artifacts (unknown, not failures)", [h("div", "build-unknowns", list(unk, function (u) { return buildItemText(u); }))], unk.length));
     if ((b.notes || []).length) out.push(gblock("Notes", [details("Show run notes", list(b.notes, function (n) { return String(n); }), {})]));
@@ -1271,7 +1365,8 @@ body.no-data #no-data { display: block; }
     try {
       if (rv.status === "not-run" || !rv.status) {
         append(sec, h("div", "notice s-unknown", [h("strong", null, "Not run in this version. "),
-          "No code review lens has read this patch. The recommendation cannot go past “requirements met, not reviewed” until one does."]));
+          "No code review lens has read this patch. The recommendation cannot go past “requirements met, not reviewed” until one does.",
+          h("span", "why", ["Run ", h("code", null, "/review-pr " + (pr.number || "<N>")), " and publish to fill this section."])]));
       } else {
         var ic = rv.issue_counts || {};
         var chips = h("div", "chips");
@@ -1289,7 +1384,7 @@ body.no-data #no-data { display: block; }
           append(sec, h("p", "muted checklists", "checklists: apache/cassandra trunk @ " + short(rv.checklists.sha, 10)));
         var issues = rv.issues || [];
         if (rv.issues) {
-          append(sec, issues.length ? h("div", "stack issues", issues.map(issueCard)) : empty("No issues reported."));
+          append(sec, issues.length ? h("div", "stack issues", issues.map(issueCard)) : empty("No issues reported.", "Findings from the code review lenses would be listed here."));
         }
         var inner = h("div", "cc-body");
         lenses.forEach(function (lens) {
@@ -1309,13 +1404,10 @@ body.no-data #no-data { display: block; }
         if (lenses.length) {
           var lbtn = h("button", "outline-btn lens-detail-toggle", [h("span", null, "Per-lens detail"), " ", chev(14)]);
           lbtn.type = "button";
-          lbtn.style.display = "inline-flex";
-          lbtn.style.alignItems = "center";
-          lbtn.style.gap = "8px";
-          lbtn.style.alignSelf = "flex-start";
+          lbtn.classList.add("self-start");
           append(sec, [lbtn, inner]);
           collapsible(lbtn, inner, false);
-        } else append(sec, empty("No lenses reported."));
+        } else append(sec, empty("No lenses reported.", "Each lens that reads the patch adds its own card here."));
       }
       append(sec, docsBlock(sectionById.review));
     } catch (e) {
@@ -1455,7 +1547,7 @@ body.no-data #no-data { display: block; }
     var c = bgCard("changes", "Files changed", "full");
     append(c, h("h3", null, "Files changed"));
     var ul = h("ul", "filelist");
-    if (!files.length) append(c, empty("No files in the model."));
+    if (!files.length) append(c, empty("No files in the model.", "The file list comes from the pull request itself."));
     files.forEach(function (f) {
       var li = h("li", null, [h("span", "p", [f.path, f.previous_path ? h("span", "muted", " (from " + f.previous_path + ")") : null]),
         h("span", "st", (f.status ? String(f.status).charAt(0) : "") + (f.binary ? " binary" : "")),
@@ -1470,7 +1562,7 @@ body.no-data #no-data { display: block; }
       btn = h("button", "outline-btn no-print", [h("span", null, "Open the diff view"), " ", chev(14)]);
       btn.type = "button";
       btn.id = "diff-toggle";
-      btn.style.alignSelf = "flex-start";
+      btn.classList.add("self-start");
       var ctl = collapsible(btn, diffBody, false);
       var built = false;
       ctl.onchange = function (o) {
@@ -1484,6 +1576,7 @@ body.no-data #no-data { display: block; }
           frame.setAttribute("referrerpolicy", "no-referrer");
           try {
             frame.srcdoc = decodeB64Utf8(String(dv.html_b64));
+            diffBody.appendChild(h("div", "diff-bar", [h("b", null, "Diff view"), h("span", null, "Runs in a sandbox, apart from this page.")]));
             diffBody.appendChild(frame);
           } catch (e) {
             diffBody.appendChild(h("div", "notice s-unknown", [h("strong", null, "Diff view could not be decoded. "), "The file list above is shown instead."]));
@@ -1494,11 +1587,12 @@ body.no-data #no-data { display: block; }
       openDiff = function () { if (!ctl.isOpen()) ctl.set(true); };
       append(c, [btn, diffBody]);
     } else {
-      append(c, h("div", "notice s-unknown", [h("strong", null, "Diff view unavailable. "), dv.reason || "No reason recorded."]));
+      append(c, h("div", "notice s-unknown", [h("strong", null, "Diff view unavailable. "), dv.reason || "No reason recorded.",
+        h("span", "why", "The file list above still shows every changed file.")]));
     }
     var om = dv.omitted || [];
     if (om.length) append(c, gblock("Left out of the diff view", [list(om, function (o) { return mdInline("span", typeof o === "string" ? o : JSON.stringify(o)); })], om.length));
-    if (pr.url && isSafeLinkUrl(pr.url)) append(c, h("p", null, link(String(pr.url).replace(/\/+$/, "") + "/files", "Open the diff on GitHub")));
+    if (pr.url && isSafeLinkUrl(pr.url)) append(c, h("p", null, link(String(pr.url).replace(/\/+$/, "") + "/files", "Open the diff on GitHub", "outline-btn self-start")));
     append(c, docsBlock(sectionById.changes));
     return c;
   }
@@ -1533,12 +1627,10 @@ body.no-data #no-data { display: block; }
       h("span", null, sec.summary || (planned ? "A generated plan for a lab run." : "No lab plan: " + (lp.reason || "not applicable") + "."))]),
       h("span", "r", [planned ? h("span", "tag", "Not run") : h("span", "tag", "No plan"), chev(16)])]);
     head.type = "button";
-    head.querySelector(".r").style.display = "inline-flex";
-    head.querySelector(".r").style.gap = "10px";
-    head.querySelector(".r").style.alignItems = "center";
     var body = h("div", "cc-body");
     if (!planned) {
-      append(body, h("div", "notice s-note", "No lab plan: " + (lp.reason || "not applicable") + "."));
+      append(body, h("div", "notice s-note", ["No lab plan: " + (lp.reason || "not applicable") + ".",
+        h("span", "why", "A plan is generated when the diff touches code a test cluster can exercise.")]));
     } else {
       append(body, h("div", "notice s-should labplan-banner", [h("strong", null, "Not run. "),
         "This plan was generated from the diff. No cluster was created and no command was executed. Run it with ",
@@ -1617,7 +1709,6 @@ body.no-data #no-data { display: block; }
     var head = h("button", "cc-head row", [h("span", "tt", [h("b", null, "Words used in this report"), h("span", null, "Short explanations of project terms")]), chev(16)]);
     head.type = "button";
     head.querySelector(".tt b").id = "gl-h";
-    head.style.cssText = "width:100%;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 20px;min-height:56px";
     var dl = h("dl", "gloss", GLOSSARY.map(function (g) { return h("div", null, [h("dt", null, g[0]), h("dd", null, g[1])]); }));
     append(sec, [head, dl]);
     collapsible(head, dl, false);
@@ -1673,7 +1764,6 @@ body.no-data #no-data { display: block; }
   // -------------------------------------------------------------------------
   // Navigation: grouped links with status icons
   // -------------------------------------------------------------------------
-  var NAV_COLORS = { fail: "#FF8A5C", should: "#F2C14E", note: "#8FB8EA", unknown: "#C9BDF2", pass: "#4FD1C0", na: "#8A9BB0" };
   var navLinks = {};
   var navOrder = [];
   function navItem(id, label, href, kind, count) {
@@ -1682,7 +1772,7 @@ body.no-data #no-data { display: block; }
     var mark;
     if (kind) {
       mark = svg(kind, 14, 3.2, wordOfKind(kind));
-      mark.style.color = NAV_COLORS[kind];
+      mark.setAttribute("class", "nav-ic nav-" + kind);
     } else mark = h("span", "nav-dot", h("i"));
     append(a, [mark, h("span", "lbl", label), count ? h("span", "cnt", String(count)) : null]);
     navLinks[id] = a;
