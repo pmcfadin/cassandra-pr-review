@@ -62,3 +62,17 @@ The swap ships.
 Three repeats per case, cases B1, B2, B4, B5 (B5 has no reachable head sha), the spot-check labels
 for the 6 unmatched issues (listed by `cpr bench score`), and medium/large tiers (both cases were
 small).
+
+## Follow-up: #5201 re-run with named agents (task 6.1)
+
+Same session, after the prompt fixes, with the six lenses loaded as named project agents (model
+inherited from the session). Tokens per lens: standards 24k, logic-boundary 30k,
+concurrency-lifecycle 23k, persistence-compat 31k, completeness-symmetry 33k, test-regime 23k:
+**163k total**, against 135-147k for the old panel per case above (1.2x, inside the 1.5x bar). So
+the 2.6x in the quick loop was the general-purpose fallback.
+
+Result: 12 findings from 6 lenses → 5 issues, 3 must-fix, **no blockers** (the quick loop's two
+inflated blockers are gone: test-regime now leaves impact off missing-test findings, and no lens
+called leaked files data loss). Issues: swallowed delete failures (5 lenses), tidier still deletes
+DATA first (4 lenses; known issue K2), no regression test (test-regime), untested ties and missing
+files (minor), needless HashMap (nit).
