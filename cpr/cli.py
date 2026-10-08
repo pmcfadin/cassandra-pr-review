@@ -178,6 +178,29 @@ def cmd_review(args):
     return 0
 
 
+def cmd_comment(args):
+    from cpr import comment, site
+    work_dir = os.path.abspath(args.work_dir)
+    report = args.report or os.path.join(ROOT, "reports", str(args.pr), "index.html")
+    try:
+        if not os.path.exists(report):
+            raise comment.CommentError(f"no report at {report}: run cpr review {args.pr} first")
+        model = site.read_model(report)
+        if not model or model["pr"]["number"] != args.pr:
+            raise comment.CommentError(f"{report} is not a report for PR {args.pr}")
+        p = comment.plan(args.pr, model)
+        if not args.post:
+            print(comment.describe(p))
+            print("Dry run: nothing was written. Add --post to post.")
+            return 0
+        res = comment.post(p, work_dir, yes=args.yes)
+    except (comment.CommentError, NetError) as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+    print(f"{res['action']}: {res.get('url')}")
+    return 0
+
+
 def cmd_tools(args):
     from cpr.staticanalysis import tools
     work_dir = os.path.abspath(args.work_dir)
@@ -253,6 +276,14 @@ def main(argv=None):
     pp.add_argument("--offline", action="store_true", help="use the cached ingest")
     pp.add_argument("--work-dir", default=default_work)
     pp.set_defaults(func=cmd_prepare)
+
+    cm = sub.add_parser("comment", help="build the report-link comment for a PR; --post posts or edits it")
+    cm.add_argument("pr", type=int)
+    cm.add_argument("--post", action="store_true", help="post (or edit our earlier comment) as the gh account")
+    cm.add_argument("--yes", action="store_true", help="confirm posting without a terminal prompt")
+    cm.add_argument("--report", help="rendered report (default reports/<PR>/index.html)")
+    cm.add_argument("--work-dir", default=default_work)
+    cm.set_defaults(func=cmd_comment)
 
     tl = sub.add_parser("tools", help="manage the pinned static-analysis tools")
     tsub = tl.add_subparsers(dest="action", required=True)
