@@ -227,7 +227,7 @@ details.howto > .d-body { background: var(--panel); border-radius: 0 0 var(--r-c
    Background cards
    --------------------------------------------------------------------------- */
 .bg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; align-items: start; }
-.bg-card { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.bg-card { overflow-wrap: anywhere; background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .bg-card.full { grid-column: 1 / -1; }
 .bg-card h3 { font-size: 17px; font-weight: 600; }
 .bg-card .hd { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
