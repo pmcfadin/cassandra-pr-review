@@ -32,4 +32,4 @@
 
 ## 6. Ship
 
-- [ ] 6.1 Re-run `/review-pr 5201` with the new panel, re-render and republish reports, review with the owner
+- [x] 6.1 Re-run `/review-pr 5201` with the new panel, re-render and republish reports, review with the owner

@@ -35,7 +35,8 @@ def read_model(report_path):
 
 def summarize(model):
     pr, rec, review = model["pr"], model["recommendation"], model.get("review") or {}
-    counts = review.get("counts") or {}
+    counts = review.get("issue_counts") or review.get("counts") or {}
+    noun = "issues" if review.get("issue_counts") else "findings"
     return {
         "number": pr["number"], "title": pr["title"], "author": pr["author"], "base": pr["base"],
         "url": pr["url"], "jira": (model.get("jira_key") or {}).get("key"),
@@ -43,7 +44,7 @@ def summarize(model):
         "generated_at": model["generated_at"],
         "review": "not run" if review.get("status") != "ran" else
         f"{counts.get('blocker', 0)} blocker · {counts.get('major', 0)} major · "
-        f"{counts.get('minor', 0)} minor · {counts.get('nit', 0)} nit",
+        f"{counts.get('minor', 0)} minor · {counts.get('nit', 0)} nit {noun}",
     }
 
 
