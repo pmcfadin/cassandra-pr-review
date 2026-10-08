@@ -30,7 +30,8 @@ class Site(unittest.TestCase):
             self.assertTrue(page.startswith("<!doctype html>"))
             self.assertIn('href="pr/5198/"', page)
             self.assertNotIn("<script>alert(1)", page)
-            self.assertIn("Requirements met", page)
+            self.assertIn("Not reviewed yet", page)  # the report's headline words, not the long label
+        self.assertNotIn("Requirements met", page)
 
     def test_read_model_round_trip(self):
         with tempfile.TemporaryDirectory() as d:

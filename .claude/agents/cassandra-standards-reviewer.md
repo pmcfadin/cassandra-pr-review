@@ -108,6 +108,7 @@ Return JSON only, no prose around it:
      "impact": "data-loss | crash | hang | mixed-version-break | silent-wrong-result | performance | cosmetic",
      "confidence": "high | medium | low  (omit impact and confidence for non-behaviour findings)",
      "location": "path/to/File.java:123 (or 'ticket' for scope findings)",
+     "title": "optional: imperative, standalone, 80 characters or fewer",
      "rule": "the standard or ticket requirement, short",
      "problem": "what is wrong, concretely",
      "fix": "the smallest change that resolves it"}
@@ -115,6 +116,11 @@ Return JSON only, no prose around it:
   "approve": false
 }
 ```
+
+- `title` is optional but wanted: a short imperative phrase (80 characters or fewer) that names what to
+  change and where, and reads on its own in a to-do list, for example "Delete SSTable components in
+  mtime order in SSTableTidier". Do not start it with the rule name or a severity, and do not end it
+  mid-thought. Leave it out rather than send one over 80 characters.
 
 Order findings by severity. Use the real line number in the new file. Prefer a few well-evidenced
 findings over many speculative ones; if you are unsure, lower `confidence` and say so in `problem`.

@@ -42,11 +42,13 @@ const test = base.extend({
 const group = (page, id) => page.locator(`#sec-${id}`);
 const head = (page, id) => page.locator(`#sec-${id} > .group-head`);
 
-test("verdict comes first: headline, must-fix count, steps to merge, then the contributor's must-fix items", async ({ page }) => {
+test("verdict comes first: headline, fix count, next steps, then Now (fixes) and Then (steps)", async ({ page }) => {
   await page.goto(fileUrl(fixtures().report));
   const verdict = page.locator("#status");
   await expect(verdict.locator("h2")).toHaveText("Not ready to merge");
-  await expect(verdict).toContainText("6 must-fix items. 3 people need to act.");
+  await expect(verdict).toContainText("The contributor has 3 fixes to make. Then a committer runs CI and two committers vote.");
+  await expect(verdict).not.toContainText("Overall:");
+  await expect(verdict).not.toContainText("must-fix");
   const steps = verdict.locator('ol[aria-label="Steps to merge"] li');
   await expect(steps).toHaveCount(5);
   await expect(steps.nth(0)).toContainText("Ticket");
@@ -54,21 +56,43 @@ test("verdict comes first: headline, must-fix count, steps to merge, then the co
   // The verdict sits above the checks in document order.
   const before = await page.evaluate(() => document.getElementById("status").compareDocumentPosition(document.getElementById("checks")) & Node.DOCUMENT_POSITION_FOLLOWING);
   expect(before).toBeTruthy();
-  // To do: grouped by role, contributor first, must-fix first; optional items sit behind a toggle.
-  const roles = page.locator("#next .role");
-  await expect(roles.first().locator(".role-name")).toContainText("Contributor");
-  await expect(roles.first().locator("li:not(.opt)")).toHaveCount(4);
+  // To do: Now holds the contributor's fixes (must-fix first); Then holds neutral steps. Optional items sit behind a toggle.
+  const now = page.locator("#next .role.now");
+  const then = page.locator("#next .role.then");
+  await expect(now.locator(".role-name")).toContainText("Contributor");
+  await expect(now.locator("li:not(.opt)")).toHaveCount(3);
+  await expect(now.locator("li:not(.opt) svg[aria-label='Must fix']")).toHaveCount(3);
+  await expect(then.locator(".role-name")).toContainText("Then");
+  await expect(then.locator("li:not(.opt)")).toHaveCount(3);
+  await expect(then.locator("svg[aria-label='Must fix']")).toHaveCount(0);
+  await expect(then.locator("li:not(.opt)").nth(1)).toContainText("Run pre-commit CI on each target branch");
+  await expect(then.locator("li:not(.opt)").first()).toContainText("Ask for review on the JIRA ticket or the dev@ list");
+  await expect(page.locator("#next .todo-head")).toContainText("Now: Contributor");
+  // Every title reads on its own, with file:line and a source tag; the two test requests are one item.
+  const tests = now.locator("li", { hasText: "Test rigor" });
+  await expect(tests).toHaveCount(1);
+  await expect(tests).toContainText("SSTable.java:113");
+  await expect(tests).toContainText("Code review");
+  await expect(tests).toContainText("Also satisfies: Tests accompany production changes");
+  await expect(page.locator("#next")).not.toContainText("Add a single-node");
   const optional = page.locator("#next li.opt").first();
   await expect(optional).toBeHidden();
   await page.locator("#opt-toggle").click();
   await expect(page.locator("#opt-toggle")).toHaveAttribute("aria-expanded", "true");
   await expect(optional).toBeVisible();
-  // An item opens to its how-to-fix detail.
-  const item = roles.first().locator("li").first().locator("button.todo-item");
+  // An item opens to its how-to-fix detail and links to its finding card, which opens.
+  const item = now.locator("li").first().locator("button.todo-item");
   await expect(item).toHaveAttribute("aria-expanded", "false");
   await item.click();
   await expect(item).toHaveAttribute("aria-expanded", "true");
-  await expect(roles.first().locator("li").first()).toContainText("How to fix:");
+  await expect(now.locator("li").first()).toContainText("How to fix:");
+  await now.locator("li").first().getByRole("link", { name: "See the finding" }).click();
+  await expect(page.locator("#finding-issue-1 .finding-head")).toHaveAttribute("aria-expanded", "true");
+  // The Reviewers step names at most three people and the vote count.
+  const votes = then.locator("li", { hasText: "Collect two committer +1 votes" });
+  await votes.locator("button.todo-item").click();
+  await expect(votes).toContainText("and 2 more");
+  await expect(votes).toContainText("+1 votes: 0 of 2");
   // Header facts.
   await expect(page.locator("header.pr")).toContainText("first-time contributor");
   await expect(page.locator("header.pr")).toContainText("CASSANDRA-21649");
