@@ -13,10 +13,10 @@ reviewer feedback on the first published reports (2026-10-07).
    apache/cassandra's own `.claude/skills` review methods and bug-pattern catalog (concurrency,
    serialization and versioning, lifecycle and ordering, IO and crash safety); dedupe overlapping
    findings into one list. Removes the spec-flow dependency.
-5. **static-analysis** (next): PMD (cognitive complexity, copy-paste) and the project's real checkstyle on
+5. **static-analysis** (done): PMD (cognitive complexity, copy-paste) and the project's real checkstyle on
    changed files, split into introduced-by-this-PR vs already-there; perf commit-structure check
    (benchmark commit first, then the change).
-6. **build-and-coverage**: build the branch and run the tests the PR touches or affects with JaCoCo
+6. **build-and-coverage** (next; builds on this Mac): build the branch and run the tests the PR touches or affects with JaCoCo
    (`ant jacoco-run`); report coverage of changed lines.
 7. **perf-ab**: for core-path changes, run JMH (`test/microbench`) on the benchmark commit and the
    PR head so reviewers can A/B.
