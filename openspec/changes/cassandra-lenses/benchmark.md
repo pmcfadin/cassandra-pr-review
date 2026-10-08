@@ -76,3 +76,33 @@ inflated blockers are gone: test-regime now leaves impact off missing-test findi
 called leaked files data loss). Issues: swallowed delete failures (5 lenses), tidier still deletes
 DATA first (4 lenses; known issue K2), no regression test (test-regime), untested ties and missing
 files (minor), needless HashMap (nit).
+
+## Haiku 5.5 quick loop
+
+Same cases, same prompts as the Sonnet run (current prompt versions, so with the impact fixes the
+Sonnet run did not have), every lens on Haiku 5.5 (`model: haiku`, named agents). Panel file
+`bench/panels/panel-haiku.json`; runs in `bench/runs/panel-haiku/`.
+
+| metric | Haiku 5.5 | Sonnet 5.5 |
+|---|---|---|
+| hard recall | 1/1 | 1/1 |
+| soft / major+ recall | 3/3, 4/4 | 3/3, 4/4 |
+| lenses that reported the hard `$$` issue (B3) | **1 of 6** (logic-boundary) | 5 of 6 |
+| lenses that reported B6 K2 (tidier deletes DATA first) | 4 of 6 | 2 of 6 |
+| raw findings / merged issues | 15 / 8 | 23 / 9 |
+| invalid lens outputs | 1 (B6 test-regime wrote `"impact": ""`) | 0 |
+| tokens (sum, both cases) | 343k | 733k (general-purpose fallback) |
+| wall time, slowest lens | 33 s / 62 s | 74 s / 96 s |
+
+Gate: passed (Haiku found every known issue Sonnet found). But the margin is thin:
+
+* The hard issue hung on one lens. The Haiku standards lens stated the opposite as fact ("the
+  single-quote rule is the only escape a CQL string literal needs") and approved B3.
+* One new extra issue looks wrong on inspection: logic-boundary's "lazy `.+?` match leaks the tail of a
+  short password" uses a trigger (`password "s"`, query `'secret'`) where the query does not hold that
+  password. Needs a spot-check label.
+* Schema discipline is weaker: an empty-string impact made a whole lens invalid, so its findings were
+  dropped from the merge.
+
+Not enough to make Haiku the default on one run per case. Next: 3 repeats per case for both models
+on all runnable cases, then decide per lens (a mixed panel is possible).

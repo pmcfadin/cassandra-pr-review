@@ -1,0 +1,31 @@
+{
+ "tokens": 155367,
+ "seconds": 33,
+ "per_lens": {
+  "cass-concurrency-lifecycle": {
+   "tokens": 19348,
+   "seconds": 7
+  },
+  "cassandra-standards": {
+   "tokens": 21565,
+   "seconds": 15
+  },
+  "cass-persistence-compat": {
+   "tokens": 23185,
+   "seconds": 15
+  },
+  "cass-completeness-symmetry": {
+   "tokens": 26272,
+   "seconds": 16
+  },
+  "cass-logic-boundary": {
+   "tokens": 21526,
+   "seconds": 27
+  },
+  "cass-test-regime": {
+   "tokens": 43471,
+   "seconds": 33
+  }
+ },
+ "model": "haiku-5.5"
+}

@@ -1,0 +1,78 @@
+{
+ "tier": "small",
+ "lines": 19,
+ "notes": [],
+ "lenses": {
+  "cass-logic-boundary": {
+   "status": "ok",
+   "files": [
+    "/Users/patrickmcfadin/local_projects/cassandra-pr-review/bench/runs/panel-haiku/B6-21649/1/refdir/.claude/skills/shallow-review/references/general/specialists/logic.md",
+    "/Users/patrickmcfadin/local_projects/cassandra-pr-review/bench/runs/panel-haiku/B6-21649/1/refdir/.claude/skills/shallow-review/references/general/specialists/boundary.md"
+   ],
+   "categories": [],
+   "focus": [],
+   "not_reviewed": [],
+   "missing": [],
+   "error": null
+  },
+  "cass-concurrency-lifecycle": {
+   "status": "ok",
+   "files": [
+    "/Users/patrickmcfadin/local_projects/cassandra-pr-review/bench/runs/panel-haiku/B6-21649/1/refdir/.claude/skills/shallow-review/references/general/specialists/concurrency.md"
+   ],
+   "categories": [],
+   "focus": [],
+   "not_reviewed": [],
+   "missing": [],
+   "error": null
+  },
+  "cass-persistence-compat": {
+   "status": "ok",
+   "files": [
+    "/Users/patrickmcfadin/local_projects/cassandra-pr-review/bench/runs/panel-haiku/B6-21649/1/refdir/.claude/skills/shallow-review/references/general/specialists/resources.md"
+   ],
+   "categories": [],
+   "focus": [],
+   "not_reviewed": [],
+   "missing": [],
+   "error": null
+  },
+  "cass-completeness-symmetry": {
+   "status": "ok",
+   "files": [
+    "/Users/patrickmcfadin/local_projects/cassandra-pr-review/bench/runs/panel-haiku/B6-21649/1/refdir/.claude/skills/shallow-review/references/general/specialists/absence.md",
+    "/Users/patrickmcfadin/local_projects/cassandra-pr-review/bench/runs/panel-haiku/B6-21649/1/refdir/.claude/skills/shallow-review/references/general/specialists/completeness.md"
+   ],
+   "categories": [],
+   "focus": [],
+   "not_reviewed": [],
+   "missing": [],
+   "error": null
+  },
+  "cass-test-regime": {
+   "status": "ok",
+   "files": [
+    "/Users/patrickmcfadin/local_projects/cassandra-pr-review/bench/runs/panel-haiku/B6-21649/1/refdir/.claude/skills/cassandra-injvm-dtest/SKILL.md"
+   ],
+   "categories": [],
+   "focus": [],
+   "not_reviewed": [],
+   "missing": [],
+   "error": null
+  },
+  "cassandra-standards": {
+   "status": "ok",
+   "files": [],
+   "categories": [],
+   "focus": [],
+   "not_reviewed": [],
+   "missing": [],
+   "error": null
+  }
+ },
+ "checklists": {
+  "sha": "617fd3b935a0dc869c4c33995a3be78e07bf638a",
+  "refdir": "/Users/patrickmcfadin/local_projects/cassandra-pr-review/bench/runs/panel-haiku/B6-21649/1/refdir",
+  "missing": []
+ }
+}
