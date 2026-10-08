@@ -180,18 +180,23 @@ def run_pmd(pmd, env, ruleset, root, rels, scratch, label, timeout):
     _write_list(lst, root, rels)
     cmd = [pmd, "check", "-R", ruleset, "--file-list", lst, "-f", "xml", "-r", out, "--no-progress", "--no-cache"]
     rc, problem, secs = _jvm_tool(env, cmd, timeout, scratch)
+    if problem:  # never publish local paths
+        problem = problem.replace(root.rstrip("/") + "/", "").replace(scratch.rstrip("/") + "/", "")
     res = {"files": {}, "parse_errors": [], "problem": problem, "seconds": secs}
-    if problem:
+    if problem and not (rc is None and problem.startswith("exit ") and os.path.exists(out)):
         return res
     try:
         with open(out) as f:
             res["files"], res["parse_errors"] = parse_pmd(f.read(), root)
+        if problem and not res["parse_errors"]:
+            return res  # the run failed and the report does not say why per file: keep the failure
+        res["problem"] = None
         failed = {p for p, _ in res["parse_errors"]}
         for rel in rels:  # PMD lists only files with violations; the rest have no methods
             if rel not in failed:
                 res["files"].setdefault(rel, {"bodies": [], "m": []})
     except (OSError, ET.ParseError) as e:
-        res["problem"] = f"unreadable PMD output: {e}"
+        res["problem"] = problem or f"unreadable PMD output: {e}"
     return res
 
 

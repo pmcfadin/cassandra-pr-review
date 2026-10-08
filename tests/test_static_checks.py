@@ -117,6 +117,23 @@ class Complexity(unittest.TestCase):
         self.assertEqual(r["status"], "pass")
         self.assertIn("9 → removed", r["evidence"][0]["text"])
 
+    def test_skipped_files_never_pass(self):
+        pmd = tool(version="7.0", files_expected=3, files_analyzed=2,
+                   reason="1 file(s) failed to parse: src/java/B.java")
+        b = with_sa(tools={"checkstyle": tool(), "pmd": pmd, "cpd": tool()})
+        r = get(b, "static.complexity")
+        self.assertEqual(r["status"], "unknown")
+        self.assertIn("1 of 3 changed files could not be analyzed: src/java/B.java", r["summary"])
+
+    def test_skipped_files_still_report_what_was_found(self):
+        pmd = tool(version="7.0", files_expected=3, files_analyzed=2, reason="1 file(s) failed to parse: B.java")
+        f = finding(tool="pmd", score=20, method_sig="big()", rule="CognitiveComplexity")
+        b = with_sa(tools={"checkstyle": tool(), "pmd": pmd, "cpd": tool()},
+                    complexity={"threshold": 15, "methods": [], "findings": [f]})
+        r = get(b, "static.complexity")
+        self.assertEqual(r["status"], "warn")
+        self.assertIn("PMD skipped some files", r["evidence"][0]["text"])
+
     def test_pmd_missing_is_unknown(self):
         b = with_sa(tools={"checkstyle": tool(), "pmd": tool("unknown", reason="PMD not installed"), "cpd": tool()})
         self.assertEqual(get(b, "static.complexity")["status"], "unknown")

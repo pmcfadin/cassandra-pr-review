@@ -14,7 +14,7 @@ import time
 from cpr.ingest import clone as clone_mod
 from cpr.staticanalysis import classify, inputs, run, tools
 
-SCHEMA = 1
+SCHEMA = 2  # 2: partial PMD runs keep the files PMD read
 TOOLS = ("checkstyle", "pmd", "cpd")
 
 
@@ -252,7 +252,10 @@ def _pmd(cfg, work_dir, changed, shas, head_lines, sd, raw, budget, pmd, java_ca
     if base_problem:
         return tool_result("unknown", f"base side: {base_problem}", version, n, 0, secs), [], []
     bad = sorted({p for p, _ in head["parse_errors"]} | set(bad_base))
-    status, reason = ("unknown", f"{len(bad)} file(s) failed to parse: {', '.join(bad[:5])}") if bad else ("ran", None)
+    if bad and len(bad) >= n:
+        status, reason = "unknown", f"{len(bad)} file(s) failed to parse: {', '.join(bad[:5])}"
+    else:  # report on the files PMD read; the check names the skipped ones and will not pass
+        status, reason = "ran", (f"{len(bad)} file(s) failed to parse: {', '.join(bad[:5])}" if bad else None)
     methods, findings = classify.classify_complexity(
         [c for c in changed if c["path"] not in bad and c["base_path"] not in bad],
         base_files, {p: f for p, f in head["files"].items() if p not in bad}, head_lines, cfg["thresholds"])

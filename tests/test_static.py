@@ -345,6 +345,21 @@ class Runners(unittest.TestCase):
             bad = run.run_pmd("pmd", {}, "r.xml", self.root, [SSTABLE], self.d.name, "head", 10)
         self.assertEqual(bad["problem"], "exit 1: usage: boom")
 
+    def test_pmd_failure_with_per_file_errors_keeps_the_other_files(self):
+        bad_file = os.path.join(self.root, "src/java/Other.java")
+        xml = fixture("pmd-5201-head.xml").replace("/work/head", self.root).replace(
+            "</pmd>", f'<error filename="{bad_file}" msg="SemanticException: unresolved type"/></pmd>')
+        with mock.patch.object(run, "execute", fake_execute(xml, rc=1, err=f"[ERROR] at {bad_file}:1:1: boom")):
+            r = run.run_pmd("pmd", {}, "r.xml", self.root, [SSTABLE, "src/java/Other.java"], self.d.name, "head", 10)
+        self.assertIsNone(r["problem"])
+        self.assertEqual([p for p, _ in r["parse_errors"]], ["src/java/Other.java"])
+        self.assertIn(SSTABLE, r["files"])
+
+    def test_pmd_failure_message_has_no_local_paths(self):
+        with mock.patch.object(run, "execute", fake_execute("not xml", rc=1, err=f"[ERROR] at {self.root}/src/A.java")):
+            r = run.run_pmd("pmd", {}, "r.xml", self.root, [SSTABLE], self.d.name, "head", 10)
+        self.assertEqual(r["problem"], "exit 1: [ERROR] at src/A.java")
+
     def test_cpd_counts_files(self):
         xml = fixture("cpd-sample.xml").replace("/work/head", self.root)
         with mock.patch.object(run, "execute", fake_execute(xml, rc=4)):
