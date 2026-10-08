@@ -78,7 +78,12 @@ def build_body(model, url=None):
     def render(limit):
         out = []
         for r in reasons:
-            line = f"- {r['title']}" + (f": {r['summary']}" if r.get("summary") else "")
+            if r.get("lenses"):
+                k = len(r["lenses"])
+                line = (f"- [{r['severity']}] {r['rule']} — `{r['location']}` "
+                        f"({k} lens{'' if k == 1 else 'es'})")
+            else:
+                line = f"- {r['title']}" + (f": {r['summary']}" if r.get("summary") else "")
             out.append(_clip(line, limit))
         return "\n".join(head_lines + out + tail)
 

@@ -27,7 +27,8 @@ def _issue_reason(issue):
     return {"check": None, "finding": issue["members"][0]["id"],
             "title": f"[{issue['severity']}] {', '.join(issue['lenses'])}: {issue['rule']}", "status": "fail",
             "summary": f"{issue['location']} — {issue['problem']}", "action": issue.get("fix"),
-            "owner": "contributor", "blocking": True}
+            "owner": "contributor", "blocking": True, "severity": issue["severity"], "rule": issue["rule"],
+            "lenses": list(issue["lenses"]), "location": issue["location"]}
 
 
 def _note(title, summary, owner, status="info"):
