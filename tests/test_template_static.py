@@ -64,6 +64,16 @@ class TemplateStaticTest(unittest.TestCase):
         with self.assertRaises(model_mod.ModelError):
             model_mod.validate(m)
 
+    def test_fonts_are_embedded(self):
+        for family in ("Red Hat Text", "Red Hat Mono"):
+            self.assertIn(f'@font-face{{font-family:"{family}"', self.html)
+        self.assertEqual(self.html.count("src:url(data:font/woff2;base64,"), len(render.FONTS))
+        self.assertNotIn(render.FONT_MARKER, self.html)
+
+    def test_missing_font_files_fall_back_to_system_fonts(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(render.font_faces(d), "")
+
     def test_template_has_one_marker(self):
         with open(render.TEMPLATE) as f:
             self.assertEqual(f.read().count(render.MARKER), 1)

@@ -2,8 +2,9 @@
 
 Usage: PYTHONPATH=<repo root> python3 tests/browser/build_fixture.py <out_dir>
 
-Writes <out_dir>/report.html (the 5201 model as-is) and <out_dir>/hostile.html (the same model with
-script-shaped text in the PR title, a check's evidence, the PR body, and a JIRA comment).
+Writes <out_dir>/report.html (the 5201 model as-is), <out_dir>/hostile.html (the same model with
+script-shaped text in the PR title, a check's evidence, the PR body, and a JIRA comment), and variants
+of 5201 for lens status, lab plan, build, and an unreviewed PR with nothing to do.
 """
 
 import copy
@@ -61,6 +62,20 @@ def no_plan(model):
     return m
 
 
+def unreviewed(model):
+    """5201 with every requirement met and code review not run: nothing to do, review still pending."""
+    m = copy.deepcopy(model)
+    for c in m["checks"]:
+        if c["status"] in ("warn", "fail", "unknown"):
+            c.update(status="pass", action=None, action_required=False)
+    m["recommendation"] = {"verdict": "requirements-met-unreviewed", "label": "Requirements met — code not yet reviewed",
+                           "reasons": [], "waiting_on": []}
+    for sec in m["sections"]:
+        if sec["status"] in ("warn", "fail", "unknown"):
+            sec["status"] = "pass"
+    return m
+
+
 def with_build(model, run):
     """5201 with the Build & coverage section filled from a saved `cpr build` result (or not built when None)."""
     from cpr import buildresult, checks as checks_mod, model as model_mod
@@ -103,10 +118,12 @@ def main(out_dir):
     render.write(no_plan(model), os.path.join(out_dir, "labplan-none.html"))
     render.write(with_build(model, load_build_run()), os.path.join(out_dir, "build.html"))
     render.write(with_build(model, None), os.path.join(out_dir, "build-none.html"))
+    render.write(unreviewed(model), os.path.join(out_dir, "unreviewed.html"))
     print(json.dumps({"build": os.path.join(out_dir, "build.html"), "build_none": os.path.join(out_dir, "build-none.html"),
                       "report": os.path.join(out_dir, "report.html"), "hostile": os.path.join(out_dir, "hostile.html"),
                       "lens_status": os.path.join(out_dir, "lens-status.html"),
                       "labplan_none": os.path.join(out_dir, "labplan-none.html"),
+                      "unreviewed": os.path.join(out_dir, "unreviewed.html"),
                       "hostile_title": HOSTILE_TITLE, "hostile_evidence": HOSTILE_EVIDENCE}))
 
 

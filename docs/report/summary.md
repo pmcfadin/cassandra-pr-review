@@ -2,7 +2,11 @@
 
 ## What is checked
 
-The summary page collects the result of every other section: the PR's title, number, author, base branch, and JIRA key and status; one recommendation with the reasons for it and who it is waiting on; the triage rating; and a grid of every requirement check with its status. Blocking failures come first, each with the next action.
+The summary page answers three questions first: can this merge, what is missing, and who has to act. It shows the PR's number, base branch, author, JIRA key and status, and title; one status card with the recommendation, one sentence that counts the must-fix items and names who they wait on, and a row of merge steps (Ticket, Tests, Build, Code review, CI, +1 votes) that link to their sections.
+
+Under the card, the **To do** bar counts the must-fix items for each owner. Open it to see every item grouped by owner (contributor, committer, reviewers); open an item to see what is wrong, the next step, and a link to its section. A code review issue reads "Fix the major code review issue in SSTable.java". Advisory warnings are behind "Show N optional items". The nav's **To do** link opens the same list.
+
+Below that: the review effort rating, suggested reviewers, and three closed panels: **Every check** (a grid of every requirement check with its status), the PR description, and **Words used in this report**, which explains terms such as committer, +1 vote, and Fix Version.
 
 The recommendation is computed from the check results. It is not a merge decision. Committers make that.
 
@@ -36,7 +40,7 @@ Other sections take the worst status of their checks, ignoring not-applicable, i
 
 ## How to fix
 
-Work through the reasons from the top. Blocking failures stop everything else, so fix those first; each one links to its section and names the action. For anything owned by a reviewer or committer, your step is usually to ask on the JIRA ticket. Then regenerate the report.
+Open **To do** and work through your own group from the top. Must-fix items stop everything else, so fix those first; each one links to its section and names the action. For anything owned by a reviewer or committer, your step is usually to ask on the JIRA ticket. Then regenerate the report.
 
 ## Limits
 

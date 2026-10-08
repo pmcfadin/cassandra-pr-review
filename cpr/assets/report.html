@@ -6,64 +6,71 @@
 <meta name="color-scheme" content="light dark">
 <title>Cassandra PR review</title>
 <style>
+/*REPORT_FONTS*/
 /* ---------------------------------------------------------------------------
    Tokens. Light is the default; dark follows the system unless the reader
-   picked light, and is forced when the reader picked dark.
+   picked light, and is forced when the reader picked dark. The look is an
+   inspection sheet: navy ink, a dark navigation rail, and status colours that
+   differ in lightness as well as hue (teal, ochre, vermilion).
    --------------------------------------------------------------------------- */
 :root {
-  --bg: #e9edf1;
+  --bg: #f3f5f8;
   --panel: #ffffff;
-  --panel-2: #f4f6f8;
-  --ink: #16202a;
-  --ink-2: #44525f;
-  --ink-3: #6f7c88;
-  --rule: #d3d9df;
-  --rule-strong: #b7c0c8;
-  --accent: #245a8c;
-  --accent-soft: #e2ecf5;
-  --focus: #1f6fd1;
-  --nav-bg: #f7f8fa;
+  --panel-2: #f7f9fb;
+  --ink: #0f2236;
+  --ink-2: #34445a;
+  --ink-3: #56657a;
+  --rule: #d9dee5;
+  --rule-strong: #c2cbd6;
+  --accent: #0b5cad;
+  --accent-soft: #e6eef8;
+  --focus: #0b5cad;
   --self-row: #eef4fb;
 
-  --pass: #17663f; --pass-bg: #e2f1e8;
-  --warn: #855600; --warn-bg: #fbefd6;
-  --fail: #b0251d; --fail-bg: #fbe5e2;
+  --pass: #00695f; --pass-bg: #e3f4f1;
+  --warn: #7a5600; --warn-bg: #fbf3dc;
+  --fail: #b02f09; --fail-bg: #fdede6;
   --unknown: #5c4799; --unknown-bg: #ebe6f6;
-  --info: #2c5d7f; --info-bg: #e2edf5;
-  --na: #66717c; --na-bg: #eceff2;
+  --info: #0b5cad; --info-bg: #e6eef8;
+  --na: #5f6b7a; --na-bg: #eef1f5;
 
-  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --radius: 6px;
+  /* The navigation rail is dark in both themes. */
+  --nav-bg: #0f2236; --nav-ink: #d3ddea; --nav-ink-3: #9db0c7; --nav-hover: #172e48; --nav-active: #1f3a5c; --nav-rule: #22364b;
+
+  --mono: "Red Hat Mono", ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --sans: "Red Hat Text", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --radius: 4px;
   --nav-w: 264px;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0d1217; --panel: #151c23; --panel-2: #1b232b;
-    --ink: #e3e8ed; --ink-2: #a7b2bd; --ink-3: #7b8793;
-    --rule: #28323c; --rule-strong: #3a4652;
-    --accent: #84b6e6; --accent-soft: #1a2a3a; --focus: #6aa8f0;
-    --nav-bg: #11171d; --self-row: #172535;
-    --pass: #5cc98e; --pass-bg: #132a1e;
-    --warn: #e5b04a; --warn-bg: #2d2310;
-    --fail: #ff7d73; --fail-bg: #3a1715;
+    --bg: #0b1724; --panel: #12202f; --panel-2: #172a3d;
+    --ink: #e4ebf3; --ink-2: #aebccc; --ink-3: #8597ab;
+    --rule: #22364b; --rule-strong: #2f4760;
+    --accent: #7db3ec; --accent-soft: #15304a; --focus: #7db3ec;
+    --self-row: #15304a;
+    --pass: #4fd1c0; --pass-bg: #0e2e2b;
+    --warn: #f2c14e; --warn-bg: #2e2410;
+    --fail: #ff8a5c; --fail-bg: #3a1a10;
     --unknown: #b8a5f3; --unknown-bg: #241d3b;
-    --info: #80b8de; --info-bg: #132635;
-    --na: #95a0ab; --na-bg: #1d242c;
+    --info: #7db3ec; --info-bg: #132b44;
+    --na: #95a3b3; --na-bg: #1a2838;
+    --nav-bg: #07111c; --nav-hover: #10233a; --nav-active: #183552; --nav-rule: #1a2c40;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0d1217; --panel: #151c23; --panel-2: #1b232b;
-  --ink: #e3e8ed; --ink-2: #a7b2bd; --ink-3: #7b8793;
-  --rule: #28323c; --rule-strong: #3a4652;
-  --accent: #84b6e6; --accent-soft: #1a2a3a; --focus: #6aa8f0;
-  --nav-bg: #11171d; --self-row: #172535;
-  --pass: #5cc98e; --pass-bg: #132a1e;
-  --warn: #e5b04a; --warn-bg: #2d2310;
-  --fail: #ff7d73; --fail-bg: #3a1715;
+  --bg: #0b1724; --panel: #12202f; --panel-2: #172a3d;
+  --ink: #e4ebf3; --ink-2: #aebccc; --ink-3: #8597ab;
+  --rule: #22364b; --rule-strong: #2f4760;
+  --accent: #7db3ec; --accent-soft: #15304a; --focus: #7db3ec;
+  --self-row: #15304a;
+  --pass: #4fd1c0; --pass-bg: #0e2e2b;
+  --warn: #f2c14e; --warn-bg: #2e2410;
+  --fail: #ff8a5c; --fail-bg: #3a1a10;
   --unknown: #b8a5f3; --unknown-bg: #241d3b;
-  --info: #80b8de; --info-bg: #132635;
-  --na: #95a0ab; --na-bg: #1d242c;
+  --info: #7db3ec; --info-bg: #132b44;
+  --na: #95a3b3; --na-bg: #1a2838;
+  --nav-bg: #07111c; --nav-hover: #10233a; --nav-active: #183552; --nav-rule: #1a2c40;
 }
 
 /* ---------------------------------------------------------------------------
@@ -75,7 +82,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font: 14.5px/1.55 var(--sans);
+  font: 15px/1.55 var(--sans);
   font-feature-settings: "tnum" 1;
 }
 a { color: var(--accent); text-underline-offset: 2px; text-decoration-thickness: 1px; }
@@ -101,25 +108,34 @@ li { margin: 2px 0; }
   background: linear-gradient(90deg, var(--nav-bg) calc(var(--nav-w) - 1px), var(--rule) calc(var(--nav-w) - 1px), var(--rule) var(--nav-w), transparent var(--nav-w)); }
 #nav {
   position: sticky; top: 0; height: 100vh; overflow-y: auto;
-  background: var(--nav-bg); border-right: 1px solid var(--rule);
-  padding: 18px 12px 18px 14px; display: flex; flex-direction: column; gap: 14px;
+  background: var(--nav-bg); color: var(--nav-ink); border-right: 1px solid var(--nav-rule);
+  padding: 20px 12px 18px 14px; display: flex; flex-direction: column; gap: 16px;
+  /* Status colours tuned for the dark rail, in both themes. */
+  --pass: #4fd1c0; --pass-bg: #0e2e2b; --warn: #f2c14e; --warn-bg: #2e2410; --fail: #ff8a5c; --fail-bg: #3a1a10;
+  --unknown: #b8a5f3; --unknown-bg: #241d3b; --info: #7db3ec; --info-bg: #132b44; --na: #95a3b3; --na-bg: #1a2838;
+  --panel: var(--nav-bg); --focus: #7db3ec;
 }
+#nav .eyebrow { color: var(--nav-ink-3); }
 .nav-head { padding: 0 6px; }
-.nav-head .pr-num { font: 700 20px/1.2 var(--sans); letter-spacing: -0.02em; margin-top: 4px; }
-.nav-head .pr-num a { color: var(--ink); text-decoration: none; }
+.nav-head .pr-num { font: 700 21px/1.2 var(--sans); letter-spacing: -0.01em; margin-top: 4px; }
+.nav-head .pr-num a { color: #ffffff; text-decoration: none; }
 .nav-head .pr-num a:hover { text-decoration: underline; }
-.nav-verdict { margin-top: 6px; }
+.nav-verdict { margin-top: 8px; }
+.nav-todo { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; padding: 8px 10px;
+  border: 1px solid var(--nav-rule); border-radius: var(--radius); color: #ffffff; text-decoration: none; font-weight: 600; }
+.nav-todo:hover { background: var(--nav-hover); }
+.nav-todo .n { font: 700 12px/1 var(--mono); color: var(--fail); background: var(--fail-bg); padding: 3px 6px; border-radius: 3px; }
 #nav ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
 #nav li { margin: 0; }
 #nav ol a {
-  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px;
-  padding: 7px 8px 7px 10px; border-radius: var(--radius); color: var(--ink-2); text-decoration: none;
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; min-height: 38px;
+  padding: 6px 8px 6px 10px; border-radius: var(--radius); color: var(--nav-ink); text-decoration: none;
   border-left: 3px solid transparent; font-weight: 500;
 }
-#nav ol a:hover { background: var(--panel-2); color: var(--ink); }
-#nav ol a[aria-current="page"] { background: var(--panel); color: var(--ink); border-left-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--rule); font-weight: 650; }
-.nav-foot { margin-top: auto; padding: 0 6px; font-size: 12px; color: var(--ink-3); }
+#nav ol a:hover { background: var(--nav-hover); color: #ffffff; }
+#nav ol a[aria-current="page"] { background: var(--nav-active); color: #ffffff; border-left-color: #7db3ec; font-weight: 650; }
+#nav ol a .badge { border-color: transparent; }
+.nav-foot { margin-top: auto; padding: 0 6px; font-size: 12px; color: var(--nav-ink-3); }
 
 main { min-width: 0; }
 .toolbar {
@@ -162,7 +178,7 @@ button.tool:hover { border-color: var(--accent); }
 /* Status badge: color is never the only signal; each badge carries a glyph and a word. */
 .badge {
   display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
-  font: 600 11.5px/1 var(--mono); letter-spacing: 0.02em; padding: 3px 7px 3px 4px; border-radius: 999px;
+  font: 600 11.5px/1 var(--mono); letter-spacing: 0.02em; padding: 3px 7px 3px 4px; border-radius: 3px;
   color: var(--c); background: var(--cb); border: 1px solid color-mix(in srgb, var(--c) 35%, transparent);
 }
 .badge .g { display: inline-grid; place-items: center; width: 15px; height: 15px; border-radius: 50%;
@@ -181,52 +197,85 @@ button.tool:hover { border-color: var(--accent); }
 /* ---------------------------------------------------------------------------
    Summary
    --------------------------------------------------------------------------- */
-.pr-head h1 { font-size: 23px; font-weight: 700; letter-spacing: -0.02em; margin: 6px 0 8px; overflow-wrap: anywhere; }
+.pr-head .meta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; color: var(--ink-3); font-size: 14px; }
+.pr-head .meta-row > span { white-space: nowrap; }
+.pr-head h1 { font-size: 24px; font-weight: 650; letter-spacing: -0.01em; line-height: 1.3; margin: 6px 0 0; max-width: 60ch; overflow-wrap: anywhere; }
 .pr-head h1 a { color: var(--ink); text-decoration: none; }
 .pr-head h1 a:hover { text-decoration: underline; }
-.meta-row { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--ink-2); font-size: 13.5px; }
-.meta-row > span { white-space: nowrap; }
-.meta-row .k { color: var(--ink-3); margin-right: 4px; }
 
-.verdict {
-  margin-top: 20px; background: var(--panel); border: 1px solid var(--rule); border-radius: var(--radius);
-  border-left: 8px solid var(--c); padding: 16px 20px 14px;
-}
-.verdict .v-label { display: flex; align-items: center; gap: 12px; margin-top: 6px; font-size: 26px; font-weight: 750; letter-spacing: -0.025em; line-height: 1.15; color: var(--ink); }
-.verdict .v-glyph { flex: none; display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--c); color: var(--panel); font-size: 18px; font-weight: 800; }
-.verdict .v-note { margin: 10px 0 0; font-size: 15px; font-weight: 600; color: var(--ink); }
-.verdict .waiting { margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-2); }
-.reasons { list-style: none; padding: 0; margin: 14px 0 0; border-top: 1px solid var(--rule); }
-.reasons > li { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; padding: 12px 0; border-bottom: 1px solid var(--rule); margin: 0; }
-.reasons > li:last-child { border-bottom: 0; padding-bottom: 2px; }
-.reasons > li > .badge { align-self: start; justify-self: start; margin-top: 1px; }
-.reasons .r-title { font-weight: 650; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
-.reasons .r-title a { color: var(--ink); }
-.reasons .r-body { grid-column: 2; color: var(--ink-2); }
-.next { grid-column: 2; margin-top: 4px; background: var(--panel-2); border-radius: 4px; padding: 7px 10px; border: 1px solid var(--rule); }
-.next .lead { font: 700 11px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink); margin-right: 6px; }
+/* Next step / Fix: the action a reader takes, used by check cards, issues, and to-do items. */
+.next { margin-top: 6px; background: var(--panel-2); border-radius: var(--radius); padding: 8px 11px; border: 1px solid var(--rule); color: var(--ink); }
+.next .lead { font: 700 11px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink); margin-right: 8px; }
 
-.summary-left { display: grid; gap: 18px; align-content: start; }
-.reviewers-card ul { margin: 6px 0 0; padding-left: 18px; }
+/* Status card: verdict + one sentence + merge steps, then the collapsed To do bar. */
+.verdict { margin-top: 20px; background: var(--panel); border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden; }
+.verdict .v-main { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 24px; padding: 18px 22px; }
+.verdict .v-head { display: flex; align-items: center; gap: 14px; flex: 1 1 340px; min-width: 0; }
+.verdict .v-glyph { flex: none; display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 50%;
+  background: var(--cb); color: var(--c); font-size: 22px; font-weight: 800; }
+.verdict .v-text { display: block; font-size: 26px; font-weight: 700; letter-spacing: -0.015em; line-height: 1.2; color: var(--ink); }
+.verdict .v-note { margin: 2px 0 0; font-size: 16px; color: var(--ink-2); }
+.verdict .review-headline { margin: 2px 0 0; font-size: 14px; color: var(--ink-3); }
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; flex: 0 1 auto; }
+.steps li { margin: 0; }
+.steps a { display: inline-flex; align-items: center; gap: 7px; padding: 6px 11px; min-height: 32px; border-radius: 3px;
+  font-size: 14px; font-weight: 600; text-decoration: none; color: var(--c); background: var(--cb); }
+.steps a:hover { box-shadow: inset 0 0 0 1px var(--c); }
+.steps .sg { font-weight: 800; }
+
+details.todo { scroll-margin-top: 64px; border: 0; border-top: 1px solid var(--rule); border-radius: 0; margin: 0; background: var(--panel-2); }
+details.todo > summary { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; padding: 12px 22px; min-height: 48px;
+  list-style: none; font-weight: 400; font-size: 15px; }
+details.todo > summary::-webkit-details-marker { display: none; }
+details.todo > summary .t-title { font-weight: 700; }
+details.todo > summary .t-owner { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); }
+details.todo > summary .t-n { min-width: 22px; text-align: center; font: 700 12.5px/1 var(--mono); color: var(--fail); background: var(--fail-bg);
+  padding: 4px 6px; border-radius: 3px; }
+details.todo > summary .t-toggle { margin-left: auto; color: var(--accent); font-size: 14px; font-weight: 600; }
+details.todo > summary .t-toggle::after { content: "Show"; }
+details.todo[open] > summary .t-toggle::after { content: "Hide"; }
+details.todo[open] > summary { border-bottom: 1px solid var(--rule); }
+details.todo > .d-body { padding: 0; background: var(--panel); }
+.todo-group { display: flex; flex-wrap: wrap; border-bottom: 1px solid var(--rule); }
+.todo-group:last-child { border-bottom: 0; }
+.todo-group > h3 { flex: 0 0 150px; padding: 14px 22px; font-size: 15px; font-weight: 700; }
+.todo-group > ul { list-style: none; margin: 0; padding: 0; flex: 1 1 360px; min-width: 0; }
+.todo-group li { margin: 0; }
+details.todo-item { border: 0; border-radius: 0; margin: 0; background: none; }
+details.todo-item > summary { display: flex; align-items: center; gap: 10px; padding: 10px 22px 10px 0; min-height: 44px; font-weight: 500; font-size: 15px; list-style: none; }
+details.todo-item > summary::-webkit-details-marker { display: none; }
+details.todo-item > summary::after { content: "▾"; margin-left: auto; color: var(--ink-3); }
+details.todo-item[open] > summary::after { content: "▴"; }
+details.todo-item[open] > summary { border: 0; }
+details.todo-item > .d-body { padding: 0 22px 14px 25px; color: var(--ink-2); }
+details.todo-item > .d-body > p { margin: 0 0 6px; }
+.todo-item .ti-g { flex: none; font-weight: 800; color: var(--c); width: 15px; text-align: center; }
+.todo-more { display: block; width: 100%; text-align: left; padding: 12px 22px; min-height: 44px; border: 0; border-top: 1px solid var(--rule);
+  background: var(--panel-2); color: var(--accent); font: 600 14px/1.3 var(--sans); cursor: pointer; }
+.todo-optional[hidden] { display: none; }
+.todo-empty { padding: 14px 22px; margin: 0; color: var(--ink-2); }
+
+.summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 22px; align-items: start; }
+.summary-cards .panel { display: flex; flex-direction: column; gap: 8px; }
+.reviewers-card ul { margin: 0; padding-left: 18px; }
 .reviewers-card li { margin: 4px 0; }
 .panel.expert { margin: 0 0 10px; }
 .panel.expert ul { margin: 6px 0 0; padding-left: 18px; }
-.summary-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.9fr); gap: 18px; margin-top: 18px; align-items: start; }
-.triage-card .rating { font-size: 22px; font-weight: 750; letter-spacing: -0.02em; text-transform: capitalize; }
+.triage-card .rating { font-size: 20px; font-weight: 700; text-transform: capitalize; }
 .triage-card .pts { font: 500 12.5px var(--mono); color: var(--ink-3); margin-left: 6px; }
-.sig { list-style: none; padding: 0; margin: 10px 0 0; font-size: 13px; }
-.sig li { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 4px 0; border-top: 1px dotted var(--rule); margin: 0; }
-.sig li .sv { color: var(--ink-3); }
-.sig li.scored { color: var(--ink); font-weight: 600; }
-.sig li .pp { font: 600 12px var(--mono); }
+.triage-card .why { margin: 0; color: var(--ink-2); font-size: 14px; }
+.summary-more { margin-top: 22px; }
+.glossary { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px 28px; margin: 0; }
+.glossary dt { font-weight: 700; }
+.glossary dd { margin: 0; color: var(--ink-2); }
 
 /* The gate matrix: every check, grouped by section, one row each. */
 .matrix { display: flex; flex-direction: column; gap: 12px; }
 .matrix-group h4 { font: 600 11px/1.3 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 4px; }
 .matrix-group ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 4px; }
 .matrix-group li { margin: 0; }
-.gate { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 4px;
-  background: var(--panel); border: 1px solid var(--rule); color: var(--ink); text-decoration: none; font-size: 13px; line-height: 1.3; }
+.gate { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; padding: 6px 8px; border-radius: var(--radius);
+  background: var(--panel); border: 1px solid var(--rule); color: var(--ink); text-decoration: none; font-size: 13.5px; line-height: 1.3; }
 .gate:hover { border-color: var(--c); }
 .gate.blocking { box-shadow: inset 3px 0 0 var(--ink); }
 .gate .gk { font: 600 10px/1 var(--mono); letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-3); }
@@ -300,9 +349,11 @@ body.no-data #no-data { display: block; }
    --------------------------------------------------------------------------- */
 @media (max-width: 799.98px) {
   .shell { grid-template-columns: minmax(0, 1fr); background: none; }
-  .verdict { padding: 14px 14px 12px; border-left-width: 6px; }
-  .reasons > li { grid-template-columns: 1fr; }
-  .reasons .r-body, .next { grid-column: 1; }
+  .verdict .v-main { padding: 16px; }
+  details.todo > summary, .todo-more { padding-left: 16px; padding-right: 16px; }
+  .todo-group > h3 { flex-basis: 100%; padding: 12px 16px 0; }
+  details.todo-item > summary { padding-left: 16px; }
+  details.todo-item > .d-body { padding-left: 41px; }
   #nav {
     position: fixed; z-index: 20; left: 0; top: 0; width: min(300px, 86vw); height: 100vh;
     transform: translateX(-100%); visibility: hidden; transition: transform 0.18s ease, visibility 0s linear 0.18s;
@@ -313,8 +364,7 @@ body.no-data #no-data { display: block; }
   #nav-toggle { display: inline-flex; }
   .toolbar { padding: 8px 16px; }
   .content { padding: 18px 16px 48px; }
-  .summary-grid { grid-template-columns: minmax(0, 1fr); }
-  .verdict .v-label { font-size: 21px; }
+  .verdict .v-text { font-size: 22px; }
   dl.fields { grid-template-columns: 1fr; gap: 0; }
   dl.fields dd { margin-bottom: 8px; }
 }
@@ -332,6 +382,8 @@ body.no-data #no-data { display: block; }
   .report-section { display: block !important; break-before: page; }
   .report-section:first-child { break-before: auto; }
   .print-only { display: block; }
+  .todo-optional[hidden] { display: block; }
+  .todo-more, details.todo > summary .t-toggle { display: none; }
   details::details-content { content-visibility: visible; display: block; }
   details > summary { padding: 4px 0; }
   .check, .gate, .verdict, tr { break-inside: avoid; }
@@ -351,6 +403,7 @@ body.no-data #no-data { display: block; }
       <div class="eyebrow">apache/cassandra review</div>
       <div class="pr-num" id="nav-pr"></div>
       <div class="nav-verdict" id="nav-verdict"></div>
+      <div id="nav-todo-slot"></div>
     </div>
     <ol id="nav-list"></ol>
     <div class="nav-foot" id="nav-foot"></div>
@@ -698,128 +751,267 @@ body.no-data #no-data { display: block; }
   // -------------------------------------------------------------------------
   var verdictStatus = (sectionById.summary && sectionById.summary.status) || "unknown";
 
+  // -------------------------------------------------------------------------
+  // Summary: the answer first (can it merge, what is missing, who acts), then
+  // detail on demand. Plain words for contributors new to the project.
+  // -------------------------------------------------------------------------
+  var STEPS = [["ticket", "Ticket"], ["testing", "Tests"], ["build", "Build"], ["review", "Code review"], ["ci", "CI"], ["votes", "+1 votes"]];
+  var OWNER_ORDER = ["contributor", "committer", "reviewer"];
+  var OWNER_PHRASE = { contributor: "the contributor", committer: "a committer", reviewer: "reviewers" };
+  var OWNER_TITLE = { contributor: "Contributor", committer: "Committer", reviewer: "Reviewers" };
+  var VERDICT_NOTE = {
+    "draft": "This PR is a draft. Treat this report as early feedback, not a merge decision.",
+    "needs-work": "Every blocking check passes. The contributor still has fixes to make.",
+    "insufficient-evidence": "Some required inputs could not be read, so the tool cannot say whether the requirements are met.",
+    "awaiting-review": "The contributor's part is done. What remains is for reviewers or committers.",
+    "requirements-met-unreviewed": "Code review has not run yet. The merge requirements pass, but no review lens has read the code, so this is not a ready-to-merge verdict.",
+    "ready": "Every blocking requirement passes and every review lens approved. A committer makes the final call."
+  };
+  var GLOSSARY = [
+    ["Blocking", "The PR cannot merge until this passes."],
+    ["Advisory", "A request or a note. It does not stop the merge by itself."],
+    ["Committer", "A project member who can merge code and run CI."],
+    ["+1 vote", "A committer approves the change. Two are needed."],
+    ["CI", "The full automated test run. Results are attached to the JIRA ticket."],
+    ["Fix Version", "The release versions in JIRA where this fix will ship."],
+    ["Lens", "One automated reviewer that reads the code for one kind of problem."],
+    ["Blocker, major, minor, nit", "How serious a code review issue is. Blockers and majors must be fixed."],
+    ["Pass, Warning, Fail", "The check passed, needs attention, or did not pass."],
+    ["Unknown, N/A", "The check could not be decided, or does not apply to this PR."]
+  ];
+
+  function ownerKey(o) { return OWNER_ORDER.indexOf(o) >= 0 ? o : (o || "other"); }
+  function ownerTitle(o) { return OWNER_TITLE[o] || ownerLabel(o); }
+  function joinWords(words) {
+    if (words.length < 2) return words.join("");
+    return words.slice(0, -1).join(", ") + " and " + words[words.length - 1];
+  }
+  function issueOfFinding(fid) {
+    var issues = (M.review && M.review.issues) || [];
+    for (var i = 0; i < issues.length; i++) {
+      var it = issues[i];
+      if (it.id === fid || (it.members || []).some(function (m) { return m.id === fid; })) return it;
+    }
+    return null;
+  }
+  function isBlockingReason(r) {
+    var c = r.check ? checkById[r.check] : null;
+    return typeof r.blocking === "boolean" ? r.blocking : (c ? !!c.blocking : false);
+  }
+  // One to-do item: a short title, and the detail it opens to.
+  function todoFromReason(r) {
+    var item = { owner: ownerKey(r.owner), status: r.status, must: isBlockingReason(r) };
+    if (r.finding) {
+      var iss = issueOfFinding(r.finding);
+      var sev = (iss && iss.severity) || r.severity || "";
+      var loc = (iss && iss.location) || String(r.summary || "").split(" — ")[0];
+      var file = String(loc || "").split("/").pop();
+      item.title = "Fix the " + (sev ? sev + " " : "") + "code review issue" + (file ? " in " + file : "");
+      item.body = [iss ? mdInline("p", iss.problem) : (r.summary ? mdInline("p", r.summary) : null),
+        (iss ? iss.fix : r.action) ? h("div", "next", [h("span", "lead", "Fix"), mdInline("span", iss ? iss.fix : r.action)]) : null];
+      item.href = "#review";
+      item.label = "Code review";
+    } else {
+      item.title = r.title || r.check || "";
+      item.body = [r.summary ? mdInline("p", r.summary) : null, r.action ? nextStep(r.action, r.owner) : null];
+      item.check = r.check;
+      item.href = r.check && sectionOfCheck[r.check] ? "#" + sectionOfCheck[r.check] : null;
+      item.label = item.href ? sectionById[sectionOfCheck[r.check]].title : null;
+    }
+    return item;
+  }
+  function todoFromCheck(c) {
+    return { owner: ownerKey(c.owner), status: c.status, must: false, title: c.title || c.id, check: c.id,
+      body: [c.summary ? mdInline("p", c.summary) : null, c.action ? nextStep(c.action, c.owner) : null],
+      href: sectionOfCheck[c.id] ? "#" + sectionOfCheck[c.id] : null,
+      label: sectionOfCheck[c.id] ? sectionById[sectionOfCheck[c.id]].title : null };
+  }
+  function todoItem(it) {
+    var s = st(it.status);
+    var g = h("span", "ti-g", STATUS[s].g);
+    g.setAttribute("aria-hidden", "true");
+    var sum = h("summary", null, [g, h("span", "sr-only", STATUS[s].w + ": "), h("span", null, it.title)]);
+    var d = h("details", "todo-item s-" + s, [sum, h("div", "d-body", it.body)]);
+    if (it.href) {
+      var a = h("a", null, "Open " + it.label);
+      a.href = it.href;
+      if (it.check) a.setAttribute("data-check", it.check);
+      append(d.lastChild, h("p", null, a));
+    }
+    return h("li", null, d);
+  }
+  function todoGroups(items) {
+    var by = {}, order = [];
+    items.forEach(function (it) { if (!by[it.owner]) { by[it.owner] = []; order.push(it.owner); } by[it.owner].push(it); });
+    order.sort(function (a, b) {
+      var ia = OWNER_ORDER.indexOf(a), ib = OWNER_ORDER.indexOf(b);
+      return (ia < 0 ? 9 : ia) - (ib < 0 ? 9 : ib);
+    });
+    return order.map(function (o) {
+      return h("div", "todo-group", [h("h3", null, ownerTitle(o)), h("ul", null, by[o].map(todoItem))]);
+    });
+  }
+  function rankReason(r) {
+    var s = { "fail": 0, "unknown": 1, "warn": 2 }[r.status];
+    return (isBlockingReason(r) ? 0 : 10) + (s === undefined ? 5 : s);
+  }
+
+  function todoModel() {
+    var rec = M.recommendation || {};
+    var reasons = (Array.isArray(rec.reasons) ? rec.reasons : []).map(function (r, i) { return { r: r, i: i }; })
+      .sort(function (a, b) { return (rankReason(a.r) - rankReason(b.r)) || (a.i - b.i); }).map(function (x) { return x.r; });
+    var items = reasons.map(todoFromReason);
+    var inReasons = {};
+    reasons.forEach(function (r) { if (r.check) inReasons[r.check] = true; });
+    var optional = checks.filter(function (c) { return !c.blocking && !inReasons[c.id] && (c.status === "warn" || c.status === "fail"); })
+      .map(todoFromCheck);
+    var must = items.filter(function (it) { return it.must; });
+    var later = items.filter(function (it) { return !it.must; }).concat(optional);
+    var mustBy = {};
+    must.forEach(function (it) { mustBy[it.owner] = (mustBy[it.owner] || 0) + 1; });
+    var owners = Object.keys(mustBy).sort(function (a, b) {
+      var ia = OWNER_ORDER.indexOf(a), ib = OWNER_ORDER.indexOf(b);
+      return (ia < 0 ? 9 : ia) - (ib < 0 ? 9 : ib);
+    });
+    return { must: must, later: later, mustBy: mustBy, owners: owners };
+  }
+  var TODO = todoModel();
+
+  function statusSentence(rec) {
+    var n = TODO.must.length;
+    if (!n) return VERDICT_NOTE[rec.verdict] || (TODO.later.length ? "Nothing blocks this PR. " + plural(TODO.later.length, "optional item") + " remain." : "Nothing is left to do.");
+    var who = TODO.owners.map(function (o) { return OWNER_PHRASE[o] || ownerLabel(o).toLowerCase(); });
+    return plural(n, "must-fix item") + ". Waiting on " + joinWords(who) + ".";
+  }
+
   function renderSummary() {
     var out = [];
     var jira = M.jira || {};
     var t = jira.ticket;
     var key = (M.jira_key && M.jira_key.key) || (t && t.key);
+    var rec = M.recommendation || {};
 
+    // Header: one muted line of facts, then the title.
     var head = h("header", "pr-head");
-    append(head, h("div", "eyebrow", "apache/cassandra · Pull request #" + pr.number + " · " + (pr.draft ? "draft" : (pr.state || ""))));
-    append(head, h("h1", null, link(pr.url, pr.title || "(untitled)")));
     var meta = h("div", "meta-row");
-    append(meta, h("span", null, [h("span", "k", "Author"), link(ghUser(pr.author), pr.author || "unknown"),
-      pr.author_association ? h("span", "muted", " (" + String(pr.author_association).toLowerCase().replace(/_/g, " ") + ")") : null]));
-    append(meta, h("span", null, [h("span", "k", "Base"), link(ghTree("apache/cassandra", pr.base), pr.base || "?", "mono")]));
-    if (pr.head_repo) append(meta, h("span", null, [h("span", "k", "From"), link(ghTree(pr.head_repo, pr.head_ref), pr.head_repo + ":" + (pr.head_ref || ""), "mono")]));
-    append(meta, h("span", null, [h("span", "k", "Size"), h("span", "add", "+" + (pr.additions || 0)), " ", h("span", "del", "−" + (pr.deletions || 0)),
-      " in " + plural(pr.changed_files || 0, "file")]));
-    append(meta, h("span", null, [h("span", "k", "JIRA"), key ? link(t && t.url ? t.url : "https://issues.apache.org/jira/browse/" + encodeURIComponent(key), key, "mono") : h("span", "muted", "no ticket key found"),
-      " ", t ? h("span", "tag", t.status || "?") : (key ? h("span", "tag", "ticket " + (jira.status || "unavailable")) : null)]));
+    append(meta, h("span", null, [link(pr.url, "#" + pr.number), pr.draft ? " · draft" : (pr.state && pr.state !== "open" ? " · " + pr.state : "")]));
+    append(meta, h("span", null, ["into ", link(ghTree("apache/cassandra", pr.base), pr.base || "?", "mono")]));
+    append(meta, h("span", null, ["by ", link(ghUser(pr.author), pr.author || "unknown"),
+      pr.author_association ? " (" + String(pr.author_association).toLowerCase().replace(/_/g, " ") + ")" : null]));
+    append(meta, h("span", null, key ? [link(t && t.url ? t.url : "https://issues.apache.org/jira/browse/" + encodeURIComponent(key), key, "mono"),
+      " ", t ? h("span", "tag", t.status || "?") : h("span", "tag", "ticket " + (jira.status || "unavailable"))] : h("span", "muted", "no ticket key found")));
     append(head, meta);
-    if (t && t.summary) append(head, h("p", "muted", t.summary));
+    append(head, h("h1", null, link(pr.url, pr.title || "(untitled)")));
     out.push(head);
 
-    // Recommendation
-    var rec = M.recommendation || {};
-    var v = h("section", "verdict s-" + st(verdictStatus));
+    // Status card.
+    var s = st(verdictStatus);
+    var v = h("section", "verdict s-" + s);
     v.setAttribute("aria-label", "Recommendation");
-    append(v, h("div", "eyebrow", "Recommendation"));
-    var glyph = h("span", "v-glyph", STATUS[st(verdictStatus)].g);
+    var glyph = h("span", "v-glyph", STATUS[s].g);
     glyph.setAttribute("aria-hidden", "true");
-    append(v, h("div", "v-label", [glyph, h("span", "v-text", rec.label || rec.verdict || "No recommendation")]));
+    var label = String(rec.label || rec.verdict || "No recommendation");
+    var cut = label.indexOf(" — ");
+    var words = h("div", null, [h("span", "v-text", cut > 0 ? label.slice(0, cut) : label)]);
+    var note = statusSentence(rec);
+    if (TODO.must.length && VERDICT_NOTE[rec.verdict] && rec.verdict !== "awaiting-review") note = VERDICT_NOTE[rec.verdict] + " " + note;
+    append(words, h("p", "v-note", note));
     var headline = reviewHeadline();
     if (headline) {
-      var hl = h("p", "v-note review-headline", [headline, " "]);
-      var hla = h("a", null, "Code review");
+      var hl = h("p", "review-headline", ["Code review: " + headline + " · "]);
+      var hla = h("a", null, "Open");
       hla.href = "#review";
       append(hl, hla);
-      append(v, hl);
+      append(words, hl);
     }
-    if (rec.verdict === "requirements-met-unreviewed")
-      append(v, h("p", "v-note", "Code review has not run yet. The merge requirements below pass, but no review lens has read the code, so this is not a ready-to-merge verdict."));
-    if (rec.verdict === "draft" || pr.draft)
-      append(v, h("p", "v-note", "This PR is a draft. Treat everything here as early feedback, not a merge decision."));
-    if (rec.verdict === "awaiting-review")
-      append(v, h("p", "v-note", "The contributor's part is done. What remains is owned by reviewers or committers: votes, CI runs, or both."));
-    if (rec.verdict === "needs-contributor-work")
-      append(v, h("p", "v-note", "The contributor has blocking items to fix before this can move forward. They are listed first below."));
-    if (rec.verdict === "ready")
-      append(v, h("p", "v-note", "Every blocking requirement passes and every code review lens approved. A committer makes the final call."));
-    if (rec.verdict === "insufficient-evidence")
-      append(v, h("p", "v-note", "Some required inputs could not be read, so the tool cannot say whether the requirements are met."));
-    if (Array.isArray(rec.waiting_on) && rec.waiting_on.length) {
-      var w = h("div", "waiting", h("strong", null, "Waiting on:"));
-      rec.waiting_on.forEach(function (o) { append(w, h("span", "tag owner", ownerLabel(o))); });
-      append(v, w);
-    }
-    var reasons = (Array.isArray(rec.reasons) ? rec.reasons : []).slice();
-    function rank(r) {
-      var c = r.check ? checkById[r.check] : null;
-      var blocking = typeof r.blocking === "boolean" ? r.blocking : (c ? !!c.blocking : false);
-      var s = { "fail": 0, "unknown": 1, "warn": 2 }[r.status];
-      return (blocking ? 0 : 10) + (s === undefined ? 5 : s);
-    }
-    reasons = reasons.map(function (r, i) { return { r: r, i: i }; })
-      .sort(function (a, b) { return (rank(a.r) - rank(b.r)) || (a.i - b.i); }).map(function (x) { return x.r; });
-    if (reasons.length) {
-      var ol = h("ol", "reasons");
-      ol.setAttribute("aria-label", "Reasons");
-      reasons.forEach(function (r) {
-        var c = r.check ? checkById[r.check] : null;
-        var sec = r.check ? sectionOfCheck[r.check] : (r.finding ? "review" : null);
-        var title = sec ? h("a", null, r.title || r.check) : h("span", null, r.title || "");
-        if (sec) { title.href = "#" + sec; if (r.check) title.setAttribute("data-check", r.check); }
-        var li = h("li", null, [badge(r.status), h("div", "r-title", [title, c ? kindTag(c.blocking) : null, r.check ? h("span", "cid mono muted", r.check) : null])]);
-        if (r.summary) append(li, mdInline("div", r.summary, "r-body"));
-        if (r.action) append(li, nextStep(r.action, r.owner));
-        else if (r.owner) append(li, h("div", "r-body", [h("span", "tag owner", "Who acts: " + ownerLabel(r.owner))]));
-        ol.appendChild(li);
+    var steps = h("ol", "steps");
+    steps.setAttribute("aria-label", "Steps to merge");
+    STEPS.forEach(function (p) {
+      var sec = sectionById[p[0]];
+      if (!sec) return;
+      var ss = st(sec.status);
+      var g = h("span", "sg", STATUS[ss].g);
+      g.setAttribute("aria-hidden", "true");
+      var a = h("a", "s-" + ss, [g, p[1]]);
+      a.href = "#" + p[0];
+      a.setAttribute("aria-label", p[1] + ": " + STATUS[ss].w);
+      a.title = STATUS[ss].w;
+      steps.appendChild(h("li", null, a));
+    });
+    append(v, h("div", "v-main", [h("div", "v-head", [glyph, words]), steps]));
+
+    // To do: closed by default; the bar alone says how much and for whom.
+    var todo = h("details", "todo");
+    todo.id = "todo";
+    var bar = h("summary", null, h("span", "t-title", "To do"));
+    if (TODO.owners.length) {
+      TODO.owners.forEach(function (o) {
+        append(bar, h("span", "t-owner", [ownerTitle(o), h("span", "t-n", String(TODO.mustBy[o]))]));
       });
-      append(v, ol);
+    } else {
+      append(bar, h("span", "t-owner", TODO.later.length ? "nothing blocking" : "nothing to do"));
     }
+    append(bar, h("span", "t-toggle", null));
+    todo.appendChild(bar);
+    var body = h("div", "d-body");
+    if (TODO.must.length) append(body, todoGroups(TODO.must));
+    if (TODO.later.length) {
+      var opt = h("div", "todo-optional", todoGroups(TODO.later));
+      var more = h("button", "todo-more");
+      more.type = "button";
+      var moreText = "Show " + plural(TODO.later.length, "optional item");
+      if (TODO.must.length) {
+        opt.hidden = true;
+        more.textContent = moreText;
+        more.setAttribute("aria-expanded", "false");
+        more.addEventListener("click", function () {
+          opt.hidden = !opt.hidden;
+          more.setAttribute("aria-expanded", String(!opt.hidden));
+          more.textContent = opt.hidden ? moreText : "Hide optional items";
+        });
+        append(body, [more, opt]);
+      } else {
+        append(body, opt);
+      }
+    }
+    if (!TODO.must.length && !TODO.later.length) append(body, h("p", "todo-empty", "Nothing to do. Every check passes or does not apply."));
+    todo.appendChild(body);
+    v.appendChild(todo);
     out.push(v);
 
-    // Triage + matrix
-    var grid = h("div", "summary-grid");
+    // Small cards: review effort and who knows this code.
     var tr = M.triage || {};
     var tc = h("section", "panel triage-card");
-    tc.setAttribute("aria-label", "Review difficulty");
-    append(tc, h("div", "eyebrow", "Review difficulty"));
+    tc.setAttribute("aria-label", "Review effort");
+    append(tc, h("div", "eyebrow", "Review effort"));
     append(tc, h("div", null, [h("span", "rating", tr.rating || "unknown"), h("span", "pts", plural(tr.points || 0, "point"))]));
-    if (tr.forced_by) append(tc, h("p", null, [h("strong", null, "Rated hard because it "), tr.forced_by + "."]));
-    if (tr.capped_by) append(tc, h("p", null, [h("strong", null, "Capped: "), tr.capped_by + "."]));
-    var sig = h("ul", "sig");
-    (tr.signals || []).forEach(function (s) {
-      var pts = Number(s.points) || 0;
-      sig.appendChild(h("li", pts ? "scored" : null, [h("span", null, [s.signal + ": ", h("span", "sv", String(s.value))]),
-        h("span", "pp", (pts > 0 ? "+" : "") + pts)]));
-    });
-    append(tc, sig);
+    var scored = (tr.signals || []).filter(function (x) { return Number(x.points); }).map(function (x) { return x.signal; });
+    if (tr.forced_by) append(tc, h("p", "why", "Rated hard because it " + tr.forced_by + "."));
+    else if (scored.length) append(tc, h("p", "why", "Raised by " + joinWords(scored) + "."));
+    else append(tc, h("p", "why", "Small and low risk."));
+    if (tr.capped_by) append(tc, h("p", "why", "Capped: " + tr.capped_by + "."));
     var tl = h("a", null, "Triage details");
     tl.href = "#triage";
     append(tc, h("p", null, tl));
-    var left = h("div", "summary-left");
-    left.appendChild(tc);
-    left.appendChild(reviewersCard());
-    grid.appendChild(left);
+    out.push(h("div", "summary-cards", [tc, reviewersCard()]));
 
-    var mx = h("section", "matrix");
-    mx.setAttribute("aria-label", "Every check");
-    append(mx, h("div", "eyebrow", "Every check · " + checks.length));
+    // Everything else is one click away.
+    var mx = h("div", "matrix");
     var placed = {};
-    M.sections.forEach(function (s) {
-      var ids = (s.checks || []).filter(function (id) { return checkById[id]; });
+    M.sections.forEach(function (sec) {
+      var ids = (sec.checks || []).filter(function (id) { return checkById[id]; });
       if (!ids.length) return;
       ids.forEach(function (id) { placed[id] = true; });
-      mx.appendChild(matrixGroup(s.title, s.id, ids));
+      mx.appendChild(matrixGroup(sec.title, sec.id, ids));
     });
     var stray = checks.filter(function (c) { return !placed[c.id]; }).map(function (c) { return c.id; });
     if (stray.length) mx.appendChild(matrixGroup("Other", null, stray));
-    grid.appendChild(mx);
-    out.push(grid);
-
-    if (pr.body) out.push(h("div", "block", details("PR description", h("pre", null, pr.body))));
+    var more2 = [details("Every check (" + checks.length + ")", mx, { cls: "every-check" })];
+    if (pr.body) more2.push(details("PR description", h("pre", null, pr.body)));
+    var gl = h("dl", "glossary");
+    GLOSSARY.forEach(function (g) { append(gl, h("div", null, [h("dt", null, g[0]), h("dd", null, g[1])])); });
+    more2.push(details("Words used in this report", gl, { cls: "glossary-panel" }));
+    out.push(h("div", "summary-more", more2));
     return out;
   }
   function matrixGroup(title, sid, ids) {
@@ -1006,9 +1198,8 @@ body.no-data #no-data { display: block; }
     return out;
   }
 
-  function personLine(p) {
-    return [h("strong", null, p.name), p.asf_id ? h("span", "mono muted", " " + p.asf_id) : null,
-      h("span", "muted", " · " + p.patches + (p.patches === 1 ? " patch" : " patches") + ", " + plural(p.reviews, "review") + ", latest " + p.latest)];
+  function personShort(p) {
+    return [h("strong", null, p.name), h("span", "muted", " · " + plural(p.reviews, "review") + (p.latest ? ", last " + String(p.latest).slice(0, 7) : ""))];
   }
   function reviewersCard() {
     var cx = M.context || {};
@@ -1021,10 +1212,10 @@ body.no-data #no-data { display: block; }
       append(card, h("p", "muted", cx.new_files_only ? "The PR only adds new files, so there is no prior history for the changed code."
         : "No committer has recent history with the changed files."));
     } else {
-      if (sug.length) append(card, list(sug, personLine));
+      if (sug.length) append(card, list(sug, personShort));
       if (already.length) {
         append(card, h("div", "eyebrow", "Already involved"));
-        append(card, list(already, personLine));
+        append(card, list(already, personShort));
       }
     }
     var cl = h("a", null, "Context details");
@@ -1405,6 +1596,10 @@ body.no-data #no-data { display: block; }
   var navPr = document.getElementById("nav-pr");
   append(navPr, link(pr.url, "PR #" + pr.number));
   append(document.getElementById("nav-verdict"), badge(verdictStatus, (M.recommendation && M.recommendation.verdict || "").replace(/-/g, " ")));
+  var navTodo = h("a", "nav-todo", [h("span", null, "To do"), TODO.must.length ? h("span", "n", String(TODO.must.length)) : h("span", "muted", "none")]);
+  navTodo.href = "#todo";
+  navTodo.setAttribute("aria-label", "To do: " + (TODO.must.length ? plural(TODO.must.length, "must-fix item") : "nothing blocking"));
+  append(document.getElementById("nav-todo-slot"), navTodo);
   append(document.getElementById("nav-foot"), [(M.tool && M.tool.name) + " " + (M.tool && M.tool.version), h("br"), "Generated " + (M.generated_at || "")]);
 
   var navList = document.getElementById("nav-list");
@@ -1443,6 +1638,8 @@ body.no-data #no-data { display: block; }
   var crumb = document.getElementById("crumb");
   var current = null, pendingCheck = null, focusHeading = false;
   function show(id) {
+    var openTodo = id === "todo" && sectionEls.summary;
+    if (openTodo) id = "summary";
     if (!sectionEls[id]) id = sectionEls.summary ? "summary" : sectionIds[0];
     if (current !== id) {
       Object.keys(sectionEls).forEach(function (k) {
@@ -1462,6 +1659,11 @@ body.no-data #no-data { display: block; }
         card.classList.add("flash");
         setTimeout(function () { card.classList.remove("flash"); }, 1600);
       }
+    } else if (openTodo) {
+      var td = document.getElementById("todo");
+      td.open = true;
+      td.scrollIntoView({ block: "start" });
+      td.querySelector("summary").focus({ preventScroll: true });
     } else if (focusHeading) {
       var hd = document.getElementById("h-" + id);
       if (hd) hd.focus({ preventScroll: true });
@@ -1478,7 +1680,7 @@ body.no-data #no-data { display: block; }
     closeNav();
     if (a.getAttribute("href") === location.hash) { ev.preventDefault(); show(location.hash.slice(1)); }
   });
-  if (!location.hash || !sectionEls[location.hash.slice(1)]) {
+  if (!location.hash || (!sectionEls[location.hash.slice(1)] && location.hash !== "#todo")) {
     try { history.replaceState(null, "", "#summary"); } catch (e) { /* file:// in some browsers */ }
   }
   route();

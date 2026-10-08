@@ -123,8 +123,10 @@ test("print shows every section in order and hides the nav", async ({ page }) =>
   // The iframe is swapped for the file table.
   await expect(page.locator("iframe.diff-frame")).toBeHidden();
   await expect(page.locator("#changes-files table")).toBeVisible();
-  // Collapsed panels print expanded.
+  // Collapsed panels print expanded, the To do list with its optional items included.
   await expect(sectionLocator(page, "testing").locator("details.howto .d-body")).toBeVisible();
+  await expect(page.locator("details#todo .todo-optional")).toBeVisible();
+  await expect(page.locator(".todo-more")).toBeHidden();
 });
 
 test("hostile content renders literally and runs nothing", async ({ page }) => {
@@ -146,21 +148,91 @@ test("summary shows the recommendation and every check", async ({ page }) => {
   const m = model();
   await page.goto(fileUrl(fixtures().report));
   const sum = sectionLocator(page, "summary");
-  await expect(sum.locator(".verdict .v-text")).toHaveText(m.recommendation.label);
+  await expect(sum.locator(".verdict .v-text")).toHaveText(m.recommendation.label.split(" — ")[0]);
+  // Every check sits in the closed "Every check" panel; a tile opens the section that shows the check.
+  const every = sum.locator("details.every-check");
+  await expect(every).not.toHaveAttribute("open", "");
+  await every.locator("summary").click();
   const matrix = sum.locator(".matrix");
   for (const c of m.checks) {
     await expect(matrix.locator(`[data-check="${c.id}"]`)).toHaveCount(1);
     await expect(matrix.locator(`[data-check="${c.id}"] .gt`)).toHaveText(c.title);
   }
-  // Blocking failures come first, each with its action and owner.
-  const reasons = sum.locator(".reasons > li");
-  await expect(reasons).toHaveCount(m.recommendation.reasons.length);
-  await expect(reasons.first()).toContainText("Next step");
-  await expect(reasons.first()).toContainText("Who acts");
-  // A check tile links to the section that shows the check.
   await matrix.locator('[data-check="tests.present"]').click();
   await expect(page).toHaveURL(/#testing$/);
   await expect(page.locator('[id="check-tests.present"]')).toBeInViewport();
+});
+
+test("blocked summary counts must-fix items per owner and lists them in To do", async ({ page }) => {
+  const m = model();
+  const reasons = m.recommendation.reasons;
+  await page.goto(fileUrl(fixtures().report));
+  const sum = sectionLocator(page, "summary");
+  // One sentence: how many, and who they wait on.
+  await expect(sum.locator(".verdict .v-note")).toHaveText(`${reasons.length} must-fix items. Waiting on the contributor, a committer and reviewers.`);
+  // Merge steps link to their sections and carry a status word for screen readers.
+  await expect(sum.locator(".steps a")).toHaveText(["!Ticket", "✕Tests", "✕Code review", "✕CI", "✕+1 votes"]);
+  await expect(sum.locator('.steps a[href="#testing"]')).toHaveAttribute("aria-label", "Tests: Fail");
+  // The To do bar is closed and counts the must-fix items per owner, contributor first.
+  const todo = sum.locator("details#todo");
+  await expect(todo).not.toHaveAttribute("open", "");
+  const count = (o) => reasons.filter((r) => r.owner === o).length;
+  await expect(todo.locator("> summary .t-owner")).toHaveText([`Contributor${count("contributor")}`, `Committer${count("committer")}`, `Reviewers${count("reviewer")}`]);
+  await expect(page.locator(".nav-todo")).toContainText(String(reasons.length));
+  // Open it: every reason is an item under its owner; a code review issue reads in plain words.
+  await todo.locator("> summary").click();
+  const must = todo.locator(":scope > .d-body > .todo-group details.todo-item");
+  await expect(must).toHaveCount(reasons.length);
+  await expect(todo.locator(".todo-group > h3").first()).toHaveText("Contributor");
+  await expect(must.nth(1).locator("summary")).toHaveText(/Fix the blocker code review issue in SSTable\.java:121/);
+  await must.first().locator("summary").click();
+  await expect(must.first()).toContainText("Next step");
+  await expect(must.first()).toContainText("Who acts");
+  await must.nth(1).locator("summary").click();
+  await expect(must.nth(1)).toContainText("Fix");
+  await expect(must.nth(1).getByRole("link", { name: "Open Code review" })).toHaveAttribute("href", "#review");
+  // Advisory warnings wait behind a button.
+  const optional = m.checks.filter((c) => !c.blocking && (c.status === "warn" || c.status === "fail") && !reasons.some((r) => r.check === c.id));
+  const more = todo.locator(".todo-more");
+  await expect(more).toHaveText(`Show ${optional.length} optional items`);
+  await expect(todo.locator(".todo-optional")).toBeHidden();
+  await more.click();
+  await expect(todo.locator(".todo-optional details.todo-item")).toHaveCount(optional.length);
+  await expect(more).toHaveAttribute("aria-expanded", "true");
+});
+
+test("#todo opens the summary with the To do list open", async ({ page }) => {
+  await page.goto(fileUrl(fixtures().report, "#todo"));
+  await expect(sectionLocator(page, "summary")).toBeVisible();
+  await expect(page.locator("details#todo")).toHaveAttribute("open", "");
+  await expect(page.locator('#nav-list a[href="#summary"]')).toHaveAttribute("aria-current", "page");
+  // From another section, the nav link does the same.
+  await page.locator('#nav-list a[href="#ci"]').click();
+  await page.locator("details#todo").evaluate((d) => { d.open = false; });
+  await page.locator(".nav-todo").click();
+  await expect(page).toHaveURL(/#todo$/);
+  await expect(page.locator("details#todo")).toHaveAttribute("open", "");
+  await expect(page.locator("details#todo > summary")).toBeInViewport();
+});
+
+test("unreviewed PR says review has not run and that there is nothing to do", async ({ page }) => {
+  await page.goto(fileUrl(fixtures().unreviewed));
+  const sum = sectionLocator(page, "summary");
+  await expect(sum.locator(".verdict .v-text")).toHaveText("Requirements met");
+  await expect(sum.locator(".verdict .v-note")).toContainText("Code review has not run yet");
+  const todo = sum.locator("details#todo");
+  await expect(todo.locator("> summary")).toContainText("nothing to do");
+  await todo.locator("> summary").click();
+  await expect(todo).toContainText("Nothing to do.");
+  await expect(todo.locator("details.todo-item")).toHaveCount(0);
+  await expect(page.locator(".nav-todo")).toContainText("none");
+});
+
+test("summary glossary explains project terms", async ({ page }) => {
+  await page.goto(fileUrl(fixtures().report));
+  const gl = sectionLocator(page, "summary").locator("details.glossary-panel");
+  await gl.locator("summary").click();
+  await expect(gl.locator("dt")).toContainText(["Blocking", "Committer", "+1 vote", "Fix Version"]);
 });
 
 test("Changes embeds the diff view in a scripts-only sandbox", async ({ page }) => {
@@ -184,7 +256,7 @@ test("theme toggle cycles system, light, dark", async ({ page }) => {
   await btn.click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-  expect(bg).toBe("rgb(13, 18, 23)");
+  expect(bg).toBe("rgb(11, 23, 36)");
   await btn.click();
   await expect(page.locator("html")).not.toHaveAttribute("data-theme", /.+/);
 });
