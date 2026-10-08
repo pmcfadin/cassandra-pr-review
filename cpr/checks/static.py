@@ -48,6 +48,118 @@ def banned_rules(checkstyle_xml):
     return rules
 
 
+def _sa(bundle):
+    return bundle.get("static_analysis")
+
+
+def _checkstyle_ran(bundle):
+    sa = _sa(bundle)
+    return bool(sa) and ((sa.get("tools") or {}).get("checkstyle") or {}).get("status") == "ran"
+
+
+def _approx(r):
+    """Label a regex-scan result as an approximation of checkstyle (no real checkstyle ran)."""
+    if r.status != "not-applicable":
+        r.summary += " (approximation of checkstyle from the diff; real checkstyle did not run)"
+    return r
+
+
+def _gate(bundle, tool):
+    """(analysis, tool_info, early Result or None). Never lets a check pass without proof."""
+    sa = _sa(bundle)
+    if not sa:
+        return None, None, Result("unknown", "static analysis did not run")
+    if sa.get("status") != "ran":
+        reason = sa.get("reason") or "static analysis unavailable"
+        if reason == "no changed Java files":
+            return sa, None, Result("not-applicable", "No changed Java files")
+        return sa, None, Result("unknown", reason)
+    t = (sa.get("tools") or {}).get(tool) or {}
+    st = t.get("status")
+    ver = f" ({tool} {t['version']})" if t.get("version") else ""
+    if st == "not-applicable":
+        return sa, t, Result("not-applicable", t.get("reason") or f"{tool} does not apply to this PR")
+    if st != "ran":
+        return sa, t, Result("unknown", (t.get("reason") or f"{tool} did not run (status {st})") + ver)
+    exp, got = t.get("files_expected"), t.get("files_analyzed")
+    if exp is not None and got is not None and got < exp:
+        return sa, t, Result("unknown", f"{tool} analyzed {got} of {exp} changed files; {exp - got} not analyzed")
+    return sa, t, None
+
+
+def _intro(f):
+    return str(f.get("classification") or "").startswith("introduced")
+
+
+def _where(f):
+    return f"{f.get('file')}:{f.get('line')}" if f.get("line") else str(f.get("file"))
+
+
+@check("static.checkstyle", "Checkstyle passes on changed files", "static", "static", blocking=False)
+def checkstyle(bundle, ctx):
+    sa, t, early = _gate(bundle, "checkstyle")
+    if early:
+        return early
+    fs = sa.get("checkstyle") or []
+    intro = [f for f in fs if _intro(f)]
+    fixed = [f for f in fs if f.get("classification") == "fixed"]
+    pre = [f for f in fs if not _intro(f) and f.get("classification") != "fixed"]
+    ver = f"checkstyle {t.get('version')}" if t.get("version") else "checkstyle"
+    counts = [ev(f"{len(pre)} pre-existing error(s) in touched files, {len(fixed)} fixed")]
+    if intro:
+        rows = [ev(f"`{_where(f)}` {f.get('rule')}: {f.get('message')}", location=_where(f)) for f in intro[:50]]
+        return Result("warn", f"{len(intro)} checkstyle error(s) introduced ({ver}); `ant check` would fail",
+                      rows + counts, action_required=True,
+                      action="Fix each error, or add a suppression comment that explains why; run `ant checkstyle` "
+                             "and `ant checkstyle-test` to confirm.")
+    return Result("pass", f"No checkstyle errors introduced ({ver})", counts)
+
+
+def _sig(m):
+    return f"{m.get('class')}.{m.get('method_sig')}"
+
+
+@check("static.complexity", "Cognitive complexity of changed methods", "static", "static", blocking=False)
+def complexity(bundle, ctx):
+    sa, t, early = _gate(bundle, "pmd")
+    if early:
+        return early
+    cx = sa.get("complexity") or {}
+    thr = cx.get("threshold", 15)
+    methods = sorted(cx.get("methods") or [],
+                     key=lambda m: (not str(m.get("classification", "")).startswith("introduced"),
+                                    str(m.get("file")), _sig(m)))
+    rows = []
+    for m in methods:
+        b = "new" if m.get("base") is None else m["base"]
+        h = "removed" if m.get("head") is None else m["head"]
+        rows.append(ev(f"`{_sig(m)}`: {b} → {h}", location=m.get("file")))
+    bad = [f for f in cx.get("findings") or [] if _intro(f) and (f.get("score") or 0) >= thr]
+    if bad:
+        top = "; ".join(f"`{f.get('class')}.{f.get('method_sig')}` {f.get('score')}" for f in bad[:5])
+        return Result("warn", f"{len(bad)} method(s) introduced at or above cognitive complexity {thr}: {top}",
+                      rows, action_required=False,
+                      action=f"Consider splitting the method(s) to keep cognitive complexity under {thr}.")
+    return Result("pass", f"No method introduced at or above cognitive complexity {thr} "
+                          f"({len(methods)} changed method(s) listed)", rows)
+
+
+@check("static.duplication", "No duplicated code introduced", "static", "static", blocking=False)
+def duplication(bundle, ctx):
+    sa, t, early = _gate(bundle, "cpd")
+    if early:
+        return early
+    intro = [d for d in sa.get("duplication") or [] if d.get("introduced")]
+    if not intro:
+        return Result("pass", "No introduced duplicate blocks (CPD)")
+    rows = []
+    for d in intro:
+        occ = ", ".join(f"`{o.get('file')}:{o.get('line')}-{o.get('endline')}`" for o in d.get("occurrences") or [])
+        rows.append(ev(f"{d.get('tokens')} tokens, {d.get('lines')} lines: {occ}"))
+    return Result("warn", f"{len(intro)} duplicate block(s) introduced (CPD)", rows, action_required=False,
+                  action="Extract the shared code if the duplication is not deliberate.")
+
+
 def _is_comment(text):
     s = text.strip()
     return s.startswith(("//", "*", "/*"))
@@ -55,6 +167,12 @@ def _is_comment(text):
 
 @check("static.banned-api", "No checkstyle-banned APIs in added code", "static", "static", blocking=False)
 def banned_api(bundle, ctx):
+    if _checkstyle_ran(bundle):
+        return Result("not-applicable", "superseded by static.checkstyle")
+    return _approx(_banned_api(bundle, ctx))
+
+
+def _banned_api(bundle, ctx):
     xml = bundle["base_files"].get("checkstyle_xml")
     if xml is None:
         return Result("not-applicable", f"The base branch `{ctx.pr['base']}` has no `.build/checkstyle.xml`")
@@ -112,6 +230,12 @@ def protected_paths(bundle, ctx):
 
 @check("static.deprecated-since", "@Deprecated has since=", "static", "static", blocking=False)
 def deprecated_since(bundle, ctx):
+    if _checkstyle_ran(bundle):
+        return Result("not-applicable", "superseded by static.checkstyle")
+    return _approx(_deprecated_since(bundle, ctx))
+
+
+def _deprecated_since(bundle, ctx):
     hits = []
     for path, info in ctx.added.items():
         if path.endswith(".java"):

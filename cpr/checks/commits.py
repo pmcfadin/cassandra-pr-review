@@ -84,3 +84,70 @@ def changelog(bundle, ctx):
         return Result("warn", f"CHANGES.txt entry does not mention {ctx.key}", rows,
                       action=f"Reference {ctx.key} in the entry.")
     return Result("pass", "CHANGES.txt entry present", rows)
+
+
+_PERF_RE = re.compile(r"\b(perf(ormance)?|faster|speed.?up|latency|throughput|allocation|megamorphic|"
+                      r"avoid (an )?(extra )?cop(y|ies)|copy-on-write|optimi[sz]e|reduce (overhead|allocation))",
+                      re.IGNORECASE)
+_BENCH_BODY_RE = re.compile(r"\b(JMH|benchmark)", re.IGNORECASE)
+_FIXUP_RE = re.compile(r"^(fixup|squash)!")
+
+
+def perf_signals(bundle, ctx):
+    """([strong signals], [medium signals]) naming what fired."""
+    strong, medium = [], []
+    bench = [p for p in ctx.paths if p.startswith("test/microbench/")]
+    if bench:
+        strong.append(f"changed benchmark file `{bench[0]}`" + (f" (+{len(bench) - 1} more)" if len(bench) > 1 else ""))
+    t = ctx.ticket or {}
+    if "performance" in [l.lower() for l in t.get("labels") or []]:
+        strong.append("JIRA label `performance`")
+    if "Test/benchmark" in (t.get("components") or []):
+        strong.append("JIRA component `Test/benchmark`")
+    if _PERF_RE.search(ctx.pr.get("title") or "") or _PERF_RE.search(t.get("summary") or ""):
+        medium.append("title or JIRA summary has a performance keyword")
+    if _BENCH_BODY_RE.search(ctx.pr.get("body") or ""):
+        medium.append("PR description mentions JMH or a benchmark")
+    return strong, medium
+
+
+@check("commit.perf-structure", "Performance PR: benchmark commit comes first", "commit", "commits", blocking=False)
+def perf_structure(bundle, ctx):
+    strong, medium = perf_signals(bundle, ctx)
+    signals = [ev(f"Signal (strong): {s}") for s in strong] + [ev(f"Signal (medium): {s}") for s in medium]
+    if not strong and len(medium) < 2:
+        return Result("not-applicable", "Not detected as a performance PR" +
+                      (f" (one weak signal: {medium[0]})" if medium else ""))
+    commits = (bundle.get("static_analysis") or {}).get("commits")
+    if not commits:
+        return Result("unknown", "Commit order is unavailable (static analysis did not run or listed no commits)",
+                      signals)
+    ordered = [c for c in commits if not _FIXUP_RE.match(c.get("subject") or "")] or commits
+
+    def first(prefix):
+        return next((i for i, c in enumerate(ordered) if any(p.startswith(prefix) for p in c.get("paths") or [])), None)
+
+    b, s = first("test/microbench/"), first("src/java/")
+
+    def row(i):
+        c = ordered[i]
+        return ev(f"`{c['sha'][:10]}` {(c.get('subject') or '')[:90]}")
+
+    if s is None:
+        return Result("not-applicable", "Performance PR with no `src/java` change (benchmark or build only)", signals)
+    if b is None:
+        return Result("warn", "Performance PR changes `src/java` but adds or changes no JMH benchmark",
+                      signals + [ev("First `src/java` commit:"), row(s)], action_required=False,
+                      action="Add a benchmark under `test/microbench/` so reviewers can measure the change.")
+    if b < s:
+        return Result("pass", "The benchmark commit precedes the first `src/java` change",
+                      signals + [ev("Benchmark commit:"), row(b), ev("First `src/java` commit:"), row(s)])
+    if b == s:
+        return Result("warn", "Benchmark and change are in one commit, so the benchmark cannot run on the parent",
+                      signals + [row(b)], action_required=False,
+                      action="Split the benchmark into its own earlier commit so it can run on both sides.")
+    return Result("warn", "The benchmark commit comes after the change it measures",
+                  signals + [ev("First `src/java` commit:"), row(s), ev("First benchmark commit:"), row(b)],
+                  action_required=True,
+                  action="Reorder the commits so the benchmark commit comes first (interactive rebase), "
+                         "letting it run before and after the change.")

@@ -2,7 +2,7 @@
 
 ## What is checked
 
-The PR's commit messages, their trailers (`Co-authored-by:`, `Assisted-by:`, and similar), signs of undisclosed AI assistance, and whether `CHANGES.txt` has an entry when production code changed.
+The PR's commit messages, their trailers (`Co-authored-by:`, `Assisted-by:`, and similar), signs of undisclosed AI assistance, and whether `CHANGES.txt` has an entry when production code changed, and, for performance PRs, whether the benchmark commit comes before the change.
 
 ## Why
 
@@ -25,6 +25,8 @@ Sources: [.github/pull_request_template.md](https://github.com/apache/cassandra/
 - The ASF requires contributors using generative tools to check the tool's terms and the output's provenance, and recommends a `Generated-by:` token. Source: [ASF Generative Tooling Guidance](https://www.apache.org/legal/generative-tooling.html). Cassandra's form is `Assisted-by: AGENT_NAME:MODEL_VERSION`. Source: [AGENTS.md](https://github.com/apache/cassandra/blob/trunk/AGENTS.md).
 - Add a `CHANGES.txt` entry at the top of the version section for the branch, as ` * <summary> (CASSANDRA-NNNNN)`. Only user-impacting changes need one; test-only fixes do not. Source: [Contributing code changes](https://cassandra.apache.org/_/development/patches.html) step 7. Committers often add or fix the entry at commit time.
 
+- A performance change should be measurable on both sides: put the JMH benchmark (under `test/microbench/`) in an earlier commit than the change, so it can run at the parent commit and at the PR head. This is the project owner's convention; most PRs do not follow it yet (a single commit with code and benchmark together is the common case), so only the wrong order asks for action. Source: the static-analysis change design in this repository.
+
 ## How each status is decided
 
 ### `commits.message-format`
@@ -36,6 +38,18 @@ Every commit in the PR is checked. A commit has a problem when its first line co
 - **unknown**: the PR has no commits.
 - **warn**: at least one commit has a problem. Each commit is listed with its problems.
 - **pass**: every commit follows the format.
+
+### `commit.perf-structure`
+
+Advisory. Owner: contributor. Only the wrong order moves the recommendation.
+
+A PR counts as a performance PR when a strong signal fires, or two medium ones do. Strong: a changed file under `test/microbench/`; a JIRA label `performance`; a JIRA component `Test/benchmark`. Medium: the PR title or JIRA summary has a performance keyword (perf, performance, faster, speed up, latency, throughput, allocation, optimize, and similar); the PR description mentions JMH or a benchmark. The evidence names every signal that fired. Commit order comes from the PR's commits, oldest first, ignoring `fixup!` and `squash!` commits; the first commit touching `test/microbench/` is compared with the first touching `src/java/`.
+
+- **not-applicable**: not a performance PR (one medium signal is not enough), or a performance PR with no `src/java` change.
+- **unknown**: the commit list is unavailable (static analysis did not run).
+- **warn** (needs action): the benchmark commit comes after the change.
+- **warn** (note): benchmark and change share a commit, or the PR changes `src/java` with no benchmark.
+- **pass**: the benchmark commit comes first.
 
 ### `commits.provenance`
 
@@ -55,6 +69,8 @@ Advisory. Owner: contributor.
 - **pass**: a well-formed added line names the PR's ticket.
 
 ## How to fix
+
+For a performance PR, reorder with an interactive rebase so the benchmark commit comes first, or split a combined commit in two.
 
 Reword the final commit (`git commit --amend`, or squash with `git rebase` before the last push):
 
@@ -77,6 +93,8 @@ For `CHANGES.txt`, add a line at the top of the section for your branch's versio
 If you agreed with a reviewer that the committer will add the entry, say so on the PR.
 
 ## Limits
+
+- `commit.perf-structure` judges the PR branch's commits, not what lands: committers squash at merge. It does not judge whether a benchmark is meaningful. A benchmark touched again in a later commit does not change the order. The JIRA `performance` label is rarely used, so detection leans on paths and keywords, and keyword matches can misfire.
 
 - Committers usually rewrite the commit message when they commit, so `commits.message-format` is informational.
 - The `patch by` pattern needs a semicolon before `reviewed by`. Lenient variants seen in history (`, reviewed by`) are flagged.

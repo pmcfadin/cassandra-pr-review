@@ -2,12 +2,17 @@
 
 ## What is checked
 
-A fast approximation of the project's static checks, run on the lines the PR adds: APIs that checkstyle bans, licence headers on new files, edits to generated code or bundled jars, and `@Deprecated` without `since`. These checks read the diff only. They do not compile code or run `ant check`, which stays authoritative.
+Real checkstyle, cognitive complexity (PMD), and duplicate-code (CPD) results for the PR's changed Java files, each split into what the PR introduced and what was already there. Checkstyle uses the base branch's own `.build` configs; the tools are pinned and installed with `cpr tools install`, and their versions are shown in each result. If the tools did not run, those checks are `unknown`, never `pass`.
+
+Alongside them is a fast approximation of the project's static checks, run on the lines the PR adds: APIs that checkstyle bans, licence headers on new files, edits to generated code or bundled jars, and `@Deprecated` without `since`. These checks read the diff only. They do not compile code or run `ant check`, which stays authoritative.
 
 The banned-API rules are read from `.build/checkstyle.xml` on the PR's base branch, so they follow the project as it changes.
 
 ## Why
 
+- Checkstyle errors fail CI's `ant check`, so an error the PR introduces is something the contributor must fix. Errors already in a touched file are counted but not blamed on the PR.
+- Cognitive complexity above 15 is the default threshold of the complexity-reduction skill the owner uses; the report lists every changed method with its base and head score so a simplification (6 to 2) is visible, and flags only methods the PR made newly or more complex.
+- Duplicated blocks of 100 or more tokens (PMD CPD default) are flagged when the PR adds one. Source: [PMD CPD](https://pmd.github.io/pmd/pmd_userdocs_cpd.html).
 - `ant check` runs `rat-check` (licence headers), `checkstyle` (main code), and `checkstyle-test` (tests). It also runs on every push to a fork through GitHub Actions on JDK 11 and 17, and checkstyle runs during `ant build` and `ant jar`. Sources: `build.xml`; [AGENTS.md](https://github.com/apache/cassandra/blob/trunk/AGENTS.md), "Linting"; [Code style](https://cassandra.apache.org/_/development/code_style.html), "Checkstyle".
 - [.build/checkstyle.xml](https://github.com/apache/cassandra/blob/trunk/.build/checkstyle.xml) bans APIs that bypass Cassandra's own abstractions, for example `System.currentTimeMillis` (use `Clock.Global`), `Executors.new*` (use `ExecutorFactory.Global`), `java.io.File` (use `org.apache.cassandra.io.util.File`), `toLowerCase` (use `LocalizeString`), and `System.getProperty` (use `CassandraRelevantProperties`). It also requires `@Deprecated` to carry `since=`.
 - Every new file needs the Apache licence header; the template is `.build/header.txt`. Source: [AGENTS.md](https://github.com/apache/cassandra/blob/trunk/AGENTS.md), "Code Style".
@@ -16,13 +21,46 @@ The banned-API rules are read from `.build/checkstyle.xml` on the PR's base bran
 
 ## How each status is decided
 
-All four checks are advisory. Unless noted, a warn moves the recommendation to "needs work".
+All checks are advisory. Unless noted, a warn moves the recommendation to "needs work".
+
+A finding is **introduced** when it is in a new file, a new method, a method whose score got worse, a method that crossed the threshold, or (checkstyle) on a changed line or with no equal error at base. It is **pre-existing** when it was already there (touched, untouched, or improved), and **fixed** when it is gone. Matching uses the base path (through renames), class, method signature, and rule, never the line number alone.
+
+### `static.checkstyle`
+
+Advisory. Owner: contributor.
+
+Runs checkstyle on the changed Java files, `.build/checkstyle.xml` for `src/java` and `checkstyle_test.xml` for `test/`, both taken from the base branch. Branch families pick the version: trunk and 5.0 use 10.26.1, 4.1 uses 8.40, 4.0 has no config.
+
+- **unknown**: the base branch has no checkstyle config (`cassandra-4.0`; no other branch's config is borrowed), the tool or a JDK is missing, it crashed, or its output omits a changed file (the count not analyzed is named). The reason is shown with the tool version.
+- **not-applicable**: no changed Java files, or the tool does not apply.
+- **warn** (needs action): at least one introduced error. Each shows file, line, rule, and message (up to 50), plus counts of pre-existing and fixed errors.
+- **pass**: checkstyle ran on every changed file and nothing was introduced.
+
+### `static.complexity`
+
+Advisory and informational: a warn here is a note and does not change the recommendation. Owner: contributor.
+
+Evidence always lists every changed method as `Class.method(signature): base → head` cognitive complexity (`new → N` for added methods, `N → removed` for deleted ones), introduced methods first.
+
+- **unknown**: PMD is missing or failed, or it did not analyze every changed file.
+- **warn** (note): a method scoring 15 or more that is new, got worse, or crossed the threshold.
+- **pass**: no such method. A method that got simpler, or an old complex method left alone, passes.
+
+### `static.duplication`
+
+Advisory and informational. Owner: contributor.
+
+CPD with 100 tokens minimum over the changed files.
+
+- **unknown**: CPD is missing or failed.
+- **warn** (note): an introduced duplicate, listed with every occurrence (file and line range).
+- **pass**: none introduced.
 
 ### `static.banned-api`
 
 Advisory. Owner: contributor.
 
-Rules come from three checkstyle modules: `RegexpSinglelineJava` (the regex as written), `IllegalImport` (listed classes and packages), and `IllegalInstantiation` (`new` of listed classes). Only added lines in `src/java/**/*.java` are scanned. A line is skipped when it starts with `//`, `/*`, or `*`, when it contains `checkstyle: permit`, or when the added line before it does.
+When real checkstyle ran on the PR this check is **not-applicable** ("superseded by static.checkstyle"). Otherwise it is an approximation of checkstyle, and its summary says so. Rules come from three checkstyle modules: `RegexpSinglelineJava` (the regex as written), `IllegalImport` (listed classes and packages), and `IllegalInstantiation` (`new` of listed classes). Only added lines in `src/java/**/*.java` are scanned. A line is skipped when it starts with `//`, `/*`, or `*`, when it contains `checkstyle: permit`, or when the added line before it does.
 
 - **not-applicable**: the base branch has no `.build/checkstyle.xml` (older branches).
 - **unknown**: the file exists but no rule could be read from it. Informational only.
@@ -50,7 +88,7 @@ Advisory. Owner: contributor.
 
 Advisory. Owner: contributor.
 
-Scans added lines in every `.java` file, including tests, for `@Deprecated` not immediately followed by `(since`. Comment lines are skipped.
+Scans added lines in every `.java` file, including tests, for `@Deprecated` not immediately followed by `(since`. Comment lines are skipped. Like `static.banned-api`, it is **not-applicable** (superseded by `static.checkstyle`) when real checkstyle ran, and otherwise labelled an approximation.
 
 - **warn**: at least one such annotation.
 - **pass**: none.
@@ -75,7 +113,12 @@ ant check               # checkstyle, checkstyle-test, and RAT licence check
 
 ## Limits
 
-- These checks approximate `ant check` from the diff. The report's About section lists `ant check` as not run.
+- Real analysis covers changed Java files only, excluding `src/gen-java/` and `modules/accord/`. Over 400 changed files PMD is skipped (`unknown`); each tool has a 120 s cap and a PR a 300 s cap.
+- `cassandra-4.0` has no checkstyle config, so `static.checkstyle` is `unknown` there and the diff approximations below keep running.
+- Results are computed when the PR is fetched and stored in the evidence bundle; an offline re-render replays them and runs no tool. The report shows the tool versions used.
+- Complexity matching is by signature; a method moved between classes may be reported as new or removed, or labelled "moved".
+- A tool that is missing or crashes shows `unknown` with the reason; it is never counted as clean.
+- The diff-based checks (banned API, licence header, `@Deprecated`) approximate `ant check` from the diff. The report's About section lists `ant check` as not run.
 - `.build/checkstyle_suppressions.xml` is not applied, so files the project exempts can be flagged. Test code (`checkstyle_test.xml`) is not scanned for banned APIs.
 - Rules that need a parse tree are not checked: import order, unused or star imports, the `var` ban, and `MissingDeprecated`.
 - A multi-line statement is checked line by line, so a banned call split across lines is missed.

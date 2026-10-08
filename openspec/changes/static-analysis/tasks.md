@@ -12,11 +12,11 @@
 
 ## 3. Checks
 
-- [ ] 3.1 `static.checkstyle`, `static.complexity`, `static.duplication` (tests: branch without checkstyle; introduced error; complexity note)
-- [ ] 3.2 `commit.perf-structure` (tests: bench after change; combined; not a perf PR)
-- [ ] 3.3 Superseding regex banned-API and `@Deprecated` checks when checkstyle ran (test: superseded)
+- [x] 3.1 `static.checkstyle`, `static.complexity`, `static.duplication` (tests: branch without checkstyle; introduced error; complexity note)
+- [x] 3.2 `commit.perf-structure` (tests: bench after change; combined; not a perf PR)
+- [x] 3.3 Superseding regex banned-API and `@Deprecated` checks when checkstyle ran (test: superseded)
 
 ## 4. Docs and ship
 
-- [ ] 4.1 Update docs/report/static.md and the commits doc (statuses, introduced vs pre-existing, perf rule, limits)
+- [x] 4.1 Update docs/report/static.md and the commits doc (statuses, introduced vs pre-existing, perf rule, limits)
 - [ ] 4.2 Run on PR 5201 and PR 4967, re-render, review with the owner
