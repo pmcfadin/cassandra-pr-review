@@ -57,6 +57,13 @@ jobs:
           path: .work/tools
           key: cpr-tools-${{ hashFiles('cpr/config/static.json') }}
 
+      # The PMD baseline scores a whole branch (minutes on a cold cache); the per-file base results sit beside it.
+      - uses: actions/cache@v4
+        with:
+          path: .work/static-cache
+          key: cpr-static-cache-${{ hashFiles('cpr/config/static.json', 'cpr/config/pmd-pr.xml') }}-${{ steps.week.outputs.iso }}
+          restore-keys: cpr-static-cache-${{ hashFiles('cpr/config/static.json', 'cpr/config/pmd-pr.xml') }}-
+
       - name: Install analysis tools
         run: bin/cpr tools install
 

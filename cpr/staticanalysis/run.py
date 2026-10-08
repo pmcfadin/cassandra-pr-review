@@ -18,6 +18,8 @@ from cpr.ingest.clone import show
 CHECKSTYLE_FILES = (".build/checkstyle.xml", ".build/checkstyle_suppressions.xml", ".build/checkstyle_test.xml")
 _QUOTED = re.compile(r"'([^']+)'")
 _SCORE = re.compile(r"of (\d+)")
+COMPLEXITY_RULES = ("CognitiveComplexity", "CyclomaticComplexity", "NPathComplexity")
+MESSAGE_CAP = 200
 
 
 def _tag(el):
@@ -139,10 +141,17 @@ def run_checkstyle(java, jar, cfgs, root, rels, scratch, label, timeout):
 
 # ---- PMD ----------------------------------------------------------------------------------------
 
-def parse_pmd(xml_text, root):
-    """-> ({rel: {bodies: [[cls, meth, begin, end]], m: [[cls, sig, rule, score, line]]}}, [(rel, message)]).
+def _category(ruleset):
+    """PMD's report names a category 'Error Prone'; the slug is what the ruleset and docs use."""
+    return (ruleset or "").lower().replace(" ", "")
 
-    Method-level complexity rows only: class-level cyclomatic violations have no `method` attribute.
+
+def parse_pmd(xml_text, root):
+    """-> ({rel: {bodies, m, v}}, [(rel, message)]).
+
+    bodies: [[cls, meth, begin, end]]; m: method-level complexity rows [[cls, sig, rule, score, line]] (class-level
+    cyclomatic violations have no `method` attribute); v: every other rule's violations
+    [[rule, category slug, begin line, end line, message]].
     """
     top = ET.fromstring(xml_text)
     files, errors = {}, []
@@ -151,18 +160,49 @@ def parse_pmd(xml_text, root):
         if kind == "error":
             errors.append((_rel(el.get("filename") or "", root), (el.get("msg") or "").strip()[:200]))
         elif kind == "file":
-            entry = files.setdefault(_rel(el.get("name"), root), {"bodies": [], "m": []})
+            entry = files.setdefault(_rel(el.get("name"), root), {"bodies": [], "m": [], "v": []})
             for v in el:
                 rule, cls, meth = v.get("rule"), v.get("class"), v.get("method")
                 begin, end = int(v.get("beginline")), int(v.get("endline"))
                 if rule == "MethodBody":
                     entry["bodies"].append([cls, meth, begin, end])
-                elif meth is not None:
-                    text = (v.text or "").strip()
-                    sig, score = _QUOTED.search(text), _SCORE.search(text)
-                    if sig and score:
-                        entry["m"].append([cls, sig.group(1), rule, int(score.group(1)), begin])
+                elif rule in COMPLEXITY_RULES:
+                    if meth is not None:
+                        text = (v.text or "").strip()
+                        sig, score = _QUOTED.search(text), _SCORE.search(text)
+                        if sig and score:
+                            entry["m"].append([cls, sig.group(1), rule, int(score.group(1)), begin])
+                else:
+                    entry["v"].append([rule, _category(v.get("ruleset")), begin, end,
+                                       " ".join((v.text or "").split())[:MESSAGE_CAP]])
     return files, errors
+
+
+def count_pmd_files(xml_path):
+    """Stream a big PMD report -> ({rule: number of files with it}, files listed, [(file, message)] errors).
+
+    Used for the baseline, where the report can run to hundreds of MB.
+    """
+    hits, listed, errors = {}, 0, []
+    current = None
+    for event, el in ET.iterparse(xml_path, events=("start", "end")):
+        kind = _tag(el)
+        if event == "start":
+            if kind == "file":
+                current = set()
+            continue
+        if kind == "violation" and current is not None:
+            current.add(el.get("rule"))
+        elif kind == "file":
+            for r in current or ():
+                hits[r] = hits.get(r, 0) + 1
+            listed += 1
+            current = None
+        elif kind == "error":
+            errors.append((el.get("filename") or "", (el.get("msg") or "").strip()[:200]))
+        if kind in ("violation", "file", "error"):
+            el.clear()
+    return hits, listed, errors
 
 
 def _jvm_tool(java_env_, cmd, timeout, scratch):
@@ -174,11 +214,23 @@ def _jvm_tool(java_env_, cmd, timeout, scratch):
     return rc, None, secs
 
 
-def run_pmd(pmd, env, ruleset, root, rels, scratch, label, timeout):
-    """PMD check with the one-pass ruleset. {files, parse_errors, problem, seconds}."""
+def pmd_command(pmd, ruleset, lst, out, aux=None, threads=None):
+    cmd = [pmd, "check", "-R", ruleset, "--file-list", lst, "-f", "xml", "-r", out, "--no-progress", "--no-cache"]
+    if aux:
+        cmd += ["--aux-classpath", aux]
+    if threads:
+        cmd += ["-t", str(threads)]
+    return cmd
+
+
+def run_pmd(pmd, env, ruleset, root, rels, scratch, label, timeout, aux=None):
+    """PMD check with the one-pass ruleset. {files, parse_errors, problem, seconds}.
+
+    aux: a classpath string for type resolution (classes dirs and jars), or None to run without type info.
+    """
     lst, out = os.path.join(scratch, f"{label}-pmd.list"), os.path.join(scratch, f"{label}-pmd.xml")
     _write_list(lst, root, rels)
-    cmd = [pmd, "check", "-R", ruleset, "--file-list", lst, "-f", "xml", "-r", out, "--no-progress", "--no-cache"]
+    cmd = pmd_command(pmd, ruleset, lst, out, aux)
     rc, problem, secs = _jvm_tool(env, cmd, timeout, scratch)
     if problem:  # never publish local paths
         problem = problem.replace(root.rstrip("/") + "/", "").replace(scratch.rstrip("/") + "/", "")
@@ -194,7 +246,7 @@ def run_pmd(pmd, env, ruleset, root, rels, scratch, label, timeout):
         failed = {p for p, _ in res["parse_errors"]}
         for rel in rels:  # PMD lists only files with violations; the rest have no methods
             if rel not in failed:
-                res["files"].setdefault(rel, {"bodies": [], "m": []})
+                res["files"].setdefault(rel, {"bodies": [], "m": [], "v": []})
     except (OSError, ET.ParseError) as e:
         res["problem"] = problem or f"unreadable PMD output: {e}"
     return res

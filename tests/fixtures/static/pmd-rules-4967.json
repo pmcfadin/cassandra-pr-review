@@ -1,0 +1,1716 @@
+{
+ "status": "ran",
+ "reason": null,
+ "rules_run": 296,
+ "type_info": false,
+ "type_note": "no build of this head; without type info: rules that resolve types may misfire",
+ "threshold": 0.25,
+ "baseline": {
+  "source": "cached",
+  "branch": "trunk",
+  "tip": "36d2433dfb2fd26fb8719716edf1b5f3232df8d3",
+  "files": 3271,
+  "seconds": 190.9,
+  "built_at": 1791492629,
+  "note": null
+ },
+ "house_style": [
+  {
+   "rule": "CommentRequired",
+   "category": "documentation",
+   "share": 0.958
+  },
+  {
+   "rule": "MethodArgumentCouldBeFinal",
+   "category": "codestyle",
+   "share": 0.88
+  },
+  {
+   "rule": "LocalVariableCouldBeFinal",
+   "category": "codestyle",
+   "share": 0.659
+  },
+  {
+   "rule": "ControlStatementBraces",
+   "category": "codestyle",
+   "share": 0.614
+  },
+  {
+   "rule": "CommentSize",
+   "category": "documentation",
+   "share": 0.606
+  },
+  {
+   "rule": "ShortVariable",
+   "category": "codestyle",
+   "share": 0.45
+  },
+  {
+   "rule": "OnlyOneReturn",
+   "category": "codestyle",
+   "share": 0.429
+  },
+  {
+   "rule": "LawOfDemeter",
+   "category": "design",
+   "share": 0.414
+  },
+  {
+   "rule": "LongVariable",
+   "category": "codestyle",
+   "share": 0.411
+  },
+  {
+   "rule": "FieldNamingConventions",
+   "category": "codestyle",
+   "share": 0.367
+  },
+  {
+   "rule": "CommentDefaultAccessModifier",
+   "category": "codestyle",
+   "share": 0.345
+  }
+ ],
+ "rules": [
+  {
+   "rule": "WrongTestAnnotation",
+   "category": "errorprone",
+   "introduced": 160,
+   "pre_existing": 263,
+   "share": 0.0,
+   "house": false,
+   "locations": [
+    [
+     "test/distributed/org/apache/cassandra/distributed/test/accord/AccordCQLTestBase.java",
+     3422,
+     "The annotation org.junit.Test is from JUnit 4, your codebase is using JUnit Jupiter."
+    ],
+    [
+     "test/simulator/test/org/apache/cassandra/service/accord/execution/AccordCommandStoreExecutorTest.java",
+     204,
+     "The annotation org.junit.Test is from JUnit 4, your codebase is using JUnit Jupiter."
+    ],
+    [
+     "test/simulator/test/org/apache/cassandra/service/accord/execution/AccordCommandStoreExecutorTest.java",
+     210,
+     "The annotation org.junit.Test is from JUnit 4, your codebase is using JUnit Jupiter."
+    ],
+    [
+     "test/simulator/test/org/apache/cassandra/service/accord/execution/AccordCommandStoreExecutorTest.java",
+     223,
+     "The annotation org.junit.Test is from JUnit 4, your codebase is using JUnit Jupiter."
+    ],
+    [
+     "test/simulator/test/org/apache/cassandra/service/accord/execution/AccordCommandStoreExecutorTest.java",
+     229,
+     "The annotation org.junit.Test is from JUnit 4, your codebase is using JUnit Jupiter."
+    ],
+    [
+     "test/simulator/test/org/apache/cassandra/service/accord/execution/AccordCommandStoreExecutorTest.java",
+     239,
+     "The annotation org.junit.Test is from JUnit 4, your codebase is using JUnit Jupiter."
+    ]
+   ]
+  },
+  {
+   "rule": "FieldDeclarationsShouldBeAtStartOfClass",
+   "category": "codestyle",
+   "introduced": 117,
+   "pre_existing": 264,
+   "share": 0.109,
+   "house": false,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/service/accord/AccordCommandStore.java",
+     232,
+     "Fields should be declared at the top of the class, before any method declarations, constructors, initializers or inner c"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/AccordCommandStore.java",
+     241,
+     "Fields should be declared at the top of the class, before any method declarations, constructors, initializers or inner c"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/AccordCommandStore.java",
+     242,
+     "Fields should be declared at the top of the class, before any method declarations, constructors, initializers or inner c"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/AccordCommandStore.java",
+     311,
+     "Fields should be declared at the top of the class, before any method declarations, constructors, initializers or inner c"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/AccordKeyspace.java",
+     358,
+     "Fields should be declared at the top of the class, before any method declarations, constructors, initializers or inner c"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/debug/DebugExecution.java",
+     67,
+     "Fields should be declared at the top of the class, before any method declarations, constructors, initializers or inner c"
+    ]
+   ]
+  },
+  {
+   "rule": "UnitTestContainsTooManyAsserts",
+   "category": "bestpractices",
+   "introduced": 90,
+   "pre_existing": 35,
+   "share": 0.0,
+   "house": false,
+   "locations": [
+    [
+     "test/distributed/org/apache/cassandra/distributed/test/ClearSnapshotTest.java",
+     65,
+     "Unit tests should not contain more than 1 assert(s)."
+    ],
+    [
+     "test/unit/org/apache/cassandra/service/accord/execution/AccordCacheEntryCycleTest.java",
+     209,
+     "Unit tests should not contain more than 1 assert(s)."
+    ],
+    [
+     "test/unit/org/apache/cassandra/service/accord/execution/AccordCacheEntryCycleTest.java",
+     322,
+     "Unit tests should not contain more than 1 assert(s)."
+    ],
+    [
+     "test/unit/org/apache/cassandra/service/accord/execution/AccordCacheEntryQueueTest.java",
+     149,
+     "Unit tests should not contain more than 1 assert(s)."
+    ],
+    [
+     "test/unit/org/apache/cassandra/service/accord/execution/AccordCacheEntryQueueTest.java",
+     436,
+     "Unit tests should not contain more than 1 assert(s)."
+    ],
+    [
+     "test/unit/org/apache/cassandra/service/accord/execution/AccordCacheEntryQueueTest.java",
+     457,
+     "Unit tests should not contain more than 1 assert(s)."
+    ]
+   ]
+  },
+  {
+   "rule": "OneDeclarationPerLine",
+   "category": "bestpractices",
+   "introduced": 87,
+   "pre_existing": 32,
+   "share": 0.044,
+   "house": false,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/service/accord/debug/DebugExecution.java",
+     183,
+     "Use one line for each declaration, it enhances code readability."
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/debug/DebugExecution.java",
+     184,
+     "Use one line for each declaration, it enhances code readability."
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AbstractLockLoop.java",
+     111,
+     "Use one line for each declaration, it enhances code readability."
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntryQueue.java",
+     60,
+     "Use one line for each declaration, it enhances code readability."
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordExecutor.java",
+     111,
+     "Use one line for each declaration, it enhances code readability."
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordExecutor.java",
+     112,
+     "Use one line for each declaration, it enhances code readability."
+    ]
+   ]
+  },
+  {
+   "rule": "AvoidInstantiatingObjectsInLoops",
+   "category": "performance",
+   "introduced": 77,
+   "pre_existing": 71,
+   "share": 0.09,
+   "house": false,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/Task.java",
+     1040,
+     "Avoid instantiating new objects inside loops"
+    ],
+    [
+     "test/distributed/org/apache/cassandra/distributed/impl/Instance.java",
+     1162,
+     "Avoid instantiating new objects inside loops"
+    ],
+    [
+     "test/simulator/test/org/apache/cassandra/service/accord/execution/AccordCommandStoreExecutorTest.java",
+     297,
+     "Avoid instantiating new objects inside loops"
+    ],
+    [
+     "test/simulator/test/org/apache/cassandra/service/accord/execution/AccordCommandStoreExecutorTest.java",
+     805,
+     "Avoid instantiating new objects inside loops"
+    ],
+    [
+     "test/simulator/test/org/apache/cassandra/service/accord/execution/AccordCommandStoreExecutorTest.java",
+     880,
+     "Avoid instantiating new objects inside loops"
+    ],
+    [
+     "test/simulator/test/org/apache/cassandra/service/accord/execution/AccordCommandStoreExecutorTest.java",
+     918,
+     "Avoid instantiating new objects inside loops"
+    ]
+   ]
+  },
+  {
+   "rule": "AvoidCatchingGenericException",
+   "category": "errorprone",
+   "introduced": 71,
+   "pre_existing": 114,
+   "share": 0.141,
+   "house": false,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/service/accord/AccordCommandStore.java",
+     729,
+     "Avoid catching Throwable in try-catch block"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/AccordCommandStore.java",
+     736,
+     "Avoid catching Throwable in try-catch block"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/AccordCommandStore.java",
+     754,
+     "Avoid catching Throwable in try-catch block"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/AccordCommandStore.java",
+     763,
+     "Avoid catching Throwable in try-catch block"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/AccordDurableOnFlush.java",
+     200,
+     "Avoid catching Throwable in try-catch block"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AbstractLockLoop.java",
+     313,
+     "Avoid catching Throwable in try-catch block"
+    ]
+   ]
+  },
+  {
+   "rule": "AssignmentInOperand",
+   "category": "errorprone",
+   "introduced": 70,
+   "pre_existing": 53,
+   "share": 0.086,
+   "house": false,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/concurrent/CassandraThread.java",
+     132,
+     "Avoid assignment to accordLockedExecutorDepth in operand"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/AccordCommandStore.java",
+     733,
+     "Avoid assignment to count in operand"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/AccordCommandStore.java",
+     760,
+     "Avoid assignment to count in operand"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/debug/DebugExecution.java",
+     76,
+     "Avoid assignment to depth in operand"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/debug/DebugExecution.java",
+     94,
+     "Avoid assignment to depth in operand"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntry.java",
+     267,
+     "Avoid assignments in operands"
+    ]
+   ]
+  },
+  {
+   "rule": "DoNotUseThreads",
+   "category": "multithreading",
+   "introduced": 62,
+   "pre_existing": 66,
+   "share": 0.033,
+   "house": false,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AbstractLockLoop.java",
+     199,
+     "To be compliant to J2EE, a webapp should not use any thread."
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AbstractLockLoop.java",
+     258,
+     "To be compliant to J2EE, a webapp should not use any thread."
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntry.java",
+     962,
+     "To be compliant to J2EE, a webapp should not use any thread."
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordExecutor.java",
+     334,
+     "To be compliant to J2EE, a webapp should not use any thread."
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordExecutor.java",
+     341,
+     "To be compliant to J2EE, a webapp should not use any thread."
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordExecutorSignalLoop.java",
+     490,
+     "To be compliant to J2EE, a webapp should not use any thread."
+    ]
+   ]
+  },
+  {
+   "rule": "AvoidFieldNameMatchingMethodName",
+   "category": "errorprone",
+   "introduced": 50,
+   "pre_existing": 90,
+   "share": 0.186,
+   "house": false,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/concurrent/CassandraThread.java",
+     36,
+     "Field accordActiveExecutor has the same name as a method"
+    ],
+    [
+     "src/java/org/apache/cassandra/concurrent/CassandraThread.java",
+     37,
+     "Field accordLockedExecutor has the same name as a method"
+    ],
+    [
+     "src/java/org/apache/cassandra/concurrent/CassandraThread.java",
+     39,
+     "Field accordActiveTask has the same name as a method"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/AccordCommandStore.java",
+     154,
+     "Field commands has the same name as a method"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/AccordCommandStore.java",
+     155,
+     "Field commandsForKeys has the same name as a method"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/AccordCommandStore.java",
+     232,
+     "Field exclusiveExecutor has the same name as a method"
+    ]
+   ]
+  },
+  {
+   "rule": "NullAssignment",
+   "category": "errorprone",
+   "introduced": 50,
+   "pre_existing": 53,
+   "share": 0.083,
+   "house": false,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/concurrent/CassandraThread.java",
+     134,
+     "Assigning an Object to null is a code smell. Consider refactoring."
+    ],
+    [
+     "src/java/org/apache/cassandra/concurrent/CassandraThread.java",
+     144,
+     "Assigning an Object to null is a code smell. Consider refactoring."
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AbstractLockLoop.java",
+     144,
+     "Assigning an Object to null is a code smell. Consider refactoring."
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AbstractLockLoop.java",
+     286,
+     "Assigning an Object to null is a code smell. Consider refactoring."
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntry.java",
+     265,
+     "Assigning an Object to null is a code smell. Consider refactoring."
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntry.java",
+     282,
+     "Assigning an Object to null is a code smell. Consider refactoring."
+    ]
+   ]
+  },
+  {
+   "rule": "TooManyMethods",
+   "category": "design",
+   "introduced": 41,
+   "pre_existing": 45,
+   "share": 0.224,
+   "house": false,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/concurrent/CassandraThread.java",
+     32,
+     "This class has too many methods, consider refactoring it."
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AbstractLockLoop.java",
+     32,
+     "This class has too many methods, consider refactoring it."
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCache.java",
+     107,
+     "This class has too many methods, consider refactoring it."
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCache.java",
+     122,
+     "This class has too many methods, consider refactoring it."
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCache.java",
+     467,
+     "This class has too many methods, consider refactoring it."
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCache.java",
+     469,
+     "This class has too many methods, consider refactoring it."
+    ]
+   ]
+  },
+  {
+   "rule": "AvoidDeeplyNestedIfStmts",
+   "category": "design",
+   "introduced": 38,
+   "pre_existing": 47,
+   "share": 0.063,
+   "house": false,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/service/accord/debug/DebugExecution.java",
+     251,
+     "Deeply nested if..then statements are hard to read"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntry.java",
+     281,
+     "Deeply nested if..then statements are hard to read"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntry.java",
+     331,
+     "Deeply nested if..then statements are hard to read"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntry.java",
+     336,
+     "Deeply nested if..then statements are hard to read"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntry.java",
+     400,
+     "Deeply nested if..then statements are hard to read"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntry.java",
+     826,
+     "Deeply nested if..then statements are hard to read"
+    ]
+   ]
+  },
+  {
+   "rule": "AvoidUsingVolatile",
+   "category": "multithreading",
+   "introduced": 34,
+   "pre_existing": 56,
+   "share": 0.076,
+   "house": false,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/concurrent/CassandraThread.java",
+     39,
+     "Use of modifier volatile is not recommended."
+    ],
+    [
+     "src/java/org/apache/cassandra/config/AccordConfig.java",
+     222,
+     "Use of modifier volatile is not recommended."
+    ],
+    [
+     "src/java/org/apache/cassandra/config/AccordConfig.java",
+     288,
+     "Use of modifier volatile is not recommended."
+    ],
+    [
+     "src/java/org/apache/cassandra/db/memtable/AbstractMemtable.java",
+     61,
+     "Use of modifier volatile is not recommended."
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/AccordCommandStore.java",
+     311,
+     "Use of modifier volatile is not recommended."
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AbstractLoop.java",
+     34,
+     "Use of modifier volatile is not recommended."
+    ]
+   ]
+  },
+  {
+   "rule": "CompareObjectsWithEquals",
+   "category": "errorprone",
+   "introduced": 29,
+   "pre_existing": 11,
+   "share": 0.03,
+   "house": false,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntry.java",
+     665,
+     "Use equals() to compare object references."
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntry.java",
+     1043,
+     "Use equals() to compare object references."
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntry.java",
+     1099,
+     "Use equals() to compare object references."
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntry.java",
+     1214,
+     "Use equals() to compare object references."
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntry.java",
+     1261,
+     "Use equals() to compare object references."
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntry.java",
+     1261,
+     "Use equals() to compare object references."
+    ]
+   ]
+  },
+  {
+   "rule": "SystemPrintln",
+   "category": "bestpractices",
+   "introduced": 29,
+   "pre_existing": 22,
+   "share": 0.008,
+   "house": false,
+   "locations": [
+    [
+     "test/distributed/org/apache/cassandra/distributed/test/accord/AccordCQLTestBase.java",
+     3366,
+     "Usage of System.out/err"
+    ],
+    [
+     "test/distributed/org/apache/cassandra/distributed/test/accord/AccordLoadTest.java",
+     924,
+     "Usage of System.out/err"
+    ],
+    [
+     "test/simulator/test/org/apache/cassandra/service/accord/execution/AccordCommandStoreExecutorTest.java",
+     258,
+     "Usage of System.out/err"
+    ],
+    [
+     "test/simulator/test/org/apache/cassandra/service/accord/execution/AccordCommandStoreExecutorTest.java",
+     299,
+     "Usage of System.out/err"
+    ],
+    [
+     "test/simulator/test/org/apache/cassandra/service/accord/execution/AccordCommandStoreExecutorTest.java",
+     307,
+     "Usage of System.out/err"
+    ],
+    [
+     "test/simulator/test/org/apache/cassandra/service/accord/execution/AccordCommandStoreExecutorTest.java",
+     345,
+     "Usage of System.out/err"
+    ]
+   ]
+  },
+  {
+   "rule": "CouplingBetweenObjects",
+   "category": "design",
+   "introduced": 27,
+   "pre_existing": 44,
+   "share": 0.105,
+   "house": false,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCache.java",
+     107,
+     "A value of 57 may denote a high amount of coupling within the class (threshold: 20)"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntry.java",
+     70,
+     "A value of 35 may denote a high amount of coupling within the class (threshold: 20)"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordExecutor.java",
+     102,
+     "A value of 60 may denote a high amount of coupling within the class (threshold: 20)"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/ExclusiveExecutor.java",
+     46,
+     "A value of 25 may denote a high amount of coupling within the class (threshold: 20)"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/SafeTask.java",
+     148,
+     "A value of 66 may denote a high amount of coupling within the class (threshold: 20)"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/SaferCommandStore.java",
+     59,
+     "A value of 29 may denote a high amount of coupling within the class (threshold: 20)"
+    ]
+   ]
+  },
+  {
+   "rule": "AvoidLiteralsInIfCondition",
+   "category": "errorprone",
+   "introduced": 26,
+   "pre_existing": 62,
+   "share": 0.093,
+   "house": false,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/service/accord/debug/DebugExecution.java",
+     76,
+     "Avoid using literals such as 1 in if statements"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntryQueue.java",
+     324,
+     "Avoid using literals such as 1 in if statements"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntryQueue.java",
+     651,
+     "Avoid using literals such as 1 in if statements"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntryQueue.java",
+     783,
+     "Avoid using literals such as 16 in if statements"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordExecutor.java",
+     812,
+     "Avoid using literals such as 2 in if statements"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordExecutor.java",
+     828,
+     "Avoid using literals such as 2 in if statements"
+    ]
+   ]
+  },
+  {
+   "rule": "AtLeastOneConstructor",
+   "category": "codestyle",
+   "introduced": 25,
+   "pre_existing": 37,
+   "share": 0.167,
+   "house": false,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/SafeTask.java",
+     1971,
+     "Each class should declare at least one constructor"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/SafeTask.java",
+     2086,
+     "Each class should declare at least one constructor"
+    ],
+    [
+     "test/simulator/test/org/apache/cassandra/service/accord/execution/AccordCommandStoreExecutorTest.java",
+     132,
+     "Each class should declare at least one constructor"
+    ],
+    [
+     "test/simulator/test/org/apache/cassandra/simulator/test/AccordExecutorTest.java",
+     116,
+     "Each class should declare at least one constructor"
+    ],
+    [
+     "test/unit/org/apache/cassandra/service/accord/AccordDurabilityStallTest.java",
+     68,
+     "Each class should declare at least one constructor"
+    ],
+    [
+     "test/unit/org/apache/cassandra/service/accord/SafeTaskTest.java",
+     104,
+     "Each class should declare at least one constructor"
+    ]
+   ]
+  },
+  {
+   "rule": "UncommentedEmptyMethodBody",
+   "category": "documentation",
+   "introduced": 25,
+   "pre_existing": 37,
+   "share": 0.066,
+   "house": false,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCache.java",
+     462,
+     "Document empty method body"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCache.java",
+     463,
+     "Document empty method body"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCache.java",
+     464,
+     "Document empty method body"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordExecutor.java",
+     370,
+     "Document empty method body"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/CancelTask.java",
+     55,
+     "Document empty method body"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/CancelTask.java",
+     56,
+     "Document empty method body"
+    ]
+   ]
+  },
+  {
+   "rule": "PublicMemberInNonPublicType",
+   "category": "design",
+   "introduced": 24,
+   "pre_existing": 66,
+   "share": 0.173,
+   "house": false,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCache.java",
+     1173,
+     "Public member 'loadOnly' declared in a non-public type"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntry.java",
+     1354,
+     "Public member 'failure' declared in a non-public type"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntryMiniQueue.java",
+     26,
+     "Public member 'AccordCacheEntryMiniQueue' declared in a non-public type"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntryQueue.java",
+     63,
+     "Public member 'AccordCacheEntryQueue' declared in a non-public type"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntryQueue.java",
+     68,
+     "Public member 'AccordCacheEntryQueue' declared in a non-public type"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/Loops.java",
+     57,
+     "Public member 'Loops' declared in a non-public type"
+    ]
+   ]
+  },
+  {
+   "rule": "UnitTestShouldIncludeAssert",
+   "category": "bestpractices",
+   "introduced": 23,
+   "pre_existing": 107,
+   "share": 0.0,
+   "house": false,
+   "locations": [
+    [
+     "test/simulator/test/org/apache/cassandra/service/accord/execution/AccordCommandStoreExecutorTest.java",
+     205,
+     "This unit test should include assert() or fail()"
+    ],
+    [
+     "test/simulator/test/org/apache/cassandra/service/accord/execution/AccordCommandStoreExecutorTest.java",
+     211,
+     "This unit test should include assert() or fail()"
+    ],
+    [
+     "test/simulator/test/org/apache/cassandra/service/accord/execution/AccordCommandStoreExecutorTest.java",
+     224,
+     "This unit test should include assert() or fail()"
+    ],
+    [
+     "test/simulator/test/org/apache/cassandra/service/accord/execution/AccordCommandStoreExecutorTest.java",
+     230,
+     "This unit test should include assert() or fail()"
+    ],
+    [
+     "test/simulator/test/org/apache/cassandra/service/accord/execution/AccordCommandStoreExecutorTest.java",
+     240,
+     "This unit test should include assert() or fail()"
+    ],
+    [
+     "test/simulator/test/org/apache/cassandra/service/accord/execution/AccordCommandStoreExecutorTest.java",
+     246,
+     "This unit test should include assert() or fail()"
+    ]
+   ]
+  },
+  {
+   "rule": "UseConcurrentHashMap",
+   "category": "multithreading",
+   "introduced": 21,
+   "pre_existing": 39,
+   "share": 0.082,
+   "house": false,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCache.java",
+     473,
+     "If you run in Java5 or newer and have concurrent access, you should use the ConcurrentHashMap implementation"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/SafeTask.java",
+     2088,
+     "If you run in Java5 or newer and have concurrent access, you should use the ConcurrentHashMap implementation"
+    ],
+    [
+     "test/unit/org/apache/cassandra/service/accord/execution/AccordCacheEntryCycleTest.java",
+     669,
+     "If you run in Java5 or newer and have concurrent access, you should use the ConcurrentHashMap implementation"
+    ],
+    [
+     "test/unit/org/apache/cassandra/service/accord/execution/AccordCacheEntryCycleTest.java",
+     671,
+     "If you run in Java5 or newer and have concurrent access, you should use the ConcurrentHashMap implementation"
+    ],
+    [
+     "test/unit/org/apache/cassandra/service/accord/execution/AccordCacheEntryCycleTest.java",
+     672,
+     "If you run in Java5 or newer and have concurrent access, you should use the ConcurrentHashMap implementation"
+    ],
+    [
+     "test/unit/org/apache/cassandra/service/accord/execution/AccordCacheEntryCycleTest.java",
+     963,
+     "If you run in Java5 or newer and have concurrent access, you should use the ConcurrentHashMap implementation"
+    ]
+   ]
+  },
+  {
+   "rule": "AvoidDuplicateLiterals",
+   "category": "errorprone",
+   "introduced": 20,
+   "pre_existing": 117,
+   "share": 0.035,
+   "house": false,
+   "locations": [
+    [
+     "test/simulator/test/org/apache/cassandra/service/accord/execution/AccordCommandStoreExecutorTest.java",
+     207,
+     "The String literal \"Loop\" appears 6 times in this file; the first occurrence is on line 207"
+    ],
+    [
+     "test/unit/org/apache/cassandra/db/compaction/CompactionAccordIteratorsTest.java",
+     323,
+     "The String literal \"Test\" appears 6 times in this file; the first occurrence is on line 323"
+    ],
+    [
+     "test/unit/org/apache/cassandra/service/accord/SafeTaskTest.java",
+     134,
+     "The String literal \"Test\" appears 7 times in this file; the first occurrence is on line 134"
+    ],
+    [
+     "test/unit/org/apache/cassandra/service/accord/execution/AccordCacheEntryCycleTest.java",
+     152,
+     "The String literal \"\\n \" appears 4 times in this file; the first occurrence is on line 152"
+    ],
+    [
+     "test/unit/org/apache/cassandra/service/accord/execution/AccordCacheEntryQueueTest.java",
+     641,
+     "The String literal \"entry\" appears 4 times in this file; the first occurrence is on line 641"
+    ],
+    [
+     "test/unit/org/apache/cassandra/service/accord/execution/AccordCacheEntrySafeTaskCycleTest.java",
+     237,
+     "The String literal \"\\n \" appears 4 times in this file; the first occurrence is on line 237"
+    ]
+   ]
+  },
+  {
+   "rule": "DefaultLabelNotLastInSwitch",
+   "category": "bestpractices",
+   "introduced": 20,
+   "pre_existing": 25,
+   "share": 0.017,
+   "house": false,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/service/accord/AccordCommandStore.java",
+     293,
+     "The default label should be the last label in a switch statement or expression"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntry.java",
+     535,
+     "The default label should be the last label in a switch statement or expression"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntryQueue.java",
+     717,
+     "The default label should be the last label in a switch statement or expression"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntryQueue.java",
+     851,
+     "The default label should be the last label in a switch statement or expression"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordExecutor.java",
+     137,
+     "The default label should be the last label in a switch statement or expression"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/SafeTask.java",
+     855,
+     "The default label should be the last label in a switch statement or expression"
+    ]
+   ]
+  },
+  {
+   "rule": "ExcessiveImports",
+   "category": "design",
+   "introduced": 20,
+   "pre_existing": 55,
+   "share": 0.115,
+   "house": false,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntry.java",
+     20,
+     "A high number of imports (41) can indicate a high degree of coupling within an object; current threshold is 30."
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordExecutor.java",
+     21,
+     "A high number of imports (72) can indicate a high degree of coupling within an object; current threshold is 30."
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/SafeTask.java",
+     20,
+     "A high number of imports (121) can indicate a high degree of coupling within an object; current threshold is 30."
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/Task.java",
+     21,
+     "A high number of imports (50) can indicate a high degree of coupling within an object; current threshold is 30."
+    ],
+    [
+     "test/simulator/test/org/apache/cassandra/service/accord/execution/AccordCommandStoreExecutorTest.java",
+     21,
+     "A high number of imports (81) can indicate a high degree of coupling within an object; current threshold is 30."
+    ],
+    [
+     "test/simulator/test/org/apache/cassandra/simulator/test/AccordExecutorTest.java",
+     21,
+     "A high number of imports (34) can indicate a high degree of coupling within an object; current threshold is 30."
+    ]
+   ]
+  },
+  {
+   "rule": "LooseCoupling",
+   "category": "bestpractices",
+   "introduced": 19,
+   "pre_existing": 53,
+   "share": 0.093,
+   "house": false,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCache.java",
+     998,
+     "Avoid using implementation types like 'IdentityHashMap'; use the interface instead"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordExecutorSignalLoop.java",
+     55,
+     "Avoid using implementation types like 'ConcurrentLinkedQueue'; use the interface instead"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/SafeTask.java",
+     182,
+     "Avoid using implementation types like 'ArrayList'; use the interface instead"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/SafeTask.java",
+     1611,
+     "Avoid using implementation types like 'ArrayList'; use the interface instead"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/SafeTask.java",
+     2158,
+     "Avoid using implementation types like 'TreeMap'; use the interface instead"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/Tranches.java",
+     45,
+     "Avoid using implementation types like 'ArrayDeque'; use the interface instead"
+    ]
+   ]
+  },
+  {
+   "rule": "RedundantFieldInitializer",
+   "category": "performance",
+   "introduced": 18,
+   "pre_existing": 54,
+   "share": 0.107,
+   "house": false,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/config/AccordConfig.java",
+     192,
+     "Avoid using redundant field initializer for 'queue_flow_imbalance_onset'"
+    ],
+    [
+     "src/java/org/apache/cassandra/config/AccordConfig.java",
+     193,
+     "Avoid using redundant field initializer for 'queue_flow_imbalance_width_shift'"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/AccordCommandStore.java",
+     311,
+     "Avoid using redundant field initializer for 'unsafeOverrideRangeIndexFactory'"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCache.java",
+     114,
+     "Avoid using redundant field initializer for 'DEBUG_VALIDATE_LOAD_ON_EVICT'"
+    ],
+    [
+     "test/simulator/test/org/apache/cassandra/service/accord/execution/AccordCommandStoreExecutorTest.java",
+     1835,
+     "Avoid using redundant field initializer for 'stamp'"
+    ],
+    [
+     "test/unit/org/apache/cassandra/service/accord/AccordFailedKeyTestHarness.java",
+     124,
+     "Avoid using redundant field initializer for 'stamp'"
+    ]
+   ]
+  },
+  {
+   "rule": "TooManyStaticImports",
+   "category": "codestyle",
+   "introduced": 18,
+   "pre_existing": 38,
+   "share": 0.061,
+   "house": false,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/service/accord/AccordCommandStores.java",
+     66,
+     "Too many static imports may lead to messy code"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntry.java",
+     45,
+     "Too many static imports may lead to messy code"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntryQueue.java",
+     29,
+     "Too many static imports may lead to messy code"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordExecutor.java",
+     81,
+     "Too many static imports may lead to messy code"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordExecutorSignalLoop.java",
+     35,
+     "Too many static imports may lead to messy code"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/ExclusiveExecutor.java",
+     38,
+     "Too many static imports may lead to messy code"
+    ]
+   ]
+  },
+  {
+   "rule": "GodClass",
+   "category": "design",
+   "introduced": 17,
+   "pre_existing": 20,
+   "share": 0.076,
+   "house": false,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCache.java",
+     107,
+     "Possible God Class (WMC=75, ATFD=44, TCC=7.386%)"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCache.java",
+     469,
+     "Possible God Class (WMC=69, ATFD=9, TCC=21.014%)"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCacheEntry.java",
+     70,
+     "Possible God Class (WMC=233, ATFD=38, TCC=18.817%)"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordExecutor.java",
+     102,
+     "Possible God Class (WMC=131, ATFD=12, TCC=7.364%)"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordExecutorSignalLoop.java",
+     45,
+     "Possible God Class (WMC=64, ATFD=9, TCC=14.620%)"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/SafeTask.java",
+     148,
+     "Possible God Class (WMC=381, ATFD=72, TCC=14.454%)"
+    ]
+   ]
+  },
+  {
+   "rule": "MissingSerialVersionUID",
+   "category": "errorprone",
+   "introduced": 16,
+   "pre_existing": 1,
+   "share": 0.03,
+   "house": false,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordExecutorSignalLoop.java",
+     47,
+     "Classes implementing Serializable should set a serialVersionUID"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/InconsistentEntryException.java",
+     21,
+     "Classes implementing Serializable should set a serialVersionUID"
+    ],
+    [
+     "test/simulator/test/org/apache/cassandra/service/accord/execution/AccordCommandStoreExecutorTest.java",
+     171,
+     "Classes implementing Serializable should set a serialVersionUID"
+    ],
+    [
+     "test/simulator/test/org/apache/cassandra/simulator/test/AccordExecutorTest.java",
+     116,
+     "Classes implementing Serializable should set a serialVersionUID"
+    ],
+    [
+     "test/simulator/test/org/apache/cassandra/simulator/test/AccordExecutorTest.java",
+     178,
+     "Classes implementing Serializable should set a serialVersionUID"
+    ],
+    [
+     "test/unit/org/apache/cassandra/service/accord/ControllableRangeIndex.java",
+     69,
+     "Classes implementing Serializable should set a serialVersionUID"
+    ]
+   ]
+  },
+  {
+   "rule": "LocalVariableCouldBeFinal",
+   "category": "codestyle",
+   "introduced": 2049,
+   "pre_existing": 3372,
+   "share": 0.659,
+   "house": true,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/concurrent/CassandraThread.java",
+     132,
+     "Local variable 'depth' could be declared final"
+    ],
+    [
+     "src/java/org/apache/cassandra/concurrent/CassandraThread.java",
+     142,
+     "Local variable 'discarded' could be declared final"
+    ],
+    [
+     "src/java/org/apache/cassandra/db/memtable/AbstractMemtable.java",
+     178,
+     "Local variable 'listeners' could be declared final"
+    ],
+    [
+     "src/java/org/apache/cassandra/db/virtual/AccordDebugKeyspace.java",
+     336,
+     "Local variable 'info' could be declared final"
+    ],
+    [
+     "src/java/org/apache/cassandra/db/virtual/AccordDebugKeyspace.java",
+     341,
+     "Local variable 'executionContext' could be declared final"
+    ],
+    [
+     "src/java/org/apache/cassandra/db/virtual/AccordDebugKeyspace.java",
+     744,
+     "Local variable 'future' could be declared final"
+    ]
+   ]
+  },
+  {
+   "rule": "CommentSize",
+   "category": "documentation",
+   "introduced": 1774,
+   "pre_existing": 902,
+   "share": 0.606,
+   "house": true,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/config/AccordConfig.java",
+     136,
+     "Comment is too large: Line too long"
+    ],
+    [
+     "src/java/org/apache/cassandra/config/AccordConfig.java",
+     160,
+     "Comment is too large: Line too long"
+    ],
+    [
+     "src/java/org/apache/cassandra/config/AccordConfig.java",
+     167,
+     "Comment is too large: Line too long"
+    ],
+    [
+     "src/java/org/apache/cassandra/config/AccordConfig.java",
+     168,
+     "Comment is too large: Line too long"
+    ],
+    [
+     "src/java/org/apache/cassandra/config/AccordConfig.java",
+     201,
+     "Comment is too large: Line too long"
+    ],
+    [
+     "src/java/org/apache/cassandra/config/AccordConfig.java",
+     202,
+     "Comment is too large: Line too long"
+    ]
+   ]
+  },
+  {
+   "rule": "MethodArgumentCouldBeFinal",
+   "category": "codestyle",
+   "introduced": 1659,
+   "pre_existing": 4046,
+   "share": 0.88,
+   "house": true,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/concurrent/CassandraThread.java",
+     109,
+     "Parameter 'newExecutor' is not assigned and could be declared final"
+    ],
+    [
+     "src/java/org/apache/cassandra/concurrent/CassandraThread.java",
+     121,
+     "Parameter 'newLockedExecutor' is not assigned and could be declared final"
+    ],
+    [
+     "src/java/org/apache/cassandra/concurrent/CassandraThread.java",
+     159,
+     "Parameter 'newActiveTask' is not assigned and could be declared final"
+    ],
+    [
+     "src/java/org/apache/cassandra/config/DatabaseDescriptor.java",
+     2963,
+     "Parameter 'concurrent_operations' is not assigned and could be declared final"
+    ],
+    [
+     "src/java/org/apache/cassandra/config/DatabaseDescriptor.java",
+     5864,
+     "Parameter 'unit' is not assigned and could be declared final"
+    ],
+    [
+     "src/java/org/apache/cassandra/cql3/functions/JavaBasedUDFunction.java",
+     754,
+     "Parameter 'timeout' is not assigned and could be declared final"
+    ]
+   ]
+  },
+  {
+   "rule": "ControlStatementBraces",
+   "category": "codestyle",
+   "introduced": 1130,
+   "pre_existing": 1598,
+   "share": 0.614,
+   "house": true,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/concurrent/CassandraThread.java",
+     123,
+     "This statement should have braces"
+    ],
+    [
+     "src/java/org/apache/cassandra/concurrent/CassandraThread.java",
+     124,
+     "This statement should have braces"
+    ],
+    [
+     "src/java/org/apache/cassandra/concurrent/CassandraThread.java",
+     134,
+     "This statement should have braces"
+    ],
+    [
+     "src/java/org/apache/cassandra/concurrent/CassandraThread.java",
+     136,
+     "This statement should have braces"
+    ],
+    [
+     "src/java/org/apache/cassandra/config/DatabaseDescriptor.java",
+     668,
+     "This statement should have braces"
+    ],
+    [
+     "src/java/org/apache/cassandra/db/virtual/AccordDebugKeyspace.java",
+     1798,
+     "This statement should have braces"
+    ]
+   ]
+  },
+  {
+   "rule": "CommentDefaultAccessModifier",
+   "category": "codestyle",
+   "introduced": 969,
+   "pre_existing": 411,
+   "share": 0.345,
+   "house": true,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/service/accord/AccordCommandStore.java",
+     157,
+     "Missing commented default access modifier on constructor 'Caches(AccordCache, Instance, Instance)'"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/AccordCommandStore.java",
+     698,
+     "Missing commented default access modifier on method 'maybeFlush(ExclusiveCaches, AccordCacheEntry<RoutingKey, CommandsFo"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/AccordService.java",
+     1197,
+     "Missing commented default access modifier on nested class 'FlushingCacheEntries'"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/debug/DebugExecution.java",
+     67,
+     "Missing commented default access modifier on field 'depth'"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/debug/DebugExecution.java",
+     183,
+     "Missing commented default access modifier on field 'polledAt'"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/debug/DebugExecution.java",
+     184,
+     "Missing commented default access modifier on field 'releasedRangeScannerAt'"
+    ]
+   ]
+  },
+  {
+   "rule": "CommentRequired",
+   "category": "documentation",
+   "introduced": 962,
+   "pre_existing": 3657,
+   "share": 0.958,
+   "house": true,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/concurrent/CassandraThread.java",
+     32,
+     "Class comments are required"
+    ],
+    [
+     "src/java/org/apache/cassandra/concurrent/CassandraThread.java",
+     36,
+     "Field comments are required"
+    ],
+    [
+     "src/java/org/apache/cassandra/concurrent/CassandraThread.java",
+     37,
+     "Field comments are required"
+    ],
+    [
+     "src/java/org/apache/cassandra/concurrent/CassandraThread.java",
+     38,
+     "Field comments are required"
+    ],
+    [
+     "src/java/org/apache/cassandra/concurrent/CassandraThread.java",
+     39,
+     "Field comments are required"
+    ],
+    [
+     "src/java/org/apache/cassandra/concurrent/CassandraThread.java",
+     40,
+     "Field comments are required"
+    ]
+   ]
+  },
+  {
+   "rule": "LawOfDemeter",
+   "category": "design",
+   "introduced": 584,
+   "pre_existing": 1368,
+   "share": 0.414,
+   "house": true,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/config/AccordConfig.java",
+     222,
+     "Access to field `UNDEFINED` on foreign value `OptionaldPositiveInt` (degree 1)"
+    ],
+    [
+     "src/java/org/apache/cassandra/config/DatabaseDescriptor.java",
+     667,
+     "Access to field `accord` on foreign value `conf` (degree 1)"
+    ],
+    [
+     "src/java/org/apache/cassandra/config/DatabaseDescriptor.java",
+     668,
+     "Access to field `accord` on foreign value `conf` (degree 1)"
+    ],
+    [
+     "src/java/org/apache/cassandra/config/DatabaseDescriptor.java",
+     668,
+     "Access to field `accord` on foreign value `conf` (degree 1)"
+    ],
+    [
+     "src/java/org/apache/cassandra/config/DatabaseDescriptor.java",
+     2946,
+     "Access to field `accord` on foreign value `conf` (degree 1)"
+    ],
+    [
+     "src/java/org/apache/cassandra/config/DatabaseDescriptor.java",
+     2969,
+     "Access to field `accord` on foreign value `conf` (degree 1)"
+    ]
+   ]
+  },
+  {
+   "rule": "ShortVariable",
+   "category": "codestyle",
+   "introduced": 292,
+   "pre_existing": 487,
+   "share": 0.45,
+   "house": true,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/db/memtable/AbstractMemtable.java",
+     60,
+     "Avoid variables with short names like id"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/AccordCommandStore.java",
+     698,
+     "Avoid variables with short names like e"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/AccordDataStore.java",
+     168,
+     "Avoid variables with short names like ex"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/api/AccordAgent.java",
+     229,
+     "Avoid variables with short names like t"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AbstractLockLoop.java",
+     45,
+     "Avoid variables with short names like p1"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AbstractLockLoop.java",
+     47,
+     "Avoid variables with short names like p1"
+    ]
+   ]
+  },
+  {
+   "rule": "OnlyOneReturn",
+   "category": "codestyle",
+   "introduced": 243,
+   "pre_existing": 401,
+   "share": 0.429,
+   "house": true,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/concurrent/CassandraThread.java",
+     124,
+     "A method should have only one exit point, and that should be the last statement in the method"
+    ],
+    [
+     "src/java/org/apache/cassandra/repair/autorepair/AutoRepair.java",
+     304,
+     "A method should have only one exit point, and that should be the last statement in the method"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/AccordCommandStores.java",
+     329,
+     "A method should have only one exit point, and that should be the last statement in the method"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/AccordCommandStores.java",
+     335,
+     "A method should have only one exit point, and that should be the last statement in the method"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/api/AccordAgent.java",
+     232,
+     "A method should have only one exit point, and that should be the last statement in the method"
+    ],
+    [
+     "src/java/org/apache/cassandra/service/accord/execution/AccordCache.java",
+     391,
+     "A method should have only one exit point, and that should be the last statement in the method"
+    ]
+   ]
+  },
+  {
+   "rule": "LongVariable",
+   "category": "codestyle",
+   "introduced": 124,
+   "pre_existing": 571,
+   "share": 0.411,
+   "house": true,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/concurrent/CassandraThread.java",
+     36,
+     "Avoid excessively long variable names like accordActiveExecutor"
+    ],
+    [
+     "src/java/org/apache/cassandra/concurrent/CassandraThread.java",
+     37,
+     "Avoid excessively long variable names like accordLockedExecutor"
+    ],
+    [
+     "src/java/org/apache/cassandra/concurrent/CassandraThread.java",
+     38,
+     "Avoid excessively long variable names like accordLockedExecutorDepth"
+    ],
+    [
+     "src/java/org/apache/cassandra/concurrent/CassandraThread.java",
+     40,
+     "Avoid excessively long variable names like accordActiveTaskUpdater"
+    ],
+    [
+     "src/java/org/apache/cassandra/config/AccordConfig.java",
+     173,
+     "Avoid excessively long variable names like BLENDED_PRIORITY_PHASE_FAIR"
+    ],
+    [
+     "src/java/org/apache/cassandra/config/AccordConfig.java",
+     189,
+     "Avoid excessively long variable names like queue_priority_model"
+    ]
+   ]
+  },
+  {
+   "rule": "FieldNamingConventions",
+   "category": "codestyle",
+   "introduced": 39,
+   "pre_existing": 228,
+   "share": 0.367,
+   "house": true,
+   "locations": [
+    [
+     "src/java/org/apache/cassandra/concurrent/CassandraThread.java",
+     40,
+     "The constant name 'accordActiveTaskUpdater' doesn't match '[A-Z][A-Z_0-9]*'"
+    ],
+    [
+     "src/java/org/apache/cassandra/config/AccordConfig.java",
+     189,
+     "The field name 'queue_priority_model' doesn't match '[a-z][a-zA-Z0-9]*'"
+    ],
+    [
+     "src/java/org/apache/cassandra/config/AccordConfig.java",
+     190,
+     "The field name 'queue_balancing_model' doesn't match '[a-z][a-zA-Z0-9]*'"
+    ],
+    [
+     "src/java/org/apache/cassandra/config/AccordConfig.java",
+     192,
+     "The field name 'queue_flow_imbalance_onset' doesn't match '[a-z][a-zA-Z0-9]*'"
+    ],
+    [
+     "src/java/org/apache/cassandra/config/AccordConfig.java",
+     193,
+     "The field name 'queue_flow_imbalance_width_shift' doesn't match '[a-z][a-zA-Z0-9]*'"
+    ],
+    [
+     "src/java/org/apache/cassandra/config/AccordConfig.java",
+     195,
+     "The field name 'queue_active_limits' doesn't match '[a-z][a-zA-Z0-9]*'"
+    ]
+   ]
+  }
+ ]
+}

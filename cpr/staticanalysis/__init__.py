@@ -12,9 +12,9 @@ import shutil
 import time
 
 from cpr.ingest import clone as clone_mod
-from cpr.staticanalysis import classify, inputs, run, tools
+from cpr.staticanalysis import auxpath, baseline, classify, inputs, ruleset as ruleset_mod, run, tools
 
-SCHEMA = 2  # 2: partial PMD runs keep the files PMD read
+SCHEMA = 3  # 2: partial PMD runs keep the files PMD read; 3: the full PMD catalog and the baseline
 TOOLS = ("checkstyle", "pmd", "cpd")
 
 
@@ -123,12 +123,14 @@ def _analyze(bundle, work_dir, log):
     ruleset = os.path.join(os.path.dirname(tools.CONFIG), "pmd-pr.xml")
     cs_sha = sha_text(*[_read(p) for _, p in sorted((cfgs or {}).items())])
     pmd_sha = sha_text(_read(ruleset), json.dumps(cfg["thresholds"], sort_keys=True))
+    aux_cp, aux_note = auxpath.resolve(work_dir, number, pr["head_sha"])
     java_cache = {}
     cs_ok = cs_id and tools.is_installed(work_dir, cs_id) and cfgs
     pmd_ok = tools.is_installed(work_dir, pmd_id)
     key = {"schema": SCHEMA, "merge_base": mb, "checkstyle": [cs_id, cs_sha, bool(cs_ok),
                                                               _env(java_cache, cfg["tools"][cs_id]["min_java"] if cs_id else 8, cfg)[2]],
-           "pmd": [pmd_id, pmd_sha, pmd_ok, _env(java_cache, 8, cfg)[2]], "cpd": cfg["cpd_min_tokens"]}
+           "pmd": [pmd_id, pmd_sha, pmd_ok, _env(java_cache, 8, cfg)[2], sha_text(aux_cp or ""), cfg["house_style_share"]],
+           "cpd": cfg["cpd_min_tokens"]}
     results = os.path.join(sd, "results.json")
     if os.path.exists(results):
         with open(results) as f:
@@ -137,7 +139,7 @@ def _analyze(bundle, work_dir, log):
             log("static analysis: cached for this head sha")
             return saved["result"]
     out = _run(cfg, work_dir, repo, base_branch, changed, mb, head, sd, (cs_id, cfgs, cs_sha, cs_ok),
-               (pmd_id, ruleset, pmd_sha, pmd_ok), java_cache, log)
+               (pmd_id, ruleset, pmd_sha, pmd_ok, aux_cp, aux_note), java_cache, log)
     out["commits"] = commits
     os.makedirs(sd, exist_ok=True)
     with open(results, "w") as f:
@@ -160,8 +162,9 @@ def _run(cfg, work_dir, repo, base_branch, changed, mb, head, sd, cs, pmd, java_
     log(f"static analysis: {len(changed)} changed Java files")
     out["tools"]["checkstyle"], out["checkstyle"] = _checkstyle(cfg, work_dir, changed, shas, head_lines, sd, raw, budget,
                                                                  cs, base_branch, java_cache)
-    out["tools"]["pmd"], out["complexity"]["methods"], out["complexity"]["findings"] = _pmd(
-        cfg, work_dir, changed, shas, head_lines, sd, raw, budget, pmd, java_cache)
+    out["tools"]["pmd"], out["complexity"]["methods"], out["complexity"]["findings"], rules = _pmd(
+        cfg, work_dir, repo, base_branch, changed, shas, head_lines, sd, raw, budget, pmd, java_cache, log)
+    out["pmd_rules"] = rules or {"status": "unavailable", "reason": out["tools"]["pmd"]["reason"] or "PMD did not run"}
     out["tools"]["cpd"], out["duplication"] = _cpd(cfg, work_dir, changed, head_rels, head_lines, sd, raw, budget,
                                                    pmd, java_cache)
     for name, t in out["tools"].items():
@@ -213,26 +216,26 @@ def _checkstyle(cfg, work_dir, changed, shas, head_lines, sd, raw, budget, cs, b
             classify.classify_checkstyle(changed, base_files, head["files"], head_lines))
 
 
-def _pmd(cfg, work_dir, changed, shas, head_lines, sd, raw, budget, pmd, java_cache):
-    pmd_id, ruleset, pmd_sha, ok = pmd
+def _pmd(cfg, work_dir, repo, base_branch, changed, shas, head_lines, sd, raw, budget, pmd, java_cache, log):
+    pmd_id, ruleset, pmd_sha, ok, aux_cp, aux_note = pmd
     version = cfg["tools"][pmd_id]["version"]
     head_rels = [c["path"] for c in changed if c["status"] != "D"]
     n = len(head_rels)
     limit = cfg["caps"]["pmd_max_files"]
     if len(changed) > limit:
-        return tool_result("skipped", f"too large: {len(changed)} changed Java files (limit {limit})", version, n), [], []
+        return tool_result("skipped", f"too large: {len(changed)} changed Java files (limit {limit})", version, n), [], [], None
     if not ok:
-        return tool_result("unknown", "PMD not installed: run `cpr tools install`", version, n), [], []
+        return tool_result("unknown", "PMD not installed: run `cpr tools install`", version, n), [], [], None
     java, env, err = _env(java_cache, cfg["tools"][pmd_id]["min_java"], cfg)
     if err:
-        return tool_result("unknown", err, version, n), [], []
+        return tool_result("unknown", err, version, n), [], [], None
     pmd_bin = tools.pmd_path(work_dir, pmd_id)
 
     def side(root, rels, label):
         t = budget.timeout()
         if t is None:
             return {"files": {}, "parse_errors": [], "problem": "PR time budget exhausted", "seconds": 0}
-        return run.run_pmd(pmd_bin, env, ruleset, root, rels, raw, label, t)
+        return run.run_pmd(pmd_bin, env, ruleset, root, rels, raw, label, t, aux_cp if label == "head" else None)
 
     head = side(os.path.join(sd, "head"), head_rels, "head")
     base_paths = {c["base_path"]: shas["base"][c["base_path"]] for c in changed if c["base_path"] in shas["base"]}
@@ -248,22 +251,59 @@ def _pmd(cfg, work_dir, changed, shas, head_lines, sd, raw, budget, pmd, java_ca
     base_files, base_problem, base_secs = _cached_side(cache, base_paths, base_runner)
     secs = head["seconds"] + base_secs
     if head["problem"]:
-        return tool_result("unknown", head["problem"], version, n, 0, secs), [], []
+        return tool_result("unknown", head["problem"], version, n, 0, secs), [], [], None
     if base_problem:
-        return tool_result("unknown", f"base side: {base_problem}", version, n, 0, secs), [], []
+        return tool_result("unknown", f"base side: {base_problem}", version, n, 0, secs), [], [], None
     bad = sorted({p for p, _ in head["parse_errors"]} | set(bad_base))
     if bad and len(bad) >= n:
         status, reason = "unknown", f"{len(bad)} file(s) failed to parse: {', '.join(bad[:5])}"
     else:  # report on the files PMD read; the check names the skipped ones and will not pass
         status, reason = "ran", (f"{len(bad)} file(s) failed to parse: {', '.join(bad[:5])}" if bad else None)
-    methods, findings = classify.classify_complexity(
-        [c for c in changed if c["path"] not in bad and c["base_path"] not in bad],
-        base_files, {p: f for p, f in head["files"].items() if p not in bad}, head_lines, cfg["thresholds"])
-    return tool_result(status, reason, version, n, n - len(bad), secs), methods, findings
+    ok_changed = [c for c in changed if c["path"] not in bad and c["base_path"] not in bad]
+    head_ok = {p: f for p, f in head["files"].items() if p not in bad}
+    methods, findings = classify.classify_complexity(ok_changed, base_files, head_ok, head_lines, cfg["thresholds"])
+    tool = tool_result(status, reason, version, n, n - len(bad), secs)
+    rules = _rules(cfg, work_dir, repo, base_branch, ok_changed, base_files, head_ok, head_lines, pmd, env, pmd_bin, log)
+    return tool, methods, findings, rules
+
+
+def _rules(cfg, work_dir, repo, base_branch, changed, base_files, head_files, head_lines, pmd, env, pmd_bin, log):
+    """The `pmd_rules` section: introduced violations per catalog rule, and which rules are house style."""
+    pmd_id, ruleset, pmd_sha, _, aux_cp, aux_note = pmd
+    with open(ruleset) as f:
+        text = f.read()
+    cats = ruleset_mod.catalog(text)
+    found = classify.classify_rules(changed, base_files, head_files, head_lines)
+    base_ref = clone_mod.base_ref(base_branch)
+    tip = clone_mod._git(repo, "rev-parse", base_ref).strip()
+    caps = cfg["caps"]
+    data, source, note = baseline.obtain(os.path.join(work_dir, "static-cache"), repo, base_ref, base_branch, tip, pmd_bin,
+                                         env, text, pmd_id, pmd_sha, caps["baseline_seconds"], caps["pmd_threads"],
+                                         cfg["exclude"], log)
+    if data is None:
+        data, source = baseline.from_touched(base_files), "touched-files"
+        note = (f"The branch baseline could not be built ({note}); house style is the density of each rule in the "
+                f"base versions of the {len(base_files)} touched file(s), a small sample.")
+    shares = baseline.shares(data)
+    limit = cfg["house_style_share"]
+    rules = []
+    for rule, e in found.items():
+        share = shares.get(rule, 0.0)
+        rules.append({"rule": rule, "category": e["category"] or cats.get(rule), "introduced": e["introduced"],
+                      "in_tests": e["in_tests"], "pre_existing": e["pre_existing"], "share": round(share, 3), "house": share >= limit,
+                      "locations": e["locations"]})
+    rules.sort(key=lambda r: (-r["introduced"], r["rule"]))
+    house = sorted(({"rule": r, "category": cats.get(r), "share": round(s, 3)} for r, s in shares.items() if s >= limit),
+                   key=lambda h: (-h["share"], h["rule"]))
+    return {"status": "ran", "reason": None, "rules_run": len(cats), "type_info": aux_cp is not None,
+            "type_note": aux_note, "threshold": limit,
+            "baseline": {"source": source, "branch": base_branch, "tip": data.get("tip", tip), "files": data["files_scanned"],
+                         "seconds": data.get("seconds"), "built_at": data.get("built_at"), "note": note},
+            "house_style": house, "rules": rules}
 
 
 def _cpd(cfg, work_dir, changed, head_rels, head_lines, sd, raw, budget, pmd, java_cache):
-    pmd_id, _, _, ok = pmd
+    pmd_id, ok = pmd[0], pmd[3]
     version = cfg["tools"][pmd_id]["version"]
     n = len(head_rels)
     if not ok:

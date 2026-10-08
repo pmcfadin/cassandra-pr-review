@@ -340,7 +340,7 @@ class Runners(unittest.TestCase):
         with mock.patch.object(run, "execute", fake_execute(xml, rc=4)):
             ok = run.run_pmd("pmd", {}, "r.xml", self.root, [SSTABLE, "src/java/Other.java"], self.d.name, "head", 10)
         self.assertIsNone(ok["problem"])
-        self.assertEqual(ok["files"]["src/java/Other.java"], {"bodies": [], "m": []})  # clean files have no rows
+        self.assertEqual(ok["files"]["src/java/Other.java"], {"bodies": [], "m": [], "v": []})  # clean files have no rows
         with mock.patch.object(run, "execute", fake_execute(xml, rc=1, err="usage: boom")):
             bad = run.run_pmd("pmd", {}, "r.xml", self.root, [SSTABLE], self.d.name, "head", 10)
         self.assertEqual(bad["problem"], "exit 1: usage: boom")

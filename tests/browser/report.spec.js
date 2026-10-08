@@ -446,3 +446,51 @@ test("index groups PRs by who acts next, with a count per group and chips only w
     await expect(page.locator('li.item[data-pr="5238"] a.main')).toHaveAttribute("href", "pr/5238/");
   }
 });
+
+test("PMD rules block: category summary, banded rule table, rule locations, docs links, house style collapsed; desktop and phone", async ({ page }) => {
+  await page.goto(fileUrl(fixtures().pmd_rules));
+  await page.locator("#toggle-all").click();
+  const blk = page.locator("#sec-static .blk", { has: page.locator("h3", { hasText: "PMD rules" }) });
+  await expect(blk).toHaveCount(1);
+  await expect(blk.locator(".pm-cat")).toHaveCount(8);
+  await expect(blk.locator(".pm-cat.s-fail")).toHaveCount(3);
+  await expect(blk.locator(".pm-cat.s-should")).toHaveCount(3);
+  await expect(blk.locator(".pm-cat.s-pass")).toHaveCount(2);
+  const table = blk.locator(".pm-table").first();
+  // Rules outside house style only, red first; more than 20 rows sit behind "Show all N".
+  const kinds = await table.locator("tbody tr td:nth-child(2) .chip").evaluateAll((els) => els.map((e) => e.className.match(/s-(fail|should|pass)/)[1]));
+  expect(kinds.length).toBe(30);
+  const rank = kinds.map((c) => ({ fail: 0, should: 1, pass: 2 })[c]);
+  expect(rank).toEqual([...rank].sort((a, b) => a - b));
+  await expect(table.locator("tr.more").first()).toBeHidden();
+  await table.locator(".dt-more").click();
+  await expect(table.locator("tr.more").first()).toBeVisible();
+  // A rule opens to its file:line list and links to its PMD page.
+  const first = table.locator("tbody tr").first();
+  await first.locator("details > summary").click();
+  await expect(first.locator(".pm-locs li").first().locator(".mono")).toHaveText(/^(src|test)\/.+\.java:\d+$/);
+  await expect(first.locator("a")).toHaveAttribute("href", /^https:\/\/docs\.pmd-code\.org\/pmd-doc-7\.28\.0\/pmd_rules_java_[a-z]+\.html#[a-z]+$/);
+  // House style: collapsed, counted, and not listed per line.
+  const house = blk.locator(".pm-house details").first();
+  await expect(house).toHaveJSProperty("open", false);
+  await house.locator("summary").click();
+  await expect(house.locator("tbody tr")).toHaveCount(11);
+  await expect(house.locator(".pm-locs")).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+  // Phone: rows stack, nothing scrolls sideways.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(() => document.querySelectorAll("#sec-static details").forEach((d) => (d.open = true)));
+  await expect(table.locator("thead")).toBeHidden();
+  const cell = table.locator("tbody td").first();
+  expect(await cell.evaluate((e) => getComputedStyle(e).display)).toBe("block");
+  expect(await table.evaluate((e) => e.scrollWidth - e.clientWidth)).toBeLessThanOrEqual(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+  await expect(blk.locator(".pm-cats")).toBeVisible();
+});
+
+test("PMD rules block says so when the catalog did not run", async ({ page }) => {
+  await page.goto(fileUrl(fixtures().report));
+  await page.locator("#toggle-all").click();
+  const blk = page.locator("#sec-static .blk", { has: page.locator("h3", { hasText: "PMD rules" }) });
+  await expect(blk.locator(".empty")).toContainText("did not run");
+});
