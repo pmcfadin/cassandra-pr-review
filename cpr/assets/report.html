@@ -1316,7 +1316,7 @@ body.no-data #no-data { display: block; }
           { num: true, node: String(t.errors) }, { num: true, node: String(t.skipped) }] }], { cls: "build-tests" }),
         (t.failures || []).length ? list(t.failures, function (f) {
           return [h("span", "mono", f["class"] + "." + f.test), f.message ? h("div", "muted", f.message) : null];
-        }) : h("p", "empty", "No test failed.")], (t.failures || []).length));
+        }) : h("p", "empty", "No test failed.")], t.run));
     }
     var files = b.changed_lines ? Object.keys(b.changed_lines).sort() : [];
     if (b.changed_lines) {
@@ -1337,7 +1337,7 @@ body.no-data #no-data { display: block; }
       out.push(block("Changed-line coverage", [empty("Coverage was not measured for this run.")]));
     }
     var sel = b.selected || [];
-    out.push(block("Selected tests", [sel.length ? details("Show " + plural(sel.length, "selected test class") + " and why", list(sel, function (c) {
+    out.push(block("Selected tests", [sel.length ? details("Show " + (sel.length === 1 ? "1 selected test class" : sel.length + " selected test classes") + " and why", list(sel, function (c) {
       return [h("span", "mono", c["class"]), h("span", "muted", " — " + (c.reasons || []).join("; "))];
     }), { cls: "build-selected" }) : empty("No test classes were selected.")], sel.length));
     var unk = b.sandbox_unknowns || [];
