@@ -106,6 +106,7 @@ def normalize(issue, ids, remotelinks):
         "resolution": (f.get("resolution") or {}).get("name") if f.get("resolution") else None,
         "issuetype": (f.get("issuetype") or {}).get("name"),
         "components": _names(f.get("components")),
+        "labels": [l for l in (f.get("labels") or []) if isinstance(l, str)],
         "fix_versions": _names(f.get("fixVersions")),
         "since_versions": _names(custom("since_versions")),
         "reviewers": _users(custom("reviewers")),
