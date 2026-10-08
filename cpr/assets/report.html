@@ -1290,11 +1290,10 @@ body.no-data #no-data { display: block; }
       return h("li", null, [h("strong", null, s.title), " (rule ", h("code", null, (s.rules || []).join(", ")), "; " +
         plural(s.files, "file") + ", " + plural(s.lines, "line") + ")"]);
     });
-    out.push(block("Scenarios", [h("div", "panel", [h("ul", null, scn), fields([
-      ["Cluster name", h("span", "mono", lp.cluster)],
-      ["Estimated wall clock", lp.hours + " h"],
-      ["Not chosen (cap)", (lp.dropped || []).map(function (d) { return d.title; }).join(", ") || null]
-    ])])], scn.length));
+    var rows = [["Cluster name", h("span", "mono", lp.cluster)], ["Estimated wall clock", lp.hours + " h"]];
+    if ((lp.dropped || []).length)
+      rows.push(["Not chosen (cap)", lp.dropped.map(function (d) { return d.title; }).join(", ")]);
+    out.push(block("Scenarios", [h("div", "panel", [h("ul", null, scn), fields(rows)])], scn.length));
     var status = h("span", "muted", "");
     status.setAttribute("role", "status");
     var copy = h("button", "tool", "Copy plan");
