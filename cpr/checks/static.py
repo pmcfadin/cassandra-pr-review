@@ -176,6 +176,52 @@ def complexity(bundle, ctx):
                           f"({len(methods)} changed method(s) listed)", rows)
 
 
+RED_CATEGORIES = ("errorprone", "multithreading", "security")
+
+
+def pmd_rules_rows(sa):
+    """Introduced PMD catalog violations outside house style: [(rule, category, production count, test count)]."""
+    out = []
+    for r in (sa.get("pmd_rules") or {}).get("rules") or []:
+        if r.get("house") or not r.get("introduced"):
+            continue
+        prod = r["introduced"] - r.get("in_tests", 0)
+        out.append((r["rule"], r.get("category"), prod, r.get("in_tests", 0)))
+    return out
+
+
+@check("static.pmd-rules", "No bug-finding PMD rule violations introduced", "static", "static", blocking=False)
+def pmd_rules(bundle, ctx):
+    sa, t, early = _gate(bundle, "pmd", allow_partial=True)
+    if early:
+        return early
+    pr = sa.get("pmd_rules") or {}
+    if pr.get("status") != "ran":
+        return Result("unknown", pr.get("reason") or "PMD's rule catalog did not run on this head")
+    partial = _partial(t)
+    rows = [ev(pr.get("type_note") or "PMD ran without type info")] if not pr.get("type_info") else []
+    base = pr.get("baseline") or {}
+    if base.get("source") == "touched-files":
+        rows.append(ev("House style was judged from the touched files only: " + (base.get("note") or "no branch baseline")))
+    if partial:
+        rows.insert(0, ev(f"PMD skipped some files ({partial}); they are not scored"))
+    rest = pmd_rules_rows(sa)
+    red = sorted((r for r in rest if r[1] in RED_CATEGORIES and r[2] > 0), key=lambda r: (-r[2], r[0]))
+    other = sum(r[2] for r in rest if r[1] not in RED_CATEGORIES)
+    if red:
+        n = sum(r[2] for r in red)
+        top = ", ".join(f"{r[0]} {r[2]}" for r in red[:5])
+        rows.append(ev(f"{other} more introduced in Performance, Best Practices, Design, Code Style and Documentation"))
+        return Result("warn", f"{n} bug-finding PMD violation(s) introduced in production code ({len(red)} rule(s)): {top}",
+                      rows, action_required=False,
+                      action="Open the PMD rules block in Code style for each rule's file and line, and fix or justify each.")
+    if partial:
+        return Result("unknown", f"No bug-finding PMD violation introduced in the files PMD could read; {partial}", rows,
+                      action="Check the skipped files by hand.")
+    return Result("pass", f"No Error Prone, Multithreading or Security PMD violation introduced in production code "
+                          f"({other} lower-severity violation(s) introduced, see the PMD rules block)", rows)
+
+
 @check("static.duplication", "No duplicated code introduced", "static", "static", blocking=False)
 def duplication(bundle, ctx):
     sa, t, early = _gate(bundle, "cpd")

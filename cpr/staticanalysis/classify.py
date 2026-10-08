@@ -187,3 +187,55 @@ def classify_duplication(dups, changed, head_lines):
         touched = any(overlaps(head_lines.get(o["file"], []), o["line"], o["endline"]) for o in occ)
         out.append({**d, "introduced": touched or all(o["file"] in new_files for o in occ)})
     return out
+
+
+# ---- PMD rule catalog ---------------------------------------------------------------------------
+
+LOCATION_CAP = 200  # kept per rule in the bundle; the report model keeps fewer
+
+
+def _counts(file_entry):
+    c = collections.Counter()
+    for v in (file_entry or {}).get("v") or []:
+        c[v[0]] += 1
+    return c
+
+
+def classify_rules(changed, base_files, head_files, head_lines, cap=LOCATION_CAP):
+    """Violations of PMD's catalog rules the patch introduces.
+
+    A violation is introduced when its begin line is an added line of the head file, or the file is new.
+    A modified file with no line map falls back to head count minus base count per rule (floored at 0),
+    taking the last occurrences. Returns {rule: {category, introduced, in_tests, pre_existing, locations}} for every
+    rule that fires in a changed head file; locations are the introduced ones, [file, line, message], capped.
+    """
+    out = {}
+    for c in changed:
+        hp = c["path"]
+        if c["status"] == "D" or hp not in head_files:
+            continue
+        vs = head_files[hp].get("v") or []
+        if not vs:
+            continue
+        new_file = c["status"] == "A"
+        mapped = new_file or hp in head_lines
+        extra = {}  # fallback: how many of each rule to call introduced
+        total = collections.Counter(v[0] for v in vs)
+        if not mapped:
+            base_n = _counts(base_files.get(c["base_path"])) if c["base_path"] else collections.Counter()
+            extra = {r: max(0, n - base_n[r]) for r, n in total.items()}
+        ranges = head_lines.get(hp, [])
+        seen = collections.Counter()
+        for rule, cat, begin, _end, msg in sorted(vs, key=lambda v: v[2]):
+            seen[rule] += 1
+            intro = (new_file or overlaps(ranges, begin, begin)) if mapped else seen[rule] > total[rule] - extra[rule]
+            e = out.setdefault(rule, {"category": cat, "introduced": 0, "in_tests": 0, "pre_existing": 0,
+                                                     "locations": []})
+            if intro:
+                e["introduced"] += 1
+                e["in_tests"] += hp.startswith("test/")
+                if len(e["locations"]) < cap:
+                    e["locations"].append([hp, begin, msg])
+            else:
+                e["pre_existing"] += 1
+    return out

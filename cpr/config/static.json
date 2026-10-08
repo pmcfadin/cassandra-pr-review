@@ -25,6 +25,7 @@
   "java_homes": ["/opt/homebrew/opt/openjdk@21"],
   "thresholds": {"CognitiveComplexity": 15, "CyclomaticComplexity": 10, "NPathComplexity": 200},
   "cpd_min_tokens": 100,
-  "caps": {"tool_seconds": 120, "pr_seconds": 300, "pmd_max_files": 400},
+  "house_style_share": 0.25,
+  "caps": {"tool_seconds": 120, "pr_seconds": 300, "pmd_max_files": 400, "baseline_seconds": 900, "pmd_threads": 4},
   "exclude": ["src/gen-java/", "modules/accord/"]
 }

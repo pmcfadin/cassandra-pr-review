@@ -89,6 +89,16 @@ def with_build(model, run):
     return m
 
 
+def with_pmd_rules(model):
+    """5201 with the PMD rules block filled from a trimmed real run (#4967: 157 files, 30 rules outside house style)."""
+    m = copy.deepcopy(model)
+    with open(os.path.join(REPO, "tests", "fixtures", "static", "pmd-rules-4967.json")) as f:
+        rules = json.load(f)
+    sa = {"status": "ran", "tools": {"pmd": {"status": "ran", "version": "7.28.0"}}, "pmd_rules": rules}
+    m["pmd_rules"] = model_mod.pmd_rules_block({"static_analysis": sa})
+    return m
+
+
 def load_build_run():
     with open(os.path.join(REPO, "tests", "fixtures", "build", "5201-status.json")) as f:
         return json.load(f)
@@ -133,6 +143,7 @@ def main(out_dir):
     render.write(no_plan(model), os.path.join(out_dir, "labplan-none.html"))
     render.write(with_build(model, load_build_run()), os.path.join(out_dir, "build.html"))
     render.write(with_build(model, None), os.path.join(out_dir, "build-none.html"))
+    render.write(with_pmd_rules(model), os.path.join(out_dir, "pmd-rules.html"))
     huge = bundle_model("4967-huge.json.gz")
     render.write(huge, os.path.join(out_dir, "huge.html"))
     index, rows = build_site(out_dir, model)
@@ -140,6 +151,7 @@ def main(out_dir):
                       "report": os.path.join(out_dir, "report.html"), "hostile": os.path.join(out_dir, "hostile.html"),
                       "lens_status": os.path.join(out_dir, "lens-status.html"),
                       "labplan_none": os.path.join(out_dir, "labplan-none.html"),
+                      "pmd_rules": os.path.join(out_dir, "pmd-rules.html"),
                       "huge": os.path.join(out_dir, "huge.html"), "index": index,
                       "index_groups": {r["group"]: sum(1 for x in rows if x["group"] == r["group"]) for r in rows},
                       "hostile_title": HOSTILE_TITLE, "hostile_evidence": HOSTILE_EVIDENCE}))

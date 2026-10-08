@@ -139,6 +139,67 @@ def complexity_table(bundle):
             "removed": removed}
 
 
+PMD_CATEGORIES = (  # slug, label, band: red finds bugs, yellow is design and practice, green is style and docs
+    ("errorprone", "Error Prone", "red"), ("multithreading", "Multithreading", "red"), ("security", "Security", "red"),
+    ("performance", "Performance", "yellow"), ("bestpractices", "Best Practices", "yellow"), ("design", "Design", "yellow"),
+    ("codestyle", "Code Style", "green"), ("documentation", "Documentation", "green"))
+PMD_BAND = {slug: band for slug, _, band in PMD_CATEGORIES}
+PMD_BAND_RANK = {"red": 0, "yellow": 1, "green": 2}
+PMD_LOCATIONS_PER_RULE = 50
+PMD_LOCATIONS_TOTAL = 2000
+
+
+def pmd_rule_url(version, category, rule):
+    return f"https://docs.pmd-code.org/pmd-doc-{version}/pmd_rules_java_{category}.html#{rule.lower()}"
+
+
+def pmd_rules_block(bundle):
+    """The PMD rules block: introduced violations per rule, coloured by category, house-style rules apart.
+
+    rows: rules outside house style, red then yellow then green, most introduced first, each with at most 50
+    locations (2,000 in all; counts stay exact). house: rules the base branch itself does not follow, counted
+    but never listed per line.
+    """
+    sa = bundle.get("static_analysis") or {}
+    pr = sa.get("pmd_rules") or {}
+    pmd = (sa.get("tools") or {}).get("pmd") or {}
+    if sa.get("status") != "ran" or pmd.get("status") != "ran" or pr.get("status") != "ran":
+        reason = pr.get("reason") or pmd.get("reason") or sa.get("reason") or "PMD did not run on this head."
+        return {"status": "unavailable", "reason": reason, "rows": [], "house": [], "categories": []}
+    version = pmd.get("version") or ""
+    labels = {slug: label for slug, label, _ in PMD_CATEGORIES}
+    rows, house, left = [], [], PMD_LOCATIONS_TOTAL
+    ordered = sorted((r for r in pr.get("rules") or [] if r.get("introduced")),
+                     key=lambda r: (PMD_BAND_RANK[PMD_BAND.get(r.get("category"), "yellow")], -r["introduced"], r["rule"]))
+    for r in ordered:
+        cat = r.get("category")
+        row = {"rule": r["rule"], "category": cat, "category_label": labels.get(cat, cat or "Other"),
+               "band": PMD_BAND.get(cat, "yellow"), "introduced": r["introduced"], "in_tests": r.get("in_tests", 0),
+               "pre_existing": r.get("pre_existing", 0), "share": r.get("share", 0),
+               "url": pmd_rule_url(version, cat, r["rule"]) if cat and version else None}
+        if r.get("house"):
+            house.append({**row, "locations": []})
+            continue
+        locs = [{"file": f, "line": ln, "message": m, "test": str(f).startswith("test/")}
+                for f, ln, m in (r.get("locations") or [])[:min(PMD_LOCATIONS_PER_RULE, left)]]
+        left -= len(locs)
+        rows.append({**row, "locations": locs, "more": r["introduced"] - len(locs)})
+    house.sort(key=lambda r: (-r["introduced"], r["rule"]))
+    cats = []
+    for slug, label, band in PMD_CATEGORIES:
+        mine = [r for r in rows if r["category"] == slug]
+        cats.append({"id": slug, "label": label, "band": band, "introduced": sum(r["introduced"] for r in mine),
+                     "rules": len(mine), "house": sum(r["introduced"] for r in house if r["category"] == slug)})
+    base = pr.get("baseline") or {}
+    return {"status": "ran", "reason": None, "rules_run": pr.get("rules_run"), "version": version,
+            "type_info": bool(pr.get("type_info")), "type_note": pr.get("type_note"),
+            "threshold": pr.get("threshold"), "baseline": base,
+            "house_rule_count": len(pr.get("house_style") or []),
+            "introduced": sum(r["introduced"] for r in rows), "introduced_house": sum(r["introduced"] for r in house),
+            "pre_existing": sum(r.get("pre_existing", 0) for r in pr.get("rules") or []),
+            "categories": cats, "rows": rows, "house": house}
+
+
 def build(bundle, checks, triage, docs, diffview, review=None, context=None):
     """Assemble the report model. `review` is None until review lenses exist."""
     pr = bundle["pr"]
@@ -214,6 +275,7 @@ def build(bundle, checks, triage, docs, diffview, review=None, context=None):
                   for f in bundle["files"]],
         "compat_surfaces": touched_surfaces([f["path"] for f in bundle["files"]]),
         "complexity": complexity_table(bundle),
+        "pmd_rules": pmd_rules_block(bundle),
         "checks": checks,
         "recommendation": rec,
         "triage": triage,
