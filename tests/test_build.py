@@ -220,6 +220,9 @@ class FakeShell:
         text = " ".join(cmd)
         if cmd[0] == "git" and "clone" in cmd and "--shared" in cmd:
             os.makedirs(cmd[-1])
+        if cmd[0] == "git" and "clone" in cmd and "--no-checkout" in cmd and "--shared" not in cmd:
+            os.makedirs(cmd[-1])
+            open(os.path.join(cmd[-1], "SRC"), "w").close()
         if cmd[0] == "cp" and cmd[1] == "-cR":
             shutil.copytree(cmd[-2], cmd[-1])
         rc, out, err = 0, "", ""
@@ -290,7 +293,7 @@ class RunnerTests(unittest.TestCase):
                 self.assertIn("-Dlocal.repository=" + os.path.join(os.path.dirname(path), "m2"), c["cmd"])
             else:
                 self.assertEqual(c["cmd"][0], "sandbox-exec", c["cmd"])
-            self.assertEqual(set(c["env"]) - {"PATH", "JAVA_HOME", "HOME", "JAVA_TOOL_OPTIONS", "ANT_OPTS", "CASSANDRA_USE_JDK11"}, set())
+            self.assertEqual(set(c["env"]) - {"PATH", "JAVA_HOME", "HOME", "JAVA_TOOL_OPTIONS", "ANT_OPTS", "CASSANDRA_USE_JDK11", "GRADLE_USER_HOME"}, set())
         steps = [" ".join(c["cmd"]) for c in sh.calls]
         order = [next(i for i, s in enumerate(steps) if m in s) for m in
                  (f"checkout --quiet --detach {MB}", "resolver-dist-lib", f"checkout --quiet --detach {HEAD}", " jar",
@@ -302,6 +305,101 @@ class RunnerTests(unittest.TestCase):
         self.assertFalse(os.path.exists(os.path.join(rd, "m2")))
         self.assertTrue(os.path.exists(os.path.join(rd, "report.xml")))
         self.assertTrue(os.path.exists(os.path.join(rd, "test-output", "TEST-org.x.FooTest.xml")))
+
+    def accord_script(self, url="https://github.com/apache/cassandra-accord.git", **more):
+        sha = "d" * 40
+        s = self.happy_script()
+        s.update({"ls-tree": (0, f"160000 commit {sha}\tmodules/accord\n", "", {}),
+                  "config --blob": (0, url + "\n", "", {}),
+                  "show " + HEAD + ":build.xml": (0, '  <property name="base.version" value="6.0-alpha2"/>\n', "", {})})
+        s.update(more)
+        return s
+
+    def test_accord_gitlink_builds_accord_in_net_profile_first(self):
+        os.makedirs(os.path.join(self.work, ".gradle", "wrapper"))
+        sh = FakeShell(self.accord_script())
+        path, st = self.go(sh)
+        self.assertEqual(st["status"], "pass", st["reason"])
+        steps = [" ".join(c["cmd"]) for c in sh.calls]
+        order = [next(i for i, s in enumerate(steps) if m in s) for m in
+                 (f"checkout --quiet --detach {HEAD}", "clone --no-checkout https://github.com/apache/cassandra-accord.git",
+                  "fetch --quiet origin " + "d" * 40, "checkout --quiet --detach " + "d" * 40, "gradlew", " jar", "jacoco-run")]
+        self.assertEqual(order, sorted(order))
+        g = next(c for c in sh.calls if "gradlew" in " ".join(c["cmd"]))
+        self.assertEqual(g["cmd"][0], "sandbox-exec")
+        self.assertEqual(g["cmd"][g["cmd"].index("-f") + 1], sandbox.PROFILE_NET)
+        rd = os.path.dirname(path)
+        self.assertIn("GRADLE=" + os.path.realpath(os.path.join(rd, "gradle")), g["cmd"])
+        self.assertEqual(g["env"]["GRADLE_USER_HOME"], os.path.join(rd, "gradle"))
+        self.assertIn("-Paccord_version=6.0-alpha2-SNAPSHOT", g["cmd"])
+        self.assertIn("-Dmaven.repo.local=" + os.path.join(rd, "m2"), g["cmd"])
+        self.assertTrue(any("cp -cR" in s and ".gradle/wrapper" in s for s in steps))
+        for c in sh.calls:  # the main ant calls skip accord and stay on the no-network profile
+            text = " ".join(c["cmd"])
+            if "/ant" in text:
+                self.assertIn("-Dmaven.repo.local=" + os.path.join(rd, "m2"), c["cmd"])  # resolver reads the run's copy
+            if "/ant" in text and "resolver-dist-lib" not in text:
+                self.assertIn("-Dno-build-accord=true", c["cmd"])
+                self.assertEqual(c["cmd"][c["cmd"].index("-f") + 1], sandbox.PROFILE)
+        self.assertIn("accord_build", st["timings_s"])
+
+    def test_stale_accord_jars_are_removed_after_the_accord_build(self):
+        seen = {}
+
+        class Shell(FakeShell):
+            def run(self, cmd, env=None, cwd=None, timeout=None):
+                text = " ".join(cmd)
+                if f"--detach {HEAD}" in text:  # the base resolve left an accord jar in the tree
+                    jar = os.path.join(cmd[cmd.index("-C") + 1], "build", "lib", "jars", "cassandra-accord-1-SNAPSHOT.jar")
+                    os.makedirs(os.path.dirname(jar))
+                    open(jar, "w").close()
+                    seen["jar"] = jar
+                if text.endswith(" jar"):
+                    seen["left"] = os.path.exists(seen["jar"])
+                return super().run(cmd, env, cwd, timeout)
+
+        self.go(Shell(self.accord_script()))
+        self.assertIn("left", seen)
+        self.assertFalse(seen["left"])
+
+    def test_accord_url_must_be_apache(self):
+        sh = FakeShell(self.accord_script(url="https://github.com/evil/cassandra-accord.git"))
+        _, st = self.go(sh)
+        self.assertEqual(st["status"], "unknown")
+        self.assertIn("unexpected accord submodule url", st["reason"])
+        self.assertFalse(any("gradlew" in " ".join(c["cmd"]) or "cassandra-accord.git" in " ".join(c["cmd"]) for c in sh.calls))
+
+    def test_accord_failure_is_unknown_not_build_failed(self):
+        sh = FakeShell(self.accord_script(gradlew=(1, "", "e: Foo.kt: error: boom\n", {})))
+        _, st = self.go(sh)
+        self.assertEqual(st["status"], "unknown")
+        self.assertTrue(st["reason"].startswith("accord build failed: "), st["reason"])
+        self.assertIn("boom", st["reason"])
+        self.assertFalse(any("/ant" in " ".join(c["cmd"]) and " jar" in " ".join(c["cmd"]) for c in sh.calls))
+
+    def test_no_gitlink_runs_no_accord_steps(self):
+        sh = FakeShell(self.happy_script())
+        _, st = self.go(sh)
+        self.assertEqual(st["status"], "pass")
+        text = "\n".join(" ".join(c["cmd"]) for c in sh.calls)
+        self.assertNotIn("gradlew", text)
+        self.assertNotIn("no-build-accord", text)
+
+    def test_missing_accord_artifact_is_unknown(self):
+        sh = FakeShell(self.accord_script(**{" jar": (1, "Could not find cassandra-accord-6.0-alpha2-SNAPSHOT.jar\n", "", {})}))
+        _, st = self.go(sh)
+        self.assertEqual(st["status"], "unknown")
+        self.assertIn("accord artifact was not found", st["reason"])
+
+    def test_net_profile_is_the_base_profile_minus_network_deny(self):
+        with open(sandbox.PROFILE) as f:
+            base = f.read().splitlines()
+        with open(sandbox.PROFILE_NET) as f:
+            net = [ln for ln in f.read().splitlines() if not ln.startswith(";; NET") and not ln.startswith(";; Used only")]
+        self.assertNotIn("(deny network*)", net)
+        self.assertEqual([ln for ln in base if ln != "(deny network*)"],
+                         [ln for ln in net if ln != '  (subpath (param "GRADLE"))'])
+        self.assertIn('  (subpath (param "GRADLE"))', net)
 
     def test_offline_skips_networked_resolve(self):
         sh = FakeShell(self.happy_script())

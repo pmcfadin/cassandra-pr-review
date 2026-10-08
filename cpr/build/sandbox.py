@@ -7,7 +7,9 @@ import hashlib
 import os
 import re
 
-PROFILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "sandbox.sb")
+ASSETS = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets")
+PROFILE = os.path.join(ASSETS, "sandbox.sb")
+PROFILE_NET = os.path.join(ASSETS, "sandbox-net.sb")
 BASE_PATH = ("/usr/bin", "/bin", "/usr/sbin", "/sbin")
 
 
@@ -15,12 +17,15 @@ def norm(path):
     return os.path.realpath(os.path.abspath(os.path.expanduser(path)))
 
 
-def params(root, work_dir, run, wt, m2, objects, home):
+def params(root, work_dir, run, wt, m2, objects, home, gradle=None):
     """The -D parameters the profile needs, as an ordered dict. Paths must be absolute and normalized."""
-    return {
+    prm = {
         "WT": norm(wt), "M2": norm(m2), "GIT": norm(os.path.join(wt, ".git")), "HOME": norm(home),
         "ROOT": norm(root), "WORK": norm(work_dir), "RUN": norm(run), "OBJECTS": norm(objects),
     }
+    if gradle:  # only the net profile uses it
+        prm["GRADLE"] = norm(gradle)
+    return prm
 
 
 def wrap(argv, prm, profile=PROFILE):

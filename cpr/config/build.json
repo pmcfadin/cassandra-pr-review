@@ -22,5 +22,15 @@
     "skip_dirs": ["test/distributed/", "test/long/", "test/burn/", "test/microbench/", "test/simulator/", "test/memory/", "test/anttasks/"]
   },
   "caps": {"wall_seconds": 1800, "test_timeout_ms": 240000, "ant_heap": "1g", "nice": 10, "resolve_seconds": 600},
+  "accord": {
+    "path": "modules/accord",
+    "url": "https://github.com/apache/cassandra-accord.git",
+    "build_seconds": 900,
+    "fetch_seconds": 300,
+    "gradle_args": ["--no-daemon", "clean", "build", "copyDependencies", "publishToMavenLocal", "-x", "test", "-x", "rat",
+                    "-x", "checkstyleMain", "-x", "checkstyleTest", "-x", "javadoc", "--stacktrace",
+                    "-Paccord_group=org.apache.cassandra", "-Paccord_artifactId=cassandra-accord",
+                    "-Paccord_version={version}", "-Dmaven.repo.local={m2}"]
+  },
   "sandbox_artifact_patterns": ["transferTo0", "Operation not permitted"]
 }

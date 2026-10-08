@@ -8,6 +8,7 @@ status values (research 5.1): pass, build-failed, tests-failed, timeout, unknown
 """
 
 import collections
+import glob
 import json
 import os
 import re
@@ -23,6 +24,9 @@ JAVAC_ERROR = re.compile(r"^\s*(?:\[javac\]\s+)?(\S+\.java):(\d+): error: (.*)$"
 HARNESS = re.compile(r"Unsupported JDK version|Unable to create javax script engine|must be set when building from java")
 NETWORK = re.compile(r"UnknownHostException|Could not transfer|Unable to download|Connection refused|Failed to resolve|"
                      r"Unable to resolve|Operation not permitted|Network is unreachable")
+ACCORD_MISSING = re.compile(r"cassandra-accord[^\n]*(?:not found|Could not find|Unable to resolve|missing|does not exist)|"
+                            r"(?:Could not find|Unable to resolve|missing)[^\n]*cassandra-accord", re.I)
+ACCORD_URL_NOTE = "unexpected accord submodule url"
 SANDBOX_NOTE = "Failures matching a sandbox artifact (transferTo0 / Operation not permitted) are unknown, not failed."
 
 
@@ -137,6 +141,8 @@ def map_status(build, tests, ran_tests, cov_ok, wall_timeout, test_rc):
         if build["errors"]:
             e = build["errors"][0]
             return "build-failed", f"compile error: {e['file']}:{e['line']}: {e['message']}"
+        if ACCORD_MISSING.search(build["text"]):
+            return "unknown", "the accord artifact was not found in the run's Maven repo after the accord pre-step; see build.log"
         if HARNESS.search(build["text"]):
             return "unknown", "harness: the build refused this JDK or flag; see build.log"
         if NETWORK.search(build["text"]):
@@ -209,6 +215,8 @@ class Build:
         self.wt, self.m2 = os.path.join(self.rd, "buildclone"), os.path.join(self.rd, "m2")
         self.start = clock()
         self.deadline = self.start + cfg["caps"]["wall_seconds"]
+        self.gradle, self.accord_dir = os.path.join(self.rd, "gradle"), os.path.join(self.rd, "accord")
+        self.accord_ready = False
         self.timings, self.jdk, self.env, self.ant = {}, None, None, None
         self.status = base_status(bundle, decision)
 
@@ -236,7 +244,9 @@ class Build:
         return self.sh(name, sandbox.wrap(argv, prm), env=self.env, cwd=self.wt, check=check)
 
     def ant_argv(self, *targets, extra=()):
-        return ["nice", "-n", str(self.cfg["caps"]["nice"]), self.ant, f"-Dlocal.repository={self.m2}", *extra, *targets]
+        accord = ["-Dno-build-accord=true"] if self.accord_ready else []
+        return ["nice", "-n", str(self.cfg["caps"]["nice"]), self.ant, f"-Dlocal.repository={self.m2}",
+                f"-Dmaven.repo.local={self.m2}", *accord, *extra, *targets]
 
     def git(self, name, *args, **kw):
         return self.sh(name, ["git", *args], env=self.git_env(), **kw)
@@ -258,7 +268,7 @@ class Build:
             raise Stop("unknown", "ant or sandbox-exec not found; the build needs both")
         self.ant = ant
         self.env["PATH"] += os.pathsep + os.path.dirname(ant)
-        for d in (self.wt, self.m2):
+        for d in (self.wt, self.m2, self.accord_dir, self.gradle):
             shutil.rmtree(d, ignore_errors=True)
         have = self.git("clone", "-C", self.fetch_clone, "cat-file", "-e", f"{self.head}^{{commit}}", check=False)
         if have.rc != 0:
@@ -280,12 +290,100 @@ class Build:
         self.git("clone", "-C", self.wt, "checkout", "--quiet", "--detach", self.mb)
         if self.offline:
             return
+        # On trunk this ant run builds the base's accord with gradle, which would publish to ~/.m2 and write ~/.gradle:
+        # point both at the run directory instead.
+        self.seed_gradle()
+        env = dict(self.env, GRADLE_USER_HOME=self.gradle,
+                   JAVA_TOOL_OPTIONS=f"{self.env['JAVA_TOOL_OPTIONS']} -Dmaven.repo.local={self.m2}")
         self.sh("resolve", ["nice", "-n", str(self.cfg["caps"]["nice"]), self.ant, f"-Dlocal.repository={self.m2}",
-                            "resolver-dist-lib"], env=self.env, cwd=self.wt, timeout=min(self.left(), self.cfg["caps"]["resolve_seconds"]))
+                            f"-Dmaven.repo.local={self.m2}", "resolver-dist-lib"], env=env, cwd=self.wt, timeout=min(self.left(), self.cfg["caps"]["resolve_seconds"]))
         self.timings["resolve_trusted"] = self.timings.pop("resolve")
+
+    def seed_gradle(self):
+        """<run>/gradle as GRADLE_USER_HOME, seeded with an APFS clone of the wrapper distributions (once)."""
+        if os.path.isdir(self.gradle):
+            return
+        os.makedirs(self.gradle)
+        seed = os.path.join(self.home, ".gradle", "wrapper")
+        if os.path.isdir(seed):  # ~/.gradle itself is never written
+            p = self.sh("accord_fetch", ["cp", "-cR", seed, os.path.join(self.gradle, "wrapper")], check=False)
+            if p.rc != 0:
+                self.status["notes"].append("accord: the Gradle wrapper seed could not be copied; the run downloads it")
+
+    def accord_pin(self):
+        """The sha the head tree pins for the accord submodule, or None when there is no gitlink there."""
+        out = self.git("accord_ls", "-C", self.wt, "ls-tree", self.head, self.cfg["accord"]["path"]).out
+        m = re.match(r"160000 commit ([0-9a-f]{40})\t", out or "")
+        return m.group(1) if m else None
+
+    def accord_version(self):
+        """`${version}` the way build.xml computes it for a non-release build: base.version + -SNAPSHOT."""
+        out = self.git("accord_ls", "-C", self.wt, "show", f"{self.head}:build.xml").out
+        m = re.search(r'<property\s+name="base\.version"\s+value="([0-9A-Za-z.+_-]+)"', out or "")
+        if not m:
+            raise Stop("unknown", "accord build failed: could not read base.version from build.xml")
+        return m.group(1) + "-SNAPSHOT"
+
+    def accord_fetch(self, sha):
+        """Trusted, networked, source only: clone the base's accord URL and check out the pinned sha."""
+        acfg = self.cfg["accord"]
+        url = self.git("accord_ls", "-C", self.wt, "config", "--blob", f"{self.mb}:.gitmodules", "--get",
+                       f"submodule.{acfg['path']}.url", check=False).out.strip()
+        if url != acfg["url"]:
+            raise Stop("unknown", f"{ACCORD_URL_NOTE}: {url or 'none'} (the base commit's .gitmodules must name {acfg['url']})")
+        cap = min(self.left(), acfg["fetch_seconds"])
+        self.git("accord_fetch", "clone", "--no-checkout", url, self.accord_dir, timeout=cap)
+        self.git("accord_fetch", "-C", self.accord_dir, "fetch", "--quiet", "origin", sha, timeout=cap)
+        self.git("accord_fetch", "-C", self.accord_dir, "checkout", "--quiet", "--detach", sha, timeout=cap)
+        dest = os.path.join(self.wt, acfg["path"])
+        shutil.rmtree(dest, ignore_errors=True)
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        p = self.sh("accord_fetch", ["cp", "-cR", self.accord_dir, dest], check=False)
+        if p.rc != 0:
+            self.sh("accord_fetch", ["cp", "-R", self.accord_dir, dest])
+
+    @staticmethod
+    def first_error(text):
+        lines = [ln.strip() for ln in (text or "").splitlines() if ln.strip()]
+        return next((ln for ln in lines if re.search(r"error|exception|FAILED|went wrong|not permitted", ln, re.I)),
+                    lines[-1] if lines else "no output")[:200]
+
+    def build_accord(self):
+        """Gradle build of the accord submodule in the net profile (network, same write limits and read denies)."""
+        acfg = self.cfg["accord"]
+        sha = self.accord_pin()
+        if sha is None:
+            return
+        version = self.accord_version()
+        self.accord_fetch(sha)
+        self.seed_gradle()
+        args = [a.replace("{version}", version).replace("{m2}", self.m2) for a in acfg["gradle_args"]]
+        wt_accord = os.path.join(self.wt, acfg["path"])
+        prm = sandbox.params(self.root, self.work_dir, self.rd, self.wt, self.m2,
+                             os.path.join(self.fetch_clone, ".git", "objects"), self.home, gradle=self.gradle)
+        cap = min(self.left(), acfg["build_seconds"])
+        env = dict(self.env, GRADLE_USER_HOME=self.gradle)
+        cmd = sandbox.wrap(["nice", "-n", str(self.cfg["caps"]["nice"]), os.path.join(wt_accord, "gradlew"), *args],
+                           prm, profile=sandbox.PROFILE_NET)
+        p = self.sh("accord_build", cmd, env=env, cwd=wt_accord, timeout=cap, check=False)
+        note = ("Accord is built from the sha the PR head pins (base pin may differ): a compile error there can be the "
+                "PR's own accord change, otherwise it is not a PR defect.")
+        if p.timed_out:
+            self.status["notes"].append(note)
+            raise Stop("timeout" if cap >= self.left() else "unknown", "accord build failed: timed out")
+        if p.rc != 0:
+            self.status["notes"].append(note)
+            raise Stop("unknown", "accord build failed: " + self.first_error(p.err + "\n" + p.out))
+        # What build-accord.xml does after gradle: drop accord jars the base-commit resolve left in the build tree, so
+        # the head build copies the freshly published one from the run's Maven repo.
+        for pattern in ("build/lib/jars/cassandra-accord-*.jar", "build/test/lib/jars/cassandra-accord-*.jar"):
+            for stale in glob.glob(os.path.join(self.wt, pattern)):
+                os.remove(stale)
+        self.accord_ready = True
 
     def build_head(self):
         self.git("clone", "-C", self.wt, "checkout", "--quiet", "--detach", self.head)
+        self.build_accord()
         text, rc = "", 0
         for target in ("jar", "build-test"):
             p = self.sandboxed("build", self.ant_argv(target), check=False)
@@ -440,7 +538,7 @@ class Build:
             st["status"] = "unknown"
             st["reason"] = "WARNING: the build changed the shared fetch clone: " + "; ".join(changes)
             st["notes"].append(st["reason"])
-        for d in (self.wt, self.m2):
+        for d in (self.wt, self.m2, self.accord_dir, self.gradle):
             shutil.rmtree(d, ignore_errors=True)
         st["tests"] = {"classes": len(st["selected"]), "run": tests["run"], "failed": tests["failed"],
                        "errors": tests["errors"], "skipped": tests["skipped"],
