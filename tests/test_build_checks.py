@@ -218,6 +218,11 @@ class Section(unittest.TestCase):
             b["build"] = run
         return model.build(b, checks.run_all(b), triage(b), render.load_docs(), diffview.unavailable("x"))
 
+    def test_kept_classpath_is_never_published(self):
+        m = self.build(passing(classpath={"classes": ["/home/me/.work/build-runs/1/classes"], "jars": []}))
+        self.assertNotIn("classpath", m["build"])
+        self.assertNotIn("/home/me", json.dumps(m))
+
     def sec(self, m):
         ids = [s["id"] for s in m["sections"]]
         self.assertEqual(ids[ids.index("testing") + 1], "build")

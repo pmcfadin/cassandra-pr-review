@@ -231,7 +231,8 @@ def build(bundle, checks, triage, docs, diffview, review=None, context=None):
     run = bundle.get("build")
     if not (isinstance(run, dict) and run.get("head") == pr["head_sha"] and run.get("status") != "not-built"):
         run = buildresult.not_built(run.get("reason") if isinstance(run, dict) and run.get("status") == "not-built" else None)
-    run = {**run, "author_is_committer": buildresult.author_is_committer(bundle)}
+    run = {**{k: v for k, v in run.items() if k != "classpath"},  # local paths for PMD only; never published
+           "author_is_committer": buildresult.author_is_committer(bundle)}
 
     sections = []
     for sid, title, doc_aspects, check_aspects in SECTIONS:
