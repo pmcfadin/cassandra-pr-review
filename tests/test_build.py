@@ -513,6 +513,78 @@ class CliTests(unittest.TestCase):
             self.assertEqual(json.load(f)["status"], "not-built")
 
 
+class KeptClasspath(unittest.TestCase):
+    """The build keeps the head's classes and resolved jars (PMD type resolution), inside the run dir only."""
+
+    BUILT = {"build/classes/main/org/x/Foo.class": "c", "build/test/classes/org/x/FooTest.class": "c",
+             "build/lib/jars/a.jar": "j", "build/test/lib/jars/b.jar": "j", "build/lib/jars/README.txt": "x"}
+
+    def setUp(self):
+        self.rt = RunnerTests("test_pass_run_is_sandboxed_in_order")  # its fixtures, without re-running its tests
+        self.rt.setUp()
+        self.addCleanup(self.rt.doCleanups)
+        self.work, self.bundle, self.go, self.happy_script = self.rt.work, self.rt.bundle, self.rt.go, self.rt.happy_script
+
+    def script(self):
+        s = self.happy_script()
+        s["build-test"] = ok(self.BUILT)
+        return s
+
+    def test_status_records_classes_and_jars_that_exist_in_the_run_dir(self):
+        path, st = self.go(FakeShell(self.script()))
+        rd = os.path.dirname(path)
+        cp = st["classpath"]
+        self.assertEqual([os.path.relpath(c, rd) for c in cp["classes"]], ["classpath/classes/main", "classpath/classes/test"])
+        self.assertEqual(sorted(os.path.basename(j) for j in cp["jars"]), ["a.jar", "b.jar"])
+        for p in cp["classes"] + cp["jars"]:
+            self.assertTrue(p.startswith(rd + os.sep))
+            self.assertTrue(os.path.exists(p))
+        self.assertTrue(os.path.exists(os.path.join(cp["classes"][0], "org", "x", "Foo.class")))
+        self.assertEqual(cp["bytes"], 4)  # two class files, two jars
+        self.assertEqual(json.load(open(path, encoding="utf-8"))["classpath"], cp)  # persisted for `cpr review`
+        self.assertFalse(os.path.exists(os.path.join(rd, "buildclone")))
+
+    def test_the_classpath_feeds_pmd_through_auxpath(self):
+        from cpr.staticanalysis import auxpath
+        path, st = self.go(FakeShell(self.script()))
+        cp, note = auxpath.resolve(self.work, self.bundle["pr"]["number"], self.bundle["pr"]["head_sha"])
+        self.assertEqual(cp.split(os.pathsep), st["classpath"]["classes"] + st["classpath"]["jars"])
+        self.assertIn("with type info", note)
+
+    def test_a_build_with_no_classes_keeps_nothing(self):
+        path, st = self.go(FakeShell(self.happy_script()))
+        self.assertIsNone(st["classpath"])
+        self.assertFalse(os.path.exists(os.path.join(os.path.dirname(path), "classpath")))
+
+    def test_symlinks_in_the_pr_tree_are_not_followed(self):
+        wt = os.path.join(self.work, "wt")
+        os.makedirs(os.path.join(wt, "build", "classes", "main"))
+        outside = os.path.join(self.work, "secret.txt")
+        open(outside, "w").write("s")
+        os.symlink(outside, os.path.join(wt, "build", "classes", "main", "Evil.class"))
+        os.symlink(self.work, os.path.join(wt, "build", "classes", "main", "dir"))
+        open(os.path.join(wt, "build", "classes", "main", "Ok.class"), "w").write("c")
+        got = runner.keep_classpath(wt, os.path.join(self.work, "rd"))
+        kept = sorted(os.listdir(got["classes"][0]))
+        self.assertEqual(kept, ["Ok.class"])
+
+    def test_only_the_five_newest_runs_keep_their_classpath(self):
+        base = os.path.join(self.work, "build-runs")
+        for i in range(7):
+            rd = os.path.join(base, str(100 + i), "h" * 39 + str(i))
+            os.makedirs(os.path.join(rd, "classpath", "classes", "main"))
+            with open(os.path.join(rd, "status.json"), "w") as f:
+                json.dump({"status": "pass", "classpath": {"classes": [os.path.join(rd, "classpath", "classes", "main")], "jars": []}}, f)
+            os.utime(os.path.join(rd, "status.json"), (1000 + i, 1000 + i))
+        pruned = runner.prune_classpaths(self.work, keep=5)
+        self.assertEqual(sorted(os.path.basename(os.path.dirname(p)) for p in pruned), ["100", "101"])
+        for i in range(7):
+            rd = os.path.join(base, str(100 + i), "h" * 39 + str(i))
+            self.assertEqual(os.path.isdir(os.path.join(rd, "classpath")), i >= 2)
+        with open(os.path.join(base, "100", "h" * 39 + "0", "status.json")) as f:
+            self.assertTrue(json.load(f)["classpath"]["pruned"])
+
+
 if __name__ == "__main__":
     unittest.main()
 

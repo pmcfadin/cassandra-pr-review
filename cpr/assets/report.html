@@ -144,7 +144,10 @@ h2.sec { font-size: 22px; font-weight: 600; }
 .pm-locs li { padding: 3px 0; border-top: 1px solid var(--rule-2); overflow-wrap: anywhere; }
 .pm-locs .mono { font-size: var(--fs-sm); }
 .pm-base { font-size: var(--fs-sm); color: var(--ink-2); margin: 8px 0; }
-.pm-house { margin-top: 12px; }
+.pm-house, .pm-usual { margin-top: 12px; }
+.pm-table tr.pm-untyped td { opacity: .55; }
+.pm-table tr.pm-untyped .pm-rule { text-decoration: line-through; text-decoration-thickness: 1px; }
+.pm-need { font-size: var(--fs-sm); color: var(--ink-2); }
 @media (max-width: 640px) { .pm-cats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .pm-table th:nth-child(n) { width: auto; } }
 .cx-score { display: inline-block; min-width: 34px; text-align: center; font-family: var(--mono); font-weight: 700; font-size: var(--fs-sm); padding: 2px 8px; border-radius: var(--r-chip); color: var(--c-fg); background: var(--c-bg); border-left: 3px solid var(--c-icon); }
 .cx-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: var(--fs-sm); color: var(--ink-2); margin: 6px 0 10px; }
@@ -1015,16 +1018,21 @@ body.no-data #no-data { display: block; }
     }
     var pct = Math.round((pm.threshold || 0.25) * 100);
     var kids = [h("p", "muted", "Violations this PR introduces against PMD's " + pm.rules_run + " Java rules, grouped by how serious the category is. A rule the base branch breaks in at least " +
-      pct + "% of its own files is house style, and is counted separately below.")];
+      pct + "% of its own files is house style. A rule whose count here is no higher than the base branch's own rate for this many added lines is usual for Cassandra. Both are counted separately below and do not drive the check.")];
     kids.push(h("div", "pm-cats", pm.categories.map(function (c) {
       var d = h("div", "pm-cat s-" + PM_KIND[c.band] + (c.introduced ? "" : " zero"), [h("b", null, String(c.introduced)), h("span", null, c.label)]);
-      d.title = PM_BAND_WORD[c.band] + (c.house ? "; " + c.house + " more in house-style rules" : "");
+      d.title = PM_BAND_WORD[c.band] + (c.house ? "; " + c.house + " more in house-style rules" : "") + (c.usual ? "; " + c.usual + " more in rules usual for Cassandra" : "");
       return d;
     })));
     var b = pm.baseline || {};
     var base = b.source === "touched-files" ? "House style is judged from the touched files only." :
       "House style is judged from all " + (b.files || 0).toLocaleString("en-US") + " source files on " + (b.branch || "the base branch") + " (" + short(b.tip, 10) + (b.source === "reused" ? ", reused from an earlier tip" : "") + ").";
-    kids.push(h("p", "pm-base", [base + " ", b.note ? b.note + " " : "", pm.type_info ? "Type info was used." : "Without type info: " + String(pm.type_note || "").replace(/^.*without type info: /, "")]));
+    var rate = pm.rate || {};
+    var rateNote = rate.available ? "The usual rate is that branch's " + (rate.loc || 0).toLocaleString("en-US") + " lines against this PR's " + (rate.added_loc || 0).toLocaleString("en-US") + " added production lines." :
+      "No usual-for-Cassandra rate: the branch baseline has no line count.";
+    kids.push(h("p", "pm-base", [base + " ", b.note ? b.note + " " : "", rateNote + " ",
+      pm.type_info ? "Type info was used." : "Without type info: " + String(pm.type_note || "").replace(/^.*without type info: /, "") +
+        (pm.untyped_rules ? " " + plural(pm.untyped_rules, "rule") + " that need compiled classes are greyed and not counted." : "")]));
     var rows = pm.rows.map(function (r) {
       var kind = PM_KIND[r.band];
       var body = [];
@@ -1035,12 +1043,13 @@ body.no-data #no-data { display: block; }
       }
       if (r.more > 0) body.push(h("p", "muted", "and " + r.more + " more not listed."));
       var rule = details(h("span", "pm-rule", r.rule), body, { cls: "inline" });
-      return { cls: "pm-" + r.band, cells: [{ node: rule }, { node: chip(kind, r.category_label) },
+      if (r.untyped) rule = h("span", null, [rule, h("div", "pm-need", "needs compiled classes")]);
+      return { cls: "pm-" + r.band + (r.untyped ? " pm-untyped" : ""), cells: [{ node: rule }, { node: chip(kind, r.category_label) },
         { node: r.in_tests ? h("span", null, [String(r.introduced), h("span", "muted", " (" + r.in_tests + " in tests)")]) : String(r.introduced), num: true },
         { node: r.url ? link(r.url, "PMD docs") : "" }] };
     });
     kids.push(rows.length ? table(["Rule", "Category", "Introduced", "Docs"], rows, { cls: "pm-table" })
-      : empty("No PMD rule violations introduced outside house style.", "Violations in lines the PR adds are counted; code that was already there is not."));
+      : empty("No PMD rule violations introduced outside house style and the usual rate.", "Violations in lines the PR adds are counted; code that was already there is not."));
     if (pm.house.length) {
       var hrows = pm.house.map(function (r) {
         return { cells: [{ node: h("span", "pm-rule", r.rule) }, { node: chip(PM_KIND[r.band], r.category_label) },
@@ -1049,6 +1058,16 @@ body.no-data #no-data { display: block; }
       kids.push(h("div", "pm-house", details("House style differs: " + plural(pm.house.length, "rule") + ", " + pm.introduced_house + " violations",
         [h("p", "muted", "The base branch breaks these in " + pct + "% or more of its own files, so they are counted here and not held against the PR."),
           table(["Rule", "Category", "Introduced", "In base"], hrows, { cls: "pm-table" })])));
+    }
+    if ((pm.usual || []).length) {
+      var urows = pm.usual.map(function (r) {
+        return { cells: [{ node: h("span", "pm-rule", r.rule) }, { node: chip(PM_KIND[r.band], r.category_label) },
+          { node: String(r.production), num: true }, { node: String(r.expected), num: true },
+          { node: r.url ? link(r.url, "PMD docs") : "" }] };
+      });
+      kids.push(h("div", "pm-usual", details("Usual for Cassandra: " + plural(pm.usual.length, "rule") + ", " + pm.introduced_usual + " violations",
+        [h("p", "muted", "In production code, each rule's count is no higher than the base branch's own rate predicts for this PR's added lines (one-sided Poisson test, p of at least " + (pm.usual_p || 0.01) + "). A rule the branch never breaks is never listed here."),
+          table(["Rule", "Category", "Observed", "Expected", "Docs"], urows, { cls: "pm-table" })])));
     }
     return gblock("PMD rules", kids, pm.introduced);
   }

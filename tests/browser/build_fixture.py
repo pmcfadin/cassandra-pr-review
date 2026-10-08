@@ -94,6 +94,17 @@ def with_pmd_rules(model):
     m = copy.deepcopy(model)
     with open(os.path.join(REPO, "tests", "fixtures", "static", "pmd-rules-4967.json")) as f:
         rules = json.load(f)
+    # Calibration: two rules the branch breaks at about this rate, and one that needs the compiled classes.
+    usual = {"DoNotUseThreads": 58.4, "AvoidUsingVolatile": 30.1}
+    for r in rules["rules"]:
+        r.setdefault("in_tests", 0)
+        r["production"] = r["introduced"] - r["in_tests"]
+        r["needs_types"] = r["rule"] == "WrongTestAnnotation"
+        r["usual"] = r["rule"] in usual
+        r["expected"] = usual.get(r["rule"], 0)
+        r["trunk"] = 107 if r["usual"] else 0
+        r["p"] = 0.31 if r["usual"] else None
+    rules.update({"usual_p": 0.01, "rate": {"loc": 640000, "added_loc": 21000, "available": True}})
     sa = {"status": "ran", "tools": {"pmd": {"status": "ran", "version": "7.28.0"}}, "pmd_rules": rules}
     m["pmd_rules"] = model_mod.pmd_rules_block({"static_analysis": sa})
     return m

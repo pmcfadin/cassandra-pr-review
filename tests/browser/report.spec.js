@@ -459,8 +459,8 @@ test("PMD rules block: category summary, banded rule table, rule locations, docs
   const table = blk.locator(".pm-table").first();
   // Rules outside house style only, red first; more than 20 rows sit behind "Show all N".
   const kinds = await table.locator("tbody tr td:nth-child(2) .chip").evaluateAll((els) => els.map((e) => e.className.match(/s-(fail|should|pass)/)[1]));
-  expect(kinds.length).toBe(30);
-  const rank = kinds.map((c) => ({ fail: 0, should: 1, pass: 2 })[c]);
+  expect(kinds.length).toBe(28); // 30 rules outside house style, minus 2 that are usual for Cassandra
+  const rank = kinds.slice(0, -1).map((c) => ({ fail: 0, should: 1, pass: 2 })[c]); // the greyed type rule comes last
   expect(rank).toEqual([...rank].sort((a, b) => a - b));
   await expect(table.locator("tr.more").first()).toBeHidden();
   await table.locator(".dt-more").click();
@@ -486,6 +486,35 @@ test("PMD rules block: category summary, banded rule table, rule locations, docs
   expect(await table.evaluate((e) => e.scrollWidth - e.clientWidth)).toBeLessThanOrEqual(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
   await expect(blk.locator(".pm-cats")).toBeVisible();
+});
+
+test("PMD rules block: usual-for-Cassandra section with observed vs expected, and type rules greyed without classes", async ({ page }) => {
+  await page.goto(fileUrl(fixtures().pmd_rules));
+  await page.locator("#toggle-all").click();
+  const blk = page.locator("#sec-static .blk", { has: page.locator("h3", { hasText: "PMD rules" }) });
+  const table = blk.locator(".pm-table").first();
+  // Usual rules are not in the main table; they sit in their own collapsed section with both numbers.
+  await expect(table.locator("tbody tr .pm-rule", { hasText: /^DoNotUseThreads$/ })).toHaveCount(0);
+  const usual = blk.locator(".pm-usual details").first();
+  await expect(usual).toHaveJSProperty("open", false);
+  await expect(usual.locator("summary")).toContainText("Usual for Cassandra: 2 rules");
+  await usual.locator("summary").click();
+  await expect(usual.locator("thead th")).toHaveText(["Rule", "Category", "Observed", "Expected", "Docs"]);
+  const row = usual.locator("tbody tr", { hasText: "DoNotUseThreads" });
+  await expect(row.locator("td").nth(2)).toHaveText("62");
+  await expect(row.locator("td").nth(3)).toHaveText("58.4");
+  // Without type info a type-dependent rule is greyed, says why, and is the last row.
+  const grey = table.locator("tbody tr.pm-untyped");
+  await expect(grey).toHaveCount(1);
+  await expect(grey).toContainText("WrongTestAnnotation");
+  await expect(grey).toContainText("needs compiled classes");
+  await expect(table.locator("tbody tr").last()).toHaveClass(/pm-untyped/);
+  expect(Number(await grey.evaluate((e) => getComputedStyle(e.querySelector("td")).opacity))).toBeLessThan(1);
+  // Phone: the usual table stacks too and nothing scrolls sideways.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(() => document.querySelectorAll("#sec-static details").forEach((d) => (d.open = true)));
+  expect(await usual.locator("table").evaluate((e) => e.scrollWidth - e.clientWidth)).toBeLessThanOrEqual(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
 });
 
 test("PMD rules block says so when the catalog did not run", async ({ page }) => {

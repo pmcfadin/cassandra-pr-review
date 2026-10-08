@@ -2,13 +2,14 @@
 
 import json
 import os
+import shutil
 import tempfile
 import time
 import unittest
 import zipfile
 
 from cpr import checks, model
-from cpr.staticanalysis import auxpath, baseline, classify, ruleset, run
+from cpr.staticanalysis import auxpath, baseline, classify, rate, ruleset, run, typerules
 from tests.helpers import bundle, result
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -86,8 +87,9 @@ class Parse(unittest.TestCase):
                 f.write(XML.replace("</pmd>", '<file name="/r/B.java"><violation beginline="1" endline="1" rule="NullAssignment" '
                                     'ruleset="Error Prone">y</violation><violation beginline="2" endline="2" rule="NullAssignment" '
                                     'ruleset="Error Prone">y</violation></file><error filename="/r/C.java" msg="boom"/></pmd>'))
-            hits, listed, errors = run.count_pmd_files(p)
+            hits, listed, errors, counts = run.count_pmd_files(p)
         self.assertEqual(hits["NullAssignment"], 2)  # two files, not three violations
+        self.assertEqual(counts["NullAssignment"], 3)  # the rate test counts violations
         self.assertEqual(hits["CloseResource"], 1)
         self.assertEqual(listed, 2)
         self.assertEqual(errors, [("/r/C.java", "boom")])
@@ -151,7 +153,8 @@ class Introduced(unittest.TestCase):
 
 class Baseline(unittest.TestCase):
     def data(self, tip, built_at, hits=None, n=100):
-        return {"branch": "trunk", "tip": tip, "built_at": built_at, "files_scanned": n, "files_hit": hits or {"R": 30}}
+        return {"version": baseline.VERSION, "branch": "trunk", "tip": tip, "built_at": built_at, "files_scanned": n,
+                "loc": 50000, "files_hit": hits or {"R": 30}, "violations": {"R": 40}}
 
     def save(self, d, data, rsha="abcdef12"):
         with open(os.path.join(d, baseline.file_name("trunk", data["tip"], "pmd-7", rsha)), "w") as f:
@@ -202,34 +205,53 @@ class Baseline(unittest.TestCase):
                                                         "commit", "-q", "-m", "x"]):
                 subprocess.run(["git", "-C", repo, *args], check=True, capture_output=True)
             dest = os.path.join(d, "out")
-            self.assertEqual(baseline.archive_sources(repo, "HEAD", dest), 1)
+            self.assertEqual(baseline.archive_sources(repo, "HEAD", dest), (1, 1))  # one file, one non-blank line
             self.assertEqual(os.listdir(os.path.join(dest, "src", "java", "a")), ["A.java"])
-            self.assertEqual(baseline.archive_sources(repo, "HEAD", dest, exclude=("src/java/a/",)), 0)
+            self.assertEqual(baseline.archive_sources(repo, "HEAD", dest, exclude=("src/java/a/",)), (0, 0))
             with self.assertRaises(Exception):
                 baseline.archive_sources(repo, "no-such-ref", dest)
 
     def test_touched_file_density_fallback(self):
         data = baseline.from_touched({"a": entry(v("R", 1), v("R", 2)), "b": entry(v("R", 1), v("S", 1)), "c": entry()})
         self.assertEqual((data["files_scanned"], data["files_hit"]), (3, {"R": 2, "S": 1}))
+        self.assertEqual(data["loc"], 0)  # a sample has no rate to judge against
+
+    def test_a_baseline_without_violation_counts_is_rebuilt_not_loaded(self):
+        old = {"branch": "trunk", "tip": "a" * 40, "built_at": time.time(), "files_scanned": 100, "files_hit": {"R": 30}}
+        with tempfile.TemporaryDirectory() as d:
+            self.save(d, old)
+            self.assertIsNone(baseline.newest_recent(d, "trunk", "pmd-7", "abcdef12"))
+            self.assertIsNone(baseline._load(os.path.join(d, baseline.file_name("trunk", "a" * 40, "pmd-7", "abcdef12"))))
 
 
 class RulesSection(unittest.TestCase):
     """staticanalysis._rules: introduced violations joined with the baseline's shares."""
 
+    extra = ()
+
     def section(self, obtained):
         from unittest import mock
         from cpr import staticanalysis as sa_mod
-        cfg = {"caps": {"baseline_seconds": 1, "pmd_threads": 1}, "exclude": [], "house_style_share": 0.25}
+        cfg = {"caps": {"baseline_seconds": 1, "pmd_threads": 1}, "exclude": [], "house_style_share": 0.25, "usual_p": 0.01}
         changed = [{"path": "src/java/A.java", "base_path": "src/java/A.java", "status": "M", "test": False}]
-        head = {"src/java/A.java": entry(v("CloseResource", 5), v("ShortVariable", 6, "codestyle"))}
+        head = {"src/java/A.java": entry(v("CloseResource", 5), v("ShortVariable", 6, "codestyle"), *self.extra)}
         base = {"src/java/A.java": entry()}
         with tempfile.TemporaryDirectory() as d, mock.patch.object(sa_mod.baseline, "obtain", return_value=obtained), \
                 mock.patch.object(sa_mod.clone_mod, "_git", return_value="a" * 40 + "\n"):
             return sa_mod._rules(cfg, d, "repo", "trunk", changed, base, head, {"src/java/A.java": [(1, 10)]},
-                                 ("pmd-7", RULESET, "f" * 40, True, None, "no build; without type info: x"), {}, "pmd", lambda m: None)
+                                 ("pmd-7", RULESET, "f" * 40, True, None, "no build; without type info: x"), {}, "pmd", lambda m: None,
+                                 self.root)
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.root, True)
+        os.makedirs(os.path.join(self.root, "src", "java"))
+        with open(os.path.join(self.root, "src", "java", "A.java"), "w") as f:
+            f.write("class A {\n" * 10)
 
     def test_house_flag_comes_from_the_baseline_share(self):
-        data = {"tip": "a" * 40, "files_scanned": 100, "files_hit": {"ShortVariable": 45, "CloseResource": 1}, "seconds": 3}
+        data = {"tip": "a" * 40, "files_scanned": 100, "files_hit": {"ShortVariable": 45, "CloseResource": 1}, "seconds": 3,
+                "loc": 0, "violations": {}}
         out = self.section((data, "cached", None))
         by = {r["rule"]: r for r in out["rules"]}
         self.assertFalse(by["CloseResource"]["house"])
@@ -387,6 +409,157 @@ class Model(unittest.TestCase):
         s = sa([])
         s["pmd_rules"] = {"status": "unavailable", "reason": "why"}
         self.assertEqual(model.pmd_rules_block({"static_analysis": s})["reason"], "why")
+
+
+class Rate(unittest.TestCase):
+    def test_poisson_tail_matches_known_values(self):
+        self.assertAlmostEqual(rate.poisson_tail(4, 3.0), 0.352768, places=5)
+        self.assertEqual(rate.poisson_tail(0, 3.0), 1.0)
+        self.assertEqual(rate.poisson_tail(1, 0.0), 0.0)
+        self.assertGreater(rate.poisson_tail(60, 1.0), 0.0)
+        self.assertLess(rate.poisson_tail(60, 1.0), 1e-60)
+
+    def test_threads_in_a_database_are_usual(self):
+        # 4 observed over 2,000 added lines; trunk: 150 in 100,000 lines predicts 3
+        usual, mu, p = rate.judge(4, 150, 100_000, 2_000)
+        self.assertTrue(usual)
+        self.assertAlmostEqual(mu, 3.0)
+        self.assertGreater(p, 0.01)
+
+    def test_well_above_the_rate_is_not_usual(self):
+        usual, mu, p = rate.judge(12, 150, 100_000, 2_000)
+        self.assertFalse(usual)
+        self.assertLess(p, 0.01)
+
+    def test_a_rule_trunk_never_breaks_is_never_usual(self):
+        self.assertEqual(rate.judge(1, 0, 100_000, 2_000)[0], False)
+
+    def test_no_production_violations_or_no_baseline_lines_judge_nothing(self):
+        self.assertEqual(rate.judge(0, 150, 100_000, 2_000), (False, 3.0, None))
+        self.assertFalse(rate.judge(2, 150, 0, 2_000)[0])
+        self.assertFalse(rate.judge(2, 150, 100_000, 0)[0])
+
+    def test_added_production_lines_skip_blank_lines_tests_and_deleted_files(self):
+        with tempfile.TemporaryDirectory() as d:
+            for rel, text in (("src/java/A.java", "a\n\nb\n  \nc\nd\n"), ("src/java/N.java", "x\ny\n\nz\n"),
+                              ("test/unit/T.java", "t\nt\n")):
+                os.makedirs(os.path.dirname(os.path.join(d, rel)), exist_ok=True)
+                with open(os.path.join(d, rel), "w") as f:
+                    f.write(text)
+            changed = [{"path": "src/java/A.java", "status": "M"}, {"path": "src/java/N.java", "status": "A"},
+                       {"path": "test/unit/T.java", "status": "A"}, {"path": "src/java/Gone.java", "status": "D"}]
+            # A: lines 2-5 added = "", b, "  ", c -> two non-blank; N: whole file, three non-blank
+            self.assertEqual(rate.added_production_loc(changed, {"src/java/A.java": [(2, 5)]}, d), 5)
+
+
+class RateInRulesSection(RulesSection):
+    def data(self, **kw):
+        return {"tip": "a" * 40, "files_scanned": 100, "files_hit": {"ShortVariable": 45}, "seconds": 3, "loc": 1000,
+                "violations": {"CloseResource": 100, "NullAssignment": 0, "ShortVariable": 900, "DoNotUseThreads": 100}, **kw}
+
+    def test_usual_flag_expected_and_p_per_rule(self):
+        self.extra = (v("NullAssignment", 7), v("DoNotUseThreads", 8, "multithreading"), v("DoNotUseThreads", 9, "multithreading"))
+        out = self.section((self.data(), "cached", None))
+        by = {r["rule"]: r for r in out["rules"]}
+        self.assertEqual(out["rate"], {"loc": 1000, "added_loc": 10, "available": True})
+        self.assertTrue(by["CloseResource"]["usual"])           # 1 observed, 1.0 expected
+        self.assertEqual((by["CloseResource"]["production"], by["CloseResource"]["expected"], by["CloseResource"]["trunk"]), (1, 1.0, 100))
+        self.assertTrue(by["DoNotUseThreads"]["usual"])         # 2 observed, 1.0 expected: p = 0.26
+        self.assertFalse(by["NullAssignment"]["usual"])         # trunk never breaks it
+        self.assertFalse(by["ShortVariable"]["usual"])          # house style comes first, not judged by rate
+        self.assertTrue(by["ShortVariable"]["house"])
+
+    def test_without_a_baseline_line_count_nothing_is_usual(self):
+        out = self.section((self.data(loc=0, violations={}), "cached", None))
+        self.assertFalse(out["rate"]["available"])
+        self.assertFalse(any(r["usual"] for r in out["rules"]))
+
+    def test_needs_types_comes_from_the_type_rule_list(self):
+        out = self.section((self.data(), "cached", None))
+        by = {r["rule"]: r for r in out["rules"]}
+        self.assertTrue(by["CloseResource"]["needs_types"])
+        self.assertFalse(by["ShortVariable"]["needs_types"])
+
+
+class TypeRules(unittest.TestCase):
+    def test_checked_in_list_names_real_catalog_rules_with_a_source(self):
+        with open(RULESET) as f:
+            cat = ruleset.catalog(f.read())
+        rules = typerules.load()
+        self.assertGreater(len(rules), 3)
+        self.assertEqual({r for r in rules if r not in cat}, set())
+        self.assertLessEqual(set(rules.values()), {"docs", "measured"})
+        self.assertIn("CloseResource", rules)
+
+    def test_measured_diff_names_rules_whose_count_changes(self):
+        self.assertEqual(typerules.measured_diff({"A": 5, "B": 2, "C": 1}, {"A": 5, "B": 0, "D": 3}),
+                         {"B": [2, 0], "C": [1, 0], "D": [0, 3]})
+
+
+def rate_rule(name, cat, n, prod=None, usual=False, expected=1.0, needs=False, tests=0, locs=None):
+    r = rule(name, cat, n, tests=tests, locs=locs)
+    r.update({"production": n - tests if prod is None else prod, "usual": usual, "expected": expected, "trunk": 10, "p": 0.3,
+              "needs_types": needs})
+    return r
+
+
+class UsualAndTypes(unittest.TestCase):
+    def block(self, rules, typed=False):
+        return model.pmd_rules_block({"static_analysis": sa(rules, type_info=typed, rate={"loc": 1000, "added_loc": 10, "available": True},
+                                                            usual_p=0.01)})
+
+    def test_usual_rules_leave_the_table_and_show_observed_vs_expected(self):
+        b = self.block([rate_rule("DoNotUseThreads", "multithreading", 4, usual=True, expected=3.2),
+                        rate_rule("NullAssignment", "errorprone", 2)])
+        self.assertEqual([r["rule"] for r in b["rows"]], ["NullAssignment"])
+        self.assertEqual([(r["rule"], r["production"], r["expected"]) for r in b["usual"]], [("DoNotUseThreads", 4, 3.2)])
+        self.assertEqual((b["introduced"], b["introduced_usual"]), (2, 4))
+        by = {c["id"]: c for c in b["categories"]}
+        self.assertEqual((by["multithreading"]["introduced"], by["multithreading"]["usual"]), (0, 4))
+
+    def test_a_usual_rules_test_file_violations_stay_in_the_table(self):
+        locs = [["src/java/A.java", 1, "m"], ["test/unit/T.java", 2, "m"], ["test/unit/T.java", 3, "m"]]
+        b = self.block([rate_rule("DoNotUseThreads", "multithreading", 3, tests=2, usual=True, locs=locs)])
+        self.assertEqual(b["usual"][0]["production"], 1)
+        self.assertEqual((b["rows"][0]["introduced"], len(b["rows"][0]["locations"])), (2, 2))
+        self.assertTrue(all(x["test"] for x in b["rows"][0]["locations"]))
+
+    def test_type_rules_without_classes_are_marked_last_and_left_out_of_the_tallies(self):
+        b = self.block([rate_rule("WrongTestAnnotation", "errorprone", 48, needs=True), rate_rule("TooManyMethods", "design", 2)])
+        self.assertEqual([(r["rule"], r["untyped"]) for r in b["rows"]], [("TooManyMethods", False), ("WrongTestAnnotation", True)])
+        self.assertEqual((b["introduced"], b["introduced_untyped"], b["untyped_rules"]), (2, 48, 1))
+
+    def test_type_rules_count_normally_with_a_classpath(self):
+        b = self.block([rate_rule("WrongTestAnnotation", "errorprone", 48, needs=True)], typed=True)
+        self.assertEqual((b["rows"][0]["untyped"], b["introduced"], b["introduced_untyped"]), (False, 48, 0))
+
+
+class UsualAndTypesCheck(unittest.TestCase):
+    def run_(self, rules, typed=False):
+        return run_check(sa(rules, type_info=typed))
+
+    def test_a_usual_red_rule_does_not_warn_and_is_named_in_the_evidence(self):
+        r = self.run_([rate_rule("DoNotUseThreads", "multithreading", 4, usual=True, expected=3.2)])
+        self.assertEqual(r["status"], "pass")
+        self.assertTrue(any("DoNotUseThreads 4 vs 3.2 expected" in e["text"] for e in r["evidence"]))
+
+    def test_an_unusual_red_rule_still_warns_beside_a_usual_one(self):
+        r = self.run_([rate_rule("DoNotUseThreads", "multithreading", 4, usual=True), rate_rule("NullAssignment", "errorprone", 3)])
+        self.assertEqual(r["status"], "warn")
+        self.assertIn("NullAssignment 3", r["summary"])
+        self.assertNotIn("DoNotUseThreads", r["summary"])
+
+    def test_a_type_rule_without_classes_is_ignored_and_with_classes_counts(self):
+        rules = [rate_rule("WrongTestAnnotation", "errorprone", 48, needs=True)]
+        r = self.run_(rules)
+        self.assertEqual(r["status"], "pass")
+        self.assertTrue(any("need compiled classes" in e["text"] for e in r["evidence"]))
+        r = self.run_(rules, typed=True)
+        self.assertEqual(r["status"], "warn")
+        self.assertIn("WrongTestAnnotation 48", r["summary"])
+
+    def test_test_only_violations_of_a_usual_rule_never_warn(self):
+        self.assertEqual(self.run_([rate_rule("DoNotUseThreads", "multithreading", 2, tests=2, usual=True)])["status"], "pass")
 
 
 if __name__ == "__main__":

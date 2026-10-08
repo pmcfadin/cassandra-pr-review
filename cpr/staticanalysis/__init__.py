@@ -12,9 +12,9 @@ import shutil
 import time
 
 from cpr.ingest import clone as clone_mod
-from cpr.staticanalysis import auxpath, baseline, classify, inputs, ruleset as ruleset_mod, run, tools
+from cpr.staticanalysis import auxpath, baseline, classify, inputs, rate, ruleset as ruleset_mod, run, tools, typerules
 
-SCHEMA = 3  # 2: partial PMD runs keep the files PMD read; 3: the full PMD catalog and the baseline
+SCHEMA = 4  # 2: partial PMD runs keep the files PMD read; 3: the full PMD catalog and the baseline; 4: rate test, type rules
 TOOLS = ("checkstyle", "pmd", "cpd")
 
 
@@ -129,7 +129,8 @@ def _analyze(bundle, work_dir, log):
     pmd_ok = tools.is_installed(work_dir, pmd_id)
     key = {"schema": SCHEMA, "merge_base": mb, "checkstyle": [cs_id, cs_sha, bool(cs_ok),
                                                               _env(java_cache, cfg["tools"][cs_id]["min_java"] if cs_id else 8, cfg)[2]],
-           "pmd": [pmd_id, pmd_sha, pmd_ok, _env(java_cache, 8, cfg)[2], sha_text(aux_cp or ""), cfg["house_style_share"]],
+           "pmd": [pmd_id, pmd_sha, pmd_ok, _env(java_cache, 8, cfg)[2], sha_text(aux_cp or ""), cfg["house_style_share"],
+                   cfg["usual_p"], sha_text(_read(typerules.PATH))],
            "cpd": cfg["cpd_min_tokens"]}
     results = os.path.join(sd, "results.json")
     if os.path.exists(results):
@@ -263,12 +264,16 @@ def _pmd(cfg, work_dir, repo, base_branch, changed, shas, head_lines, sd, raw, b
     head_ok = {p: f for p, f in head["files"].items() if p not in bad}
     methods, findings = classify.classify_complexity(ok_changed, base_files, head_ok, head_lines, cfg["thresholds"])
     tool = tool_result(status, reason, version, n, n - len(bad), secs)
-    rules = _rules(cfg, work_dir, repo, base_branch, ok_changed, base_files, head_ok, head_lines, pmd, env, pmd_bin, log)
+    rules = _rules(cfg, work_dir, repo, base_branch, ok_changed, base_files, head_ok, head_lines, pmd, env, pmd_bin, log,
+                   os.path.join(sd, "head"))
     return tool, methods, findings, rules
 
 
-def _rules(cfg, work_dir, repo, base_branch, changed, base_files, head_files, head_lines, pmd, env, pmd_bin, log):
-    """The `pmd_rules` section: introduced violations per catalog rule, and which rules are house style."""
+def _rules(cfg, work_dir, repo, base_branch, changed, base_files, head_files, head_lines, pmd, env, pmd_bin, log,
+           head_root):
+    """The `pmd_rules` section: introduced violations per catalog rule, which rules are house style (the branch
+    breaks them in many files), which are usual for Cassandra (the PR's count is within the branch's rate) and which
+    need type info."""
     pmd_id, ruleset, pmd_sha, _, aux_cp, aux_note = pmd
     with open(ruleset) as f:
         text = f.read()
@@ -286,17 +291,25 @@ def _rules(cfg, work_dir, repo, base_branch, changed, base_files, head_files, he
                 f"base versions of the {len(base_files)} touched file(s), a small sample.")
     shares = baseline.shares(data)
     limit = cfg["house_style_share"]
+    type_rules = typerules.load()
+    loc, trunk = data.get("loc") or 0, data.get("violations") or {}
+    added = rate.added_production_loc(changed, head_lines, head_root) if loc else 0
     rules = []
     for rule, e in found.items():
         share = shares.get(rule, 0.0)
+        prod = e["introduced"] - e["in_tests"]
+        usual, mu, p = (False, 0.0, None) if share >= limit else rate.judge(prod, trunk.get(rule, 0), loc, added, cfg["usual_p"])
         rules.append({"rule": rule, "category": e["category"] or cats.get(rule), "introduced": e["introduced"],
                       "in_tests": e["in_tests"], "pre_existing": e["pre_existing"], "share": round(share, 3), "house": share >= limit,
+                      "production": prod, "trunk": trunk.get(rule, 0), "expected": round(mu, 2),
+                      "p": None if p is None else float(f"{p:.3g}"), "usual": usual, "needs_types": rule in type_rules,
                       "locations": e["locations"]})
     rules.sort(key=lambda r: (-r["introduced"], r["rule"]))
     house = sorted(({"rule": r, "category": cats.get(r), "share": round(s, 3)} for r, s in shares.items() if s >= limit),
                    key=lambda h: (-h["share"], h["rule"]))
     return {"status": "ran", "reason": None, "rules_run": len(cats), "type_info": aux_cp is not None,
-            "type_note": aux_note, "threshold": limit,
+            "type_note": aux_note, "threshold": limit, "usual_p": cfg["usual_p"],
+            "rate": {"loc": loc, "added_loc": added, "available": bool(loc)},
             "baseline": {"source": source, "branch": base_branch, "tip": data.get("tip", tip), "files": data["files_scanned"],
                          "seconds": data.get("seconds"), "built_at": data.get("built_at"), "note": note},
             "house_style": house, "rules": rules}
