@@ -245,7 +245,8 @@ class Build:
 
     def ant_argv(self, *targets, extra=()):
         accord = ["-Dno-build-accord=true"] if self.accord_ready else []
-        return ["nice", "-n", str(self.cfg["caps"]["nice"]), self.ant, f"-Dlocal.repository={self.m2}", *accord, *extra, *targets]
+        return ["nice", "-n", str(self.cfg["caps"]["nice"]), self.ant, f"-Dlocal.repository={self.m2}",
+                f"-Dmaven.repo.local={self.m2}", *accord, *extra, *targets]
 
     def git(self, name, *args, **kw):
         return self.sh(name, ["git", *args], env=self.git_env(), **kw)
@@ -289,9 +290,25 @@ class Build:
         self.git("clone", "-C", self.wt, "checkout", "--quiet", "--detach", self.mb)
         if self.offline:
             return
+        # On trunk this ant run builds the base's accord with gradle, which would publish to ~/.m2 and write ~/.gradle:
+        # point both at the run directory instead.
+        self.seed_gradle()
+        env = dict(self.env, GRADLE_USER_HOME=self.gradle,
+                   JAVA_TOOL_OPTIONS=f"{self.env['JAVA_TOOL_OPTIONS']} -Dmaven.repo.local={self.m2}")
         self.sh("resolve", ["nice", "-n", str(self.cfg["caps"]["nice"]), self.ant, f"-Dlocal.repository={self.m2}",
-                            "resolver-dist-lib"], env=self.env, cwd=self.wt, timeout=min(self.left(), self.cfg["caps"]["resolve_seconds"]))
+                            f"-Dmaven.repo.local={self.m2}", "resolver-dist-lib"], env=env, cwd=self.wt, timeout=min(self.left(), self.cfg["caps"]["resolve_seconds"]))
         self.timings["resolve_trusted"] = self.timings.pop("resolve")
+
+    def seed_gradle(self):
+        """<run>/gradle as GRADLE_USER_HOME, seeded with an APFS clone of the wrapper distributions (once)."""
+        if os.path.isdir(self.gradle):
+            return
+        os.makedirs(self.gradle)
+        seed = os.path.join(self.home, ".gradle", "wrapper")
+        if os.path.isdir(seed):  # ~/.gradle itself is never written
+            p = self.sh("accord_fetch", ["cp", "-cR", seed, os.path.join(self.gradle, "wrapper")], check=False)
+            if p.rc != 0:
+                self.status["notes"].append("accord: the Gradle wrapper seed could not be copied; the run downloads it")
 
     def accord_pin(self):
         """The sha the head tree pins for the accord submodule, or None when there is no gitlink there."""
@@ -339,12 +356,7 @@ class Build:
             return
         version = self.accord_version()
         self.accord_fetch(sha)
-        os.makedirs(self.gradle, exist_ok=True)
-        seed = os.path.join(self.home, ".gradle", "wrapper")
-        if os.path.isdir(seed):  # APFS clone of the wrapper distributions; ~/.gradle itself is never written
-            p = self.sh("accord_fetch", ["cp", "-cR", seed, os.path.join(self.gradle, "wrapper")], check=False)
-            if p.rc != 0:
-                self.status["notes"].append("accord: the Gradle wrapper seed could not be copied; the run downloads it")
+        self.seed_gradle()
         args = [a.replace("{version}", version).replace("{m2}", self.m2) for a in acfg["gradle_args"]]
         wt_accord = os.path.join(self.wt, acfg["path"])
         prm = sandbox.params(self.root, self.work_dir, self.rd, self.wt, self.m2,

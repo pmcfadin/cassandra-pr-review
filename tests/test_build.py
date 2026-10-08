@@ -293,7 +293,7 @@ class RunnerTests(unittest.TestCase):
                 self.assertIn("-Dlocal.repository=" + os.path.join(os.path.dirname(path), "m2"), c["cmd"])
             else:
                 self.assertEqual(c["cmd"][0], "sandbox-exec", c["cmd"])
-            self.assertEqual(set(c["env"]) - {"PATH", "JAVA_HOME", "HOME", "JAVA_TOOL_OPTIONS", "ANT_OPTS", "CASSANDRA_USE_JDK11"}, set())
+            self.assertEqual(set(c["env"]) - {"PATH", "JAVA_HOME", "HOME", "JAVA_TOOL_OPTIONS", "ANT_OPTS", "CASSANDRA_USE_JDK11", "GRADLE_USER_HOME"}, set())
         steps = [" ".join(c["cmd"]) for c in sh.calls]
         order = [next(i for i, s in enumerate(steps) if m in s) for m in
                  (f"checkout --quiet --detach {MB}", "resolver-dist-lib", f"checkout --quiet --detach {HEAD}", " jar",
@@ -336,6 +336,8 @@ class RunnerTests(unittest.TestCase):
         self.assertTrue(any("cp -cR" in s and ".gradle/wrapper" in s for s in steps))
         for c in sh.calls:  # the main ant calls skip accord and stay on the no-network profile
             text = " ".join(c["cmd"])
+            if "/ant" in text:
+                self.assertIn("-Dmaven.repo.local=" + os.path.join(rd, "m2"), c["cmd"])  # resolver reads the run's copy
             if "/ant" in text and "resolver-dist-lib" not in text:
                 self.assertIn("-Dno-build-accord=true", c["cmd"])
                 self.assertEqual(c["cmd"][c["cmd"].index("-f") + 1], sandbox.PROFILE)
