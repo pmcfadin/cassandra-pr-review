@@ -178,6 +178,29 @@ def cmd_review(args):
     return 0
 
 
+def cmd_tools(args):
+    from cpr.staticanalysis import tools
+    work_dir = os.path.abspath(args.work_dir)
+    cfg = tools.load_config()
+    log = lambda m: print(f"  {m}", file=sys.stderr)  # noqa: E731
+    failed = False
+    for tool_id in args.tools or list(cfg["tools"]):
+        try:
+            how = tools.install(work_dir, tool_id, cfg, log=log)
+        except tools.ToolError as e:
+            print(f"error: {e}", file=sys.stderr)
+            failed = True
+            continue
+        print(f"{tool_id}: " + ("already installed" if how == "present" else f"installed ({how})"))
+    for name, need in (("checkstyle 10.x", 17), ("pmd", 8)):
+        try:
+            java, major = tools.find_java(need, cfg)
+            print(f"java for {name}: {java} (JDK {major})")
+        except tools.ToolError as e:
+            print(f"java for {name}: {e}")
+    return 1 if failed else 0
+
+
 def cmd_bench(args):
     from cpr import bench
     if args.action == "label":
@@ -230,6 +253,13 @@ def main(argv=None):
     pp.add_argument("--offline", action="store_true", help="use the cached ingest")
     pp.add_argument("--work-dir", default=default_work)
     pp.set_defaults(func=cmd_prepare)
+
+    tl = sub.add_parser("tools", help="manage the pinned static-analysis tools")
+    tsub = tl.add_subparsers(dest="action", required=True)
+    ti = tsub.add_parser("install", help="download and verify checkstyle and PMD into the work directory")
+    ti.add_argument("tools", nargs="*", help="tool ids (default: all pinned tools)")
+    ti.add_argument("--work-dir", default=default_work)
+    tl.set_defaults(func=cmd_tools)
 
     bn = sub.add_parser("bench", help="benchmark a lens panel on known-issue cases")
     bsub = bn.add_subparsers(dest="action", required=True)

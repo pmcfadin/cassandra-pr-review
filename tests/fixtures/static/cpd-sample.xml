@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pmd-cpd xmlns="https://pmd-code.org/schema/cpd-report"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         pmdVersion="7.28.0"
+         timestamp="2026-10-07T18:25:44.529371-07:00"
+         version="1.0.0"
+         xsi:schemaLocation="https://pmd-code.org/schema/cpd-report https://pmd.github.io/schema/cpd-report_1_0_0.xsd">
+   <file path="/work/head/test/unit/org/apache/cassandra/service/accord/execution/AccordExecutorContinuationCancellationTest.java"
+         totalNumberOfTokens="1568"/>
+   <file path="/work/head/test/unit/org/apache/cassandra/service/accord/execution/AccordExecutorPresetupLoadingTest.java"
+         totalNumberOfTokens="1074"/>
+   <file path="/work/head/test/unit/org/apache/cassandra/service/accord/execution/AccordExecutorRangeScanTest.java"
+         totalNumberOfTokens="1670"/>
+   <duplication lines="47" tokens="396">
+      <file begintoken="350343"
+            column="21"
+            endcolumn="2"
+            endline="226"
+            endtoken="350738"
+            line="180"
+            path="/work/head/test/unit/org/apache/cassandra/service/accord/execution/AccordExecutorPresetupLoadingTest.java"/>
+      <file begintoken="352014"
+            column="24"
+            endcolumn="2"
+            endline="384"
+            endtoken="352409"
+            line="338"
+            path="/work/head/test/unit/org/apache/cassandra/service/accord/execution/AccordExecutorRangeScanTest.java"/>
+      <codefragment><![CDATA[            released.signal();
+            executor.shutdown();
+            executor.awaitTermination(10, TimeUnit.SECONDS);
+        }
+    }
+
+    /**
+     * A command store with an in-memory journal and no persistence, so that we need no schema, cluster metadata or
+     * commit log. We deliberately do not use {@code AccordAgent}, as reporting an exception there initialises
+     * {@code AccordSystemMetrics}, which requires a started {@code AccordService}.
+     */
+    private static AccordCommandStore commandStore(TableId tableId, IPartitioner partitioner, AccordExecutor executor)
+    {
+        AtomicLong clock = new AtomicLong();
+        LongSupplier now = clock::incrementAndGet;
+        Id nodeId = new Id(1);
+        NodeCommandStoreService node = new NodeCommandStoreService()
+        {
+            private final ToLongFunction<TimeUnit> elapsed = TimeService.elapsedWrapperFromNonMonotonicSource(TimeUnit.MICROSECONDS, this::now);
+            private long stamp = 0;
+
+            @Override public AsyncExecutor someExecutor() { return null; }
+            @Override public ExclusiveAsyncExecutor someExclusiveExecutor() { return null; }
+            @Override public accord.api.Timeouts timeouts() { return null; }
+            @Override public DurableBefore durableBefore() { return DurableBefore.EMPTY; }
+            @Override public DurabilityService durability() { return null; }
+            @Override public Id id() { return nodeId; }
+            @Override public long epoch() { return 1; }
+            @Override public long now() { return now.getAsLong(); }
+            @Override public long uniqueNow(long atLeast) { return now.getAsLong(); }
+            @Override public long elapsed(TimeUnit units) { return elapsed.applyAsLong(units); }
+            @Override public TopologyManager topology() { throw new UnsupportedOperationException(); }
+            @Override public Coordinations coordinations() { return new Coordinations(); }
+            @Override public long currentStamp() { return stamp; }
+            @Override public void updateStamp() { ++stamp; }
+            @Override public boolean isReplaying() { return false; }
+            @Override public void reportLocalExecution(TxnId txnId, Route<?> route, Ballot ballot, Timestamp applyAt, Writes writes, Result result) {}
+        };
+
+        return new AccordCommandStore(0, node, new TestAgent(), null,
+                                      cs -> new ProgressLog.NoOpProgressLog(),
+                                      cs -> new DefaultLocalListeners(null, new DefaultRemoteListeners.NoOpRemoteListeners(), new NotifySink.NoOpNotifySink()),
+                                      new RangesForEpoch(1, Ranges.of(TokenRange.fullRange(tableId, partitioner))),
+                                      new InMemoryJournal(nodeId, new DefaultRandom(1)),
+                                      executor);
+    }
+}
+]]></codefragment>
+   </duplication>
+   <duplication lines="45" tokens="378">
+      <file begintoken="336922"
+            column="39"
+            endcolumn="2"
+            endline="345"
+            endtoken="337299"
+            line="301"
+            path="/work/head/test/unit/org/apache/cassandra/service/accord/execution/AccordExecutorContinuationCancellationTest.java"/>
+      <file begintoken="350361"
+            column="59"
+            endcolumn="2"
+            endline="226"
+            endtoken="350738"
+            line="182"
+            path="/work/head/test/unit/org/apache/cassandra/service/accord/execution/AccordExecutorPresetupLoadingTest.java"/>
+      <file begintoken="352032"
+            column="59"
+            endcolumn="2"
+            endline="384"
+            endtoken="352409"
+            line="340"
+            path="/work/head/test/unit/org/apache/cassandra/service/accord/execution/AccordExecutorRangeScanTest.java"/>
+      <codefragment><![CDATA[            throw new AssertionError(e);
+        }
+    }
+
+    /**
+     * A command store with an in-memory journal and no persistence, so that we need no schema, cluster metadata or
+     * commit log. We deliberately do not use {@code AccordAgent}, as reporting an exception there initialises
+     * {@code AccordSystemMetrics}, which requires a started {@code AccordService}.
+     */
+    private static AccordCommandStore commandStore(TableId tableId, IPartitioner partitioner, AccordExecutor executor)
+    {
+        AtomicLong clock = new AtomicLong();
+        LongSupplier now = clock::incrementAndGet;
+        Id nodeId = new Id(1);
+        NodeCommandStoreService node = new NodeCommandStoreService()
+        {
+            private final ToLongFunction<TimeUnit> elapsed = TimeService.elapsedWrapperFromNonMonotonicSource(TimeUnit.MICROSECONDS, this::now);
+            private long stamp = 0;
+
+            @Override public AsyncExecutor someExecutor() { return null; }
+            @Override public ExclusiveAsyncExecutor someExclusiveExecutor() { return null; }
+            @Override public accord.api.Timeouts timeouts() { return null; }
+            @Override public DurableBefore durableBefore() { return DurableBefore.EMPTY; }
+            @Override public DurabilityService durability() { return null; }
+            @Override public Id id() { return nodeId; }
+            @Override public long epoch() { return 1; }
+            @Override public long now() { return now.getAsLong(); }
+            @Override public long uniqueNow(long atLeast) { return now.getAsLong(); }
+            @Override public long elapsed(TimeUnit units) { return elapsed.applyAsLong(units); }
+            @Override public TopologyManager topology() { throw new UnsupportedOperationException(); }
+            @Override public Coordinations coordinations() { return new Coordinations(); }
+            @Override public long currentStamp() { return stamp; }
+            @Override public void updateStamp() { ++stamp; }
+            @Override public boolean isReplaying() { return false; }
+            @Override public void reportLocalExecution(TxnId txnId, Route<?> route, Ballot ballot, Timestamp applyAt, Writes writes, Result result) {}
+        };
+
+        return new AccordCommandStore(0, node, new TestAgent(), null,
+                                      cs -> new ProgressLog.NoOpProgressLog(),
+                                      cs -> new DefaultLocalListeners(null, new DefaultRemoteListeners.NoOpRemoteListeners(), new NotifySink.NoOpNotifySink()),
+                                      new RangesForEpoch(1, Ranges.of(TokenRange.fullRange(tableId, partitioner))),
+                                      new InMemoryJournal(nodeId, new DefaultRandom(1)),
+                                      executor);
+    }
+}
+]]></codefragment>
+   </duplication>
+</pmd-cpd>

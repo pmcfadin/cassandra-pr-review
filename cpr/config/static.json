@@ -1,0 +1,30 @@
+{
+  "tools": {
+    "checkstyle-10.26.1": {
+      "name": "checkstyle", "version": "10.26.1", "kind": "jar", "min_java": 17,
+      "url": "https://github.com/checkstyle/checkstyle/releases/download/checkstyle-10.26.1/checkstyle-10.26.1-all.jar",
+      "sha256": "e41c24433723ba310a30e41da4f449c105ad47cab2ae9e6be5e06606a647dbca"
+    },
+    "checkstyle-8.40": {
+      "name": "checkstyle", "version": "8.40", "kind": "jar", "min_java": 8,
+      "url": "https://github.com/checkstyle/checkstyle/releases/download/checkstyle-8.40/checkstyle-8.40-all.jar",
+      "sha256": "670f057d61cc6cef8f0440f838f4adcea6a16c9e634bc0e96a1c6eeab53fc0e4"
+    },
+    "pmd-7.28.0": {
+      "name": "pmd", "version": "7.28.0", "kind": "zip", "min_java": 8,
+      "url": "https://github.com/pmd/pmd/releases/download/pmd_releases%2F7.28.0/pmd-dist-7.28.0-bin.zip",
+      "sha256": "f974ba571f7bc01c73fffe11bade25fbc1f438698f9e9c00e416e8d65e9fbac2"
+    }
+  },
+  "checkstyle_by_branch": {
+    "trunk": "checkstyle-10.26.1",
+    "cassandra-5.0": "checkstyle-10.26.1",
+    "cassandra-4.1": "checkstyle-8.40"
+  },
+  "pmd": "pmd-7.28.0",
+  "java_homes": ["/opt/homebrew/opt/openjdk@21"],
+  "thresholds": {"CognitiveComplexity": 15, "CyclomaticComplexity": 10, "NPathComplexity": 200},
+  "cpd_min_tokens": 100,
+  "caps": {"tool_seconds": 120, "pr_seconds": 300, "pmd_max_files": 400},
+  "exclude": ["src/gen-java/", "modules/accord/"]
+}
