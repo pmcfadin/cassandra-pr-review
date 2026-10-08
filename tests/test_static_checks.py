@@ -224,3 +224,11 @@ class PerfStructure(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ComplexityTests(unittest.TestCase):
+    def test_test_methods_not_in_headline(self):
+        f = finding(tool="pmd", score=40, method_sig="t()", rule="CognitiveComplexity", file="test/unit/ATest.java")
+        r = get(with_sa(complexity={"threshold": 15, "methods": [], "findings": [f]}), "static.complexity")
+        self.assertEqual(r["status"], "pass")
+        self.assertIn("1 test method(s)", r["evidence"][0]["text"])

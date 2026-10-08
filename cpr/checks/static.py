@@ -145,8 +145,12 @@ def complexity(bundle, ctx):
     if len(shown) > METHOD_ROWS:
         rows.append(ev(f"… and {len(shown) - METHOD_ROWS} more changed method(s) with unchanged scores"))
     intro = [f for f in cx.get("findings") or [] if _intro(f)]
-    bad = sorted((f for f in intro if f.get("rule") == "CognitiveComplexity" and (f.get("score") or 0) >= thr),
-                 key=lambda f: -(f.get("score") or 0))
+    over = sorted((f for f in intro if f.get("rule") == "CognitiveComplexity" and (f.get("score") or 0) >= thr),
+                  key=lambda f: -(f.get("score") or 0))
+    bad = [f for f in over if not str(f.get("file", "")).startswith("test/")]
+    in_tests = len(over) - len(bad)
+    if in_tests:
+        rows.insert(0, ev(f"{in_tests} test method(s) introduced at or above {thr} (not counted in the headline)"))
     other = {}
     for f in intro:
         if f.get("rule") != "CognitiveComplexity":
@@ -156,10 +160,10 @@ def complexity(bundle, ctx):
                           + ", ".join(f"{n} {r}" for r, n in sorted(other.items()))))
     if bad:
         top = "; ".join(f"`{f.get('class')}.{f.get('method_sig')}` {f.get('score')}" for f in bad[:5])
-        return Result("warn", f"{len(bad)} method(s) introduced at or above cognitive complexity {thr}: {top}",
+        return Result("warn", f"{len(bad)} production method(s) introduced at or above cognitive complexity {thr}: {top}",
                       rows, action_required=False,
                       action=f"Consider splitting the method(s) to keep cognitive complexity under {thr}.")
-    return Result("pass", f"No method introduced at or above cognitive complexity {thr} "
+    return Result("pass", f"No production method introduced at or above cognitive complexity {thr} "
                           f"({len(methods)} changed method(s) listed)", rows)
 
 
