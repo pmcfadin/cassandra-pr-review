@@ -8,6 +8,7 @@ status values (research 5.1): pass, build-failed, tests-failed, timeout, unknown
 """
 
 import collections
+import glob
 import json
 import os
 import re
@@ -361,6 +362,11 @@ class Build:
         if p.rc != 0:
             self.status["notes"].append(note)
             raise Stop("unknown", "accord build failed: " + self.first_error(p.err + "\n" + p.out))
+        # What build-accord.xml does after gradle: drop accord jars the base-commit resolve left in the build tree, so
+        # the head build copies the freshly published one from the run's Maven repo.
+        for pattern in ("build/lib/jars/cassandra-accord-*.jar", "build/test/lib/jars/cassandra-accord-*.jar"):
+            for stale in glob.glob(os.path.join(self.wt, pattern)):
+                os.remove(stale)
         self.accord_ready = True
 
     def build_head(self):

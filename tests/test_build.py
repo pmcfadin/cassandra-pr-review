@@ -341,6 +341,25 @@ class RunnerTests(unittest.TestCase):
                 self.assertEqual(c["cmd"][c["cmd"].index("-f") + 1], sandbox.PROFILE)
         self.assertIn("accord_build", st["timings_s"])
 
+    def test_stale_accord_jars_are_removed_after_the_accord_build(self):
+        seen = {}
+
+        class Shell(FakeShell):
+            def run(self, cmd, env=None, cwd=None, timeout=None):
+                text = " ".join(cmd)
+                if f"--detach {HEAD}" in text:  # the base resolve left an accord jar in the tree
+                    jar = os.path.join(cmd[cmd.index("-C") + 1], "build", "lib", "jars", "cassandra-accord-1-SNAPSHOT.jar")
+                    os.makedirs(os.path.dirname(jar))
+                    open(jar, "w").close()
+                    seen["jar"] = jar
+                if text.endswith(" jar"):
+                    seen["left"] = os.path.exists(seen["jar"])
+                return super().run(cmd, env, cwd, timeout)
+
+        self.go(Shell(self.accord_script()))
+        self.assertIn("left", seen)
+        self.assertFalse(seen["left"])
+
     def test_accord_url_must_be_apache(self):
         sh = FakeShell(self.accord_script(url="https://github.com/evil/cassandra-accord.git"))
         _, st = self.go(sh)
