@@ -81,6 +81,19 @@ class Rules(unittest.TestCase):
         self.assertEqual((issue["severity"], issue["impact"], issue["members"][0]["id"]), ("blocker", "data-loss", "b"))
         self.assertEqual(issue["also_fixes"], [{"lens": "logic", "fix": "Use deleteWithConfirm"}])
 
+    def test_issue_keeps_the_primary_findings_title(self):
+        a = f("correctness", "c1", "src/A.java:10", "FileUtils.deleteWithConfirm swallows the error", "call FileUtils.deleteWithConfirm",
+              severity="major", title="Keep deleteWithConfirm in SSTable")
+        b = f("observability", "o1", "src/A.java:11", "FileUtils.deleteWithConfirm swallows the error", "call FileUtils.deleteWithConfirm",
+              severity="minor", title="Other title")
+        issues = merge.merge_findings([a, b])
+        self.assertEqual(len(issues), 1)
+        self.assertEqual(issues[0]["title"], "Keep deleteWithConfirm in SSTable")
+
+    def test_issue_without_a_title_has_no_title_key(self):
+        issues = merge.merge_findings([f("correctness", "c1", "src/A.java:10", "p one", "fix one")])
+        self.assertNotIn("title", issues[0])
+
     def test_constants_live_in_config(self):
         with open(merge.CONFIG) as fh:
             cfg = json.load(fh)

@@ -140,7 +140,13 @@ h2.sec { font-size: 22px; font-weight: 600; }
 .role ul { list-style: none; margin: 0; padding: 0; flex: 1 1 360px; min-width: 0; }
 .role li { margin: 0; }
 .todo-item { width: 100%; display: flex; gap: 10px; align-items: center; padding: 10px 20px 10px 0; min-height: 44px; }
-.todo-item .tx { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.todo-item .tx { flex: 1; min-width: 0; overflow-wrap: anywhere; display: flex; flex-direction: column; gap: 3px; }
+.todo-item .tt { font-weight: 500; }
+.todo-item .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; font-size: 13px; color: var(--ink-3); }
+.todo-item .loc { font-family: var(--mono); font-size: 12.5px; }
+.todo-item .src { padding: 0 6px; border: 1px solid var(--rule-2); border-radius: 3px; font-size: 12px; color: var(--ink-2); }
+.todo-item .step-mark { display: inline-flex; color: var(--na-icon); }
+.role-name .phase { font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-3); }
 .todo-detail { padding: 0 20px 12px 24px; font-size: 15px; color: var(--ink-2); display: flex; flex-direction: column; gap: 6px; }
 .todo-detail p { margin: 0; }
 .todo-detail .tg { font-size: 12px; color: var(--ink-3); }
@@ -1031,17 +1037,30 @@ body.no-data #no-data { display: block; }
   var verdict = V.verdict || { kind: "unknown", headline: (M.recommendation || {}).label || "No recommendation", sentence: "", note: "" };
   var vKind = VERDICT_KIND[verdict.kind] || "unknown";
 
+  function stepMark() {
+    var w = h("span", "step-mark s-na", svg("waiting", 14, 2.6, "Next step"));
+    return w;
+  }
   function todoItem(it) {
     var li = h("li", it.must ? null : "opt");
-    var kind = it.must ? (it.word === "Unknown" ? "unknown" : "fail") : kindOfWord(it.word);
-    var btn = h("button", "todo-item row", [statusIcon(kind, 14, it.must ? it.word : "Optional"), mdInline("span", it.text || it.title, "tx"), chev(14)]);
+    var isFix = it.kind === "fix";
+    var mark = !isFix ? stepMark() : statusIcon(it.must ? (it.word === "Unknown" ? "unknown" : "fail") : kindOfWord(it.word), 14, it.must ? it.word : "Optional");
+    var meta = [];
+    if (!isFix && it.role) meta.push(h("span", null, it.role));
+    if (it.location && String(it.title || "").indexOf(it.location) < 0) meta.push(h("span", "loc", it.location));
+    meta.push(h("span", "src", it.source === "Code review" ? "Code review" : it.source));
+    if (it.also) meta.push(h("span", null, "Also satisfies: " + it.also));
+    var btn = h("button", "todo-item row", [mark, h("span", "tx", [mdInline("span", it.title || it.text, "tt"), h("span", "meta", meta)]), chev(14)]);
     btn.type = "button";
     var detail = h("div", "todo-detail");
-    if (it.title && it.title !== it.text) append(detail, h("p", null, h("strong", null, it.title)));
     if (it.summary) append(detail, mdInline("p", it.summary));
     if (it.action) append(detail, h("p", null, [h("strong", null, "How to fix: "), mdInline("span", it.action)]));
-    var target = it.check ? "#check-" + it.check : (it.finding ? "#findings" : null);
-    append(detail, h("p", "tg", [it.tag, target ? [" · ", (function () { var a = h("a", null, it.check ? "See the check" : "See the findings"); a.href = target; return a; })()] : null]));
+    if (!isFix && it.who) append(detail, h("p", null, [h("strong", null, "Who: "), it.who]));
+    var target = it.issue ? "#finding-" + it.issue : (it.check ? "#check-" + it.check : null);
+    var links = [it.tag];
+    if (target) links.push(" · ", (function () { var a = h("a", null, it.issue ? "See the finding" : "See the check"); a.href = target; return a; })());
+    if (it.also && it.also_check) links.push(" · ", (function () { var a = h("a", null, "See " + it.also); a.href = "#check-" + it.also_check; return a; })());
+    append(detail, h("p", "tg", links));
     append(li, [btn, detail]);
     collapsible(btn, detail, false);
     return li;
@@ -1067,12 +1086,8 @@ body.no-data #no-data { display: block; }
     append(top, steps);
     sec.appendChild(top);
 
-    var rec = M.recommendation || {};
     var docs = docsBlock(sectionById.summary);
-    var extra = h("div", "v-extra", [
-      h("p", "muted", "Overall: " + (rec.label || rec.verdict || "") + "."),
-      docs
-    ]);
+    var extra = h("div", "v-extra", [docs]);
 
     // To do panel, grouped by who acts.
     var todo = V.todo || { roles: [], optional_count: 0 };
@@ -1081,21 +1096,31 @@ body.no-data #no-data { display: block; }
     var headBtn = h("button", "todo-head row");
     headBtn.type = "button";
     append(headBtn, h("span", "t", "To do"));
+    var thenSteps = todo.then || [];
     todo.roles.forEach(function (r) {
-      append(headBtn, h("span", "r", [r.role, " ", h("span", "count" + (r.must_count ? " must" : ""), String(r.must_count))]));
+      append(headBtn, h("span", "r", ["Now: " + r.role, " ", h("span", "count" + (r.must_count ? " must" : ""), String(r.fix_count != null ? r.fix_count : r.items.filter(function (i) { return i.must; }).length))]));
     });
+    var thenMust = thenSteps.filter(function (i) { return i.must; }).length;
+    if (thenMust) append(headBtn, h("span", "r", ["Then", " ", h("span", "count", String(thenMust))]));
     var tlabel = h("span", "toggle", [h("span", null, "Hide"), chev(14)]);
     append(headBtn, tlabel);
     panel.appendChild(headBtn);
     var body = h("div");
-    if (!todo.roles.length) append(body, h("p", "empty", "Nothing is left to do."));
+    if (!todo.roles.length && !thenSteps.length) append(body, h("p", "empty", "Nothing is left to do."));
     todo.roles.forEach(function (r) {
       var onlyOpt = !r.items.some(function (i) { return i.must; });
-      var role = h("div", "role" + (onlyOpt ? " only-opt" : ""), [
-        h("div", "role-name", [h("span", null, r.role), r.who ? h("small", null, r.who) : null]),
+      var role = h("div", "role now" + (onlyOpt ? " only-opt" : ""), [
+        h("div", "role-name", [h("span", "phase", "Now"), h("span", null, r.role), r.who ? h("small", null, r.who) : null]),
         h("ul", null, r.items.map(todoItem))]);
       body.appendChild(role);
     });
+    if (thenSteps.length) {
+      var thenOnlyOpt = !thenSteps.some(function (i) { return i.must; });
+      body.appendChild(h("div", "role then" + (thenOnlyOpt ? " only-opt" : ""), [
+        h("div", "role-name", [h("span", "phase", "Then"), h("span", null, todo.roles.length ? "Next steps" : "Steps"),
+          h("small", null, todo.roles.length ? "After the work above" : "")]),
+        h("ul", null, thenSteps.map(todoItem))]));
+    }
     var optBtn = null;
     if (todo.optional_count) {
       optBtn = h("button", "no-print", "Show " + plural(todo.optional_count, "optional item"));
@@ -1202,8 +1227,9 @@ body.no-data #no-data { display: block; }
   function issueCard(i) {
     var wrap = h("div", "finding");
     wrap.setAttribute("data-issue", i.id);
+    wrap.id = "finding-" + i.id;
     var locs = i.locations && i.locations.length ? i.locations : [i.location];
-    var hl = (V.headlines || {})[i.id] || i.rule;
+    var hl = i.title || (V.headlines || {})[i.id] || i.rule;
     var head = h("button", "finding-head row", [h("span", "sev " + i.severity, i.severity),
       h("span", "m", [mdInline("span", hl, "hl"), h("span", "loc", locs.join(", "))]), chev(16)]);
     head.type = "button";
@@ -1217,7 +1243,7 @@ body.no-data #no-data { display: block; }
     var raised = (i.lenses || []).join(", ") + (i.lenses && i.lenses.length > 1 ? " (" + i.lenses.length + " lenses agree)" : "");
     append(body, h("div", "full", ["Raised by: ", h("span", "lenses", raised), " · rule ", h("code", null, i.rule), " · ", h("span", "mono", i.id), impactTags(i)]));
     append(wrap, [head, body]);
-    collapsible(head, body, false);
+    wrap._ctl = collapsible(head, body, false);
     return wrap;
   }
   function lensFinding(f) {

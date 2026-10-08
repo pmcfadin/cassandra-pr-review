@@ -144,6 +144,8 @@ def _issue(members):
         "members": [{"lens": m["lens"], "id": m["id"]} for m in ordered],
         "impact": primary.get("impact"), "confidence": primary.get("confidence"),
     }
+    if primary.get("title"):
+        issue["title"] = primary["title"]
     if primary.get("severity_corrected"):
         issue["severity_corrected"] = primary["severity_corrected"]
     return issue, by_position[0]["_index"]

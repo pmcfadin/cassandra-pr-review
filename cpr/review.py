@@ -29,6 +29,7 @@ SEVERITY_TABLE = {
     "performance": ("minor", "minor", "nit"),
     "cosmetic": ("nit", "nit", "nit"),
 }
+TITLE_MAX = 80
 _FINDING_KEYS = ("id", "severity", "location", "rule", "problem", "fix")
 
 
@@ -67,10 +68,26 @@ def validate_output(data):
                 return f"findings[{i}].{k} missing or not a string"
         if f["severity"] not in SEVERITIES:
             return f"findings[{i}].severity '{f['severity']}' is not one of {', '.join(SEVERITIES)}"
+        if f.get("title") is not None and not isinstance(f["title"], str):
+            return f"findings[{i}].title is not a string"
         for key, allowed in (("impact", IMPACTS), ("confidence", CONFIDENCES)):
             if f.get(key) is not None and f[key] not in allowed:
                 return f"findings[{i}].{key} '{f[key]}' is not one of {', '.join(allowed)}"
     return None
+
+
+def clean_title(f):
+    """`f` with a usable optional `title`: kept when it is a non-empty string of at most 80 characters.
+
+    A title that is missing, empty or too long is dropped so the report builds its own from the rule and
+    location; it is never cut, because a cut title stops making sense on its own.
+    """
+    t = f.get("title")
+    t = " ".join(t.split()) if isinstance(t, str) else ""
+    out = {k: v for k, v in f.items() if k != "title"}
+    if t and len(t) <= TITLE_MAX:
+        out["title"] = t
+    return out
 
 
 def derive_severity(f):
@@ -131,7 +148,7 @@ def merge(lens_dir, panel=None):
             entry.update(status="invalid", error=err)
             lenses.append(entry)
             continue
-        findings = sorted((derive_severity(f) for f in data["findings"]), key=lambda f: SEVERITIES.index(f["severity"]))
+        findings = sorted((derive_severity(clean_title(f)) for f in data["findings"]), key=lambda f: SEVERITIES.index(f["severity"]))
         if not data["approve"] and not any(f["severity"] in MUST_FIX for f in findings):
             findings.insert(0, {
                 "id": f"unexplained-{name}", "severity": "major", "location": f"({name} lens report)",

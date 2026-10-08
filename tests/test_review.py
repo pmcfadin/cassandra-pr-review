@@ -116,6 +116,30 @@ class SeverityFromImpact(unittest.TestCase):
         self.assertIsNone(review.validate_output(lens_out(findings=[dict(finding(), impact="crash", confidence="low")])))
 
 
+class LensTitle(unittest.TestCase):
+    def test_title_is_optional_and_must_be_a_string(self):
+        self.assertIsNone(review.validate_output(lens_out(findings=[finding()])))
+        self.assertIsNone(review.validate_output(lens_out(findings=[dict(finding(), title="Add a test for X")])))
+        self.assertIn("title", review.validate_output(lens_out(findings=[dict(finding(), title=3)])))
+
+    def test_clean_title_keeps_good_and_drops_bad(self):
+        self.assertEqual(review.clean_title(dict(finding(), title="  Add   a test ")).get("title"), "Add a test")
+        self.assertNotIn("title", review.clean_title(dict(finding(), title="x" * 81)))
+        self.assertNotIn("title", review.clean_title(dict(finding(), title="  ")))
+        self.assertEqual(len(review.clean_title(dict(finding(), title="x" * 80))["title"]), 80)
+
+    def test_merge_carries_the_title_to_the_report_model(self):
+        with tempfile.TemporaryDirectory() as d:
+            for name, titled in (("correctness", True), ("security", False)):
+                fnd = dict(finding("major"), title="Keep failures visible in SSTable deletes") if titled else finding()
+                with open(os.path.join(d, f"{name}.json"), "w") as fh:
+                    json.dump(lens_out(findings=[fnd]), fh)
+            r = review.merge(d, PANEL)
+        self.assertEqual(r["lenses"][0]["findings"][0]["title"], "Keep failures visible in SSTable deletes")
+        self.assertNotIn("title", r["lenses"][1]["findings"][0])
+        self.assertEqual([i.get("title") for i in r["issues"]].count("Keep failures visible in SSTable deletes"), 1)
+
+
 class Issues(unittest.TestCase):
     def test_merge_adds_issues_counts_and_checklists(self):
         with tempfile.TemporaryDirectory() as d:

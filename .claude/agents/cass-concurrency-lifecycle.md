@@ -99,6 +99,7 @@ Return exactly one JSON object and no prose around it:
      "impact": "data-loss | crash | hang | mixed-version-break | silent-wrong-result | performance | cosmetic",
      "confidence": "high | medium | low",
      "location": "repo/relative/path.java:123 (line in the new file)",
+     "title": "optional: imperative, standalone, 80 characters or fewer",
      "rule": "the checklist item or rule, short",
      "problem": "the trigger and the wrong outcome, concretely",
      "fix": "the smallest change that resolves it"}
@@ -106,6 +107,11 @@ Return exactly one JSON object and no prose around it:
   "approve": false
 }
 ```
+
+- `title` is optional but wanted: a short imperative phrase (80 characters or fewer) that names what to
+  change and where, and reads on its own in a to-do list, for example "Delete SSTable components in
+  mtime order in SSTableTidier". Do not start it with the rule name or a severity, and do not end it
+  mid-thought. Leave it out rather than send one over 80 characters.
 
 - `summary` must name the checklist files applied and what was not reviewed (say "nothing" if so).
 - `spec_conformance` is `full` unless the patch plainly misses or contradicts its ticket in your

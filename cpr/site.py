@@ -15,6 +15,7 @@ import re
 import shutil
 
 from cpr import VERSION
+from cpr.model import derive_view
 
 _MODEL_RE = re.compile(r'<script id="report-model">window\.REPORT_MODEL = (.*?);</script>', re.S)
 
@@ -119,6 +120,15 @@ def merge(reports_dir, site_dir):
     return rebuild_index(site_dir), actions
 
 
+def _headline(model):
+    """The verdict words the report shows, so the index and the report agree."""
+    try:
+        view = model.get("view") or derive_view(model)
+        return view["verdict"]["headline"]
+    except (KeyError, TypeError):
+        return model["recommendation"]["label"]
+
+
 def summarize(model):
     pr, rec, review = model["pr"], model["recommendation"], model.get("review") or {}
     counts = review.get("issue_counts") or review.get("counts") or {}
@@ -126,7 +136,7 @@ def summarize(model):
     return {
         "number": pr["number"], "title": pr["title"], "author": pr["author"], "base": pr["base"],
         "url": pr["url"], "jira": (model.get("jira_key") or {}).get("key"),
-        "verdict": rec["verdict"], "label": rec["label"], "triage": model["triage"]["rating"],
+        "verdict": rec["verdict"], "label": _headline(model), "triage": model["triage"]["rating"],
         "generated_at": model["generated_at"],
         "head": pr.get("head_sha"),
         "build": _build_label(model.get("build")),
