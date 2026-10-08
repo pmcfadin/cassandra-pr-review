@@ -417,3 +417,29 @@ class CliTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FlakyRetry(unittest.TestCase):
+    """A failure that does not recur on one retry is flaky (unknown), not a PR failure."""
+
+    def tests_with(self, *failures):
+        t = runner.empty_junit()
+        t["failures"] = [{"class": c, "test": m, "kind": "error", "message": "x"} for c, m in failures]
+        t["errors"] = len(failures)
+        return t
+
+    def test_passes_on_retry_is_flaky(self):
+        t = runner.apply_retry(self.tests_with(("a.StreamingTransferTest", "t1")), runner.empty_junit())
+        self.assertEqual(t["failures"], [])
+        self.assertEqual(len(t["flaky"]), 1)
+        status, reason = runner.map_status({"rc": 0, "errors": [], "text": ""}, t, True, True, False, 1)
+        self.assertEqual(status, "unknown")
+        self.assertIn("flaky", reason)
+
+    def test_fails_again_is_a_failure(self):
+        retry = self.tests_with(("a.FooTest", "t1"))
+        t = runner.apply_retry(self.tests_with(("a.FooTest", "t1"), ("a.BarTest", "t2")), retry)
+        self.assertEqual([f["class"] for f in t["failures"]], ["a.FooTest"])
+        self.assertEqual([f["class"] for f in t["flaky"]], ["a.BarTest"])
+        status, _ = runner.map_status({"rc": 0, "errors": [], "text": ""}, t, True, True, False, 1)
+        self.assertEqual(status, "tests-failed")

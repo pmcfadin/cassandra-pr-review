@@ -109,13 +109,18 @@ def tests_pass(bundle, ctx):
                           rows or [ev(b.get("reason") or "failures were not itemised")],
                           action="Fix the failing tests, or explain on the ticket why they fail without this change "
                                  "too; run them with `ant testsome -Dtest.name=<class> -Dtest.methods=<method>`.")
-    if st == "unknown" or unknowns or sandboxed:
-        rows = [_fail_row(f) for f in sandboxed] + [ev(str(u)) for u in unknowns if not isinstance(u, dict)]
+    flaky = b.get("flaky") or []
+    if st == "unknown" or unknowns or sandboxed or flaky:
+        rows = [ev(f"flaky: `{f.get('class')}.{f.get('test')}` failed once, passed on retry: {f.get('message', '')}")
+                for f in flaky]
+        rows += [_fail_row(f) for f in sandboxed] + [ev(str(u)) for u in unknowns if not isinstance(u, dict)]
         rows += [_fail_row(f) for f in fails]
         if fails and st != "unknown":
             return Result("fail", f"{len(fails)} selected test(s) failed ({counts})", rows[:MAX_ROWS],
                           action="Fix the failing tests; run them with `ant testsome -Dtest.name=<class>`.")
-        return _unknown("Only sandbox artifacts failed or the run is inconclusive; the tests were not proven to pass"
+        what = "Flaky tests failed once and passed on retry" if flaky and not fails else \
+            "Only sandbox artifacts failed or the run is inconclusive"
+        return _unknown(what + "; the tests were not proven to pass"
                         + (f" ({counts})" if t.get("run") is not None else ""), rows)
     if t.get("run") in (None, 0):
         return _unknown("No tests ran")

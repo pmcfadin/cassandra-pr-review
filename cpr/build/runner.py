@@ -80,7 +80,19 @@ def parse_build_log(text):
 
 def empty_junit():
     return {"classes_reported": 0, "run": 0, "failed": 0, "errors": 0, "skipped": 0, "failures": [], "sandbox": [],
-            "timeouts": []}
+            "timeouts": [], "flaky": []}
+
+
+def apply_retry(tests, retry):
+    """Fold a retry of the failing classes into `tests`: a failure that does not recur is flaky, not a failure."""
+    still = {(f["class"], f["test"]) for f in retry["failures"] + retry["timeouts"] + retry["sandbox"]}
+    persistent, flaky = [], []
+    for f in tests["failures"]:
+        (persistent if (f["class"], f["test"]) in still else flaky).append(f)
+    tests["failures"], tests["flaky"] = persistent, tests.get("flaky", []) + flaky
+    tests["failed"] = sum(1 for f in persistent if f.get("kind") != "error")
+    tests["errors"] = len(persistent) - tests["failed"]
+    return tests
 
 
 def parse_junit(directory, artifact):
@@ -107,7 +119,7 @@ def parse_junit(directory, artifact):
                 for kind in ("failure", "error"):
                     for el in tc.findall(kind):
                         body = (el.get("message") or "") + "\n" + (el.text or "")
-                        item = {"class": tc.get("classname") or suite.get("name"), "test": tc.get("name"),
+                        item = {"class": tc.get("classname") or suite.get("name"), "test": tc.get("name"), "kind": kind,
                                 "message": next((ln.strip() for ln in body.splitlines() if ln.strip()), "")[:300]}
                         if suite_artifact or artifact.search(body):
                             res["sandbox"].append(item)
@@ -138,6 +150,10 @@ def map_status(build, tests, ran_tests, cov_ok, wall_timeout, test_rc):
                            else f"{len(tests['timeouts'])} test class(es) timed out")
     if tests["sandbox"]:
         return "unknown", f"{len(tests['sandbox'])} failure(s) look like sandbox artifacts, not PR defects"
+    if tests.get("flaky"):
+        f = tests["flaky"][0]
+        return "unknown", (f"{len(tests['flaky'])} test(s) failed once and passed on retry (flaky), "
+                           f"first {f['class']}.{f['test']}")
     if ran_tests and test_rc not in (0, None) and not tests["run"]:
         return "unknown", "ant failed before any test result was written; see jacoco-run.log"
     if ran_tests and test_rc not in (0, None):
@@ -323,6 +339,38 @@ class Build:
             timed_out = r.timed_out
         return p.rc, timed_out
 
+    def retry_failures(self, tests):
+        """Re-run the classes with failures once, without coverage, in the sandbox."""
+        classes = sorted({f["class"] for f in tests["failures"]})
+        with open(os.path.join(self.rd, "selected.json")) as f:
+            by_name = {select.class_name(c["path"]): c["path"] for c in json.load(f)["selected"]}
+        paths = [by_name[c] for c in classes if c in by_name]
+        if not paths:
+            return tests
+        listing = os.path.join(self.rd, "retry.txt")
+        with open(listing, "w") as f:
+            f.write("".join(p + "\n" for p in paths))
+        out = os.path.join(self.wt, "build", "test", "output")
+        for c in classes:
+            stale = os.path.join(out, f"TEST-{c}.xml")
+            if os.path.isfile(stale):
+                os.remove(stale)
+        self.sandboxed("retry", self.ant_argv("testclasslist", extra=[
+            "-Dno-build-test=true", f"-Dtest.classlistfile={listing}",
+            f"-Dtest.timeout={self.cfg['caps']['test_timeout_ms']}"]), check=False)
+        retry_dir = os.path.join(self.rd, "test-output-retry")
+        shutil.rmtree(retry_dir, ignore_errors=True)
+        os.makedirs(retry_dir)
+        for c in classes:
+            p = os.path.join(out, f"TEST-{c}.xml")
+            if os.path.isfile(p) and not os.path.islink(p):
+                shutil.copyfile(p, os.path.join(retry_dir, f"TEST-{c}.xml"))
+        retry = parse_junit(retry_dir, sandbox.artifact_pattern(self.cfg))
+        missing = [c for c in classes if not os.path.exists(os.path.join(retry_dir, f"TEST-{c}.xml"))]
+        if missing:  # no retry result: keep those failures as they were
+            retry["failures"] += [f for f in tests["failures"] if f["class"] in missing]
+        return apply_retry(tests, retry)
+
     def collect(self):
         """Copy results out of the build clone (regular files only: the PR controls that tree)."""
         out = os.path.join(self.rd, "test-output")
@@ -369,6 +417,8 @@ class Build:
                     rc, wall_timeout = self.run_tests(listing)
                     report = self.collect()
                     tests = parse_junit(os.path.join(self.rd, "test-output"), sandbox.artifact_pattern(self.cfg))
+                    if tests["failures"] and not wall_timeout:
+                        tests = self.retry_failures(tests)
                     if report:
                         self.changed_coverage(report)
                     else:
@@ -394,7 +444,9 @@ class Build:
             shutil.rmtree(d, ignore_errors=True)
         st["tests"] = {"classes": len(st["selected"]), "run": tests["run"], "failed": tests["failed"],
                        "errors": tests["errors"], "skipped": tests["skipped"],
-                       "failures": tests["failures"] + tests["timeouts"]} if ran or tests["run"] else None
+                       "failures": [{k: f[k] for k in ("class", "test", "message")}
+                                    for f in tests["failures"] + tests["timeouts"]]} if ran or tests["run"] else None
+        st["flaky"] = [{"class": t["class"], "test": t["test"], "message": t["message"]} for t in tests.get("flaky", [])]
         st["sandbox_unknowns"] = [{"class": t["class"], "test": t["test"], "message": t["message"]} for t in tests["sandbox"]]
         if tests["sandbox"]:
             st["notes"].append(SANDBOX_NOTE)
