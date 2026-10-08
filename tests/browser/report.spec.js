@@ -370,3 +370,79 @@ test("Build & coverage without a result says not built for this head", async ({ 
   await expect(sec.locator(".build-tests")).toHaveCount(0);
   await expect(sec.locator(".build-note")).toHaveText(BUILD_NOTE);
 });
+
+test("phone width with groups expanded on the 4967-like report: no sideways scroll, tables stack, taps are 40px", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(fileUrl(fixtures().huge));
+  await page.locator("#toggle-all").click();
+  await page.evaluate(() => document.querySelectorAll("details").forEach((d) => (d.open = true)));
+  const over = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(over, "horizontal overflow").toBeLessThanOrEqual(0);
+  for (const id of ["ci", "commits", "testing"]) {
+    const table = group(page, id).locator(".dtable").first();
+    await expect(table).toHaveCount(1);
+    await expect(table.locator("thead")).toBeHidden();
+    const cell = table.locator("tbody td").first();
+    expect(await cell.evaluate((e) => getComputedStyle(e).display), `${id} cell`).toBe("block");
+    expect(await cell.getAttribute("data-label"), `${id} label`).toBeTruthy();
+    const w = await table.evaluate((e) => e.scrollWidth - e.clientWidth);
+    expect(w, `${id} table scrolls sideways`).toBeLessThanOrEqual(0);
+  }
+  for (const loc of [page.locator("#toggle-all"), head(page, "ci"), page.locator("#nav-toggle")]) {
+    expect((await loc.boundingBox()).height).toBeGreaterThanOrEqual(40);
+  }
+});
+
+test("long tables show 20 rows and a Show all N button", async ({ page }) => {
+  await page.goto(fileUrl(fixtures().huge));
+  await page.locator("#toggle-all").click();
+  const capped = page.locator(".dtable.capped").first();
+  await expect(capped).toHaveCount(1);
+  const total = await capped.locator("tbody tr").count();
+  expect(total).toBeGreaterThan(20);
+  await expect(capped.locator("tbody tr:not(.more)")).toHaveCount(20);
+  const more = capped.locator(".dt-more");
+  await expect(more).toHaveText(`Show all ${total}`);
+  await more.click();
+  await expect(more).toHaveAttribute("aria-expanded", "true");
+  await expect(capped.locator("tbody tr.more").last()).toBeVisible();
+});
+
+test("report and index share the design tokens and fonts", async ({ page }) => {
+  const props = ["--bg", "--ink", "--link", "--pass-bg", "--fail-fg", "--sans"];
+  const read = (p) => p.evaluate((names) => names.map((n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim()), props);
+  await page.goto(fileUrl(fixtures().report));
+  const a = await read(page);
+  await page.goto(fileUrl(fixtures().index));
+  expect(await read(page)).toEqual(a);
+  expect(a.every(Boolean)).toBe(true);
+});
+
+test("index groups PRs by who acts next, with a count per group and chips only when something ran", async ({ page }) => {
+  const f = fixtures();
+  const titles = { reviewers: "Waiting on reviewers", contributor: "Waiting on the contributor", unknown: "Cannot tell yet", draft: "Drafts" };
+  for (const [width, height] of [[1280, 900], [390, 844]]) {
+    await page.setViewportSize({ width, height });
+    await page.goto(fileUrl(f.index));
+    for (const [key, n] of Object.entries(f.index_groups)) {
+      const sec = page.locator(`#g-${key}`);
+      await expect(sec.locator("h2")).toHaveText(titles[key]);
+      await expect(sec.locator(".group-head .count")).toHaveText(String(n));
+      await expect(sec.locator("li.item")).toHaveCount(n);
+      await expect(page.locator(`.stat[href="#g-${key}"] .count`)).toHaveText(String(n));
+    }
+    await expect(page.locator("section.group")).toHaveCount(Object.keys(f.index_groups).length);
+    // The recorded bundles have no code review and no build: each row carries the verdict pill and nothing else.
+    const total = Object.values(f.index_groups).reduce((x, y) => x + y, 0);
+    await expect(page.locator("li.item")).toHaveCount(total);
+    await expect(page.locator("li.item .chip")).toHaveCount(total);
+    const row = page.locator('li.item[data-pr="5238"]');
+    await expect(row.locator(".chip")).toHaveText("Draft");
+    await expect(row).toContainText("Review effort: Large");
+    await expect(page.locator('li.item[data-pr="5212"] .count.must')).toContainText("must fix");
+    await expect(page.locator('li.item[data-pr="5212"]')).toContainText("Next: Contributor");
+    const over = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(over, `index overflow at ${width}`).toBeLessThanOrEqual(0);
+    await expect(page.locator('li.item[data-pr="5238"] a.main')).toHaveAttribute("href", "pr/5238/");
+  }
+});

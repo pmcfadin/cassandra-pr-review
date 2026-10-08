@@ -1,6 +1,7 @@
 """GitHub Pages site build: index of reports plus copies of each report."""
 
 import os
+import re
 import tempfile
 import unittest
 
@@ -52,6 +53,98 @@ def make_report(path, head=None, review=False, build=False, number=5198):
     if build:
         m["build"] = {**m["build"], "status": "pass"}
     return render.write(m, path)
+
+
+HEX = re.compile(r"#[0-9A-Fa-f]{3,8}\b|rgba?\(")
+
+
+class DesignTokens(unittest.TestCase):
+    def test_no_stray_colors_outside_tokens(self):
+        for name, text in (("report template", open(render.TEMPLATE).read()), ("site index", site.index_html([]))):
+            body = text.replace(render.tokens_style(), "")
+            self.assertEqual(HEX.findall(body), [], name)
+
+    def test_report_and_index_inline_the_same_tokens(self):
+        tokens = render.tokens_style()
+        self.assertIn("--fail-fg", tokens)
+        self.assertIn(tokens, site.index_html([]))
+        b = bundle()
+        m = model.build(b, checks.run_all(b), triage(b), render.load_docs(), diffview.unavailable("x"))
+        with tempfile.TemporaryDirectory() as d:
+            page = open(render.write(m, os.path.join(d, "r.html"))).read()
+        self.assertIn(tokens, page)
+        self.assertNotIn(render.TOKENS_MARKER, page)
+
+
+def row_for(verdict, mutate=None, number=5198):
+    b = bundle()
+    b["pr"]["number"] = number
+    m = model.build(b, checks.run_all(b), triage(b), render.load_docs(), diffview.unavailable("x"))
+    m.pop("view", None)
+    if mutate:
+        mutate(m)
+    return site.summarize(m)
+
+
+class IndexGroups(unittest.TestCase):
+    def test_group_by_who_acts(self):
+        self.assertEqual(site._group("draft", "contributor"), "draft")
+        self.assertEqual(site._group("unknown", None), "unknown")
+        self.assertEqual(site._group("ready", None), "ready")
+        self.assertEqual(site._group("waiting", "committer"), "ready")
+        self.assertEqual(site._group("blocked", "contributor"), "contributor")
+        self.assertEqual(site._group("waiting", "contributor"), "contributor")
+        self.assertEqual(site._group("waiting", "reviewer"), "reviewers")
+        self.assertEqual(site._group("waiting", None), "reviewers")
+
+    def test_mixed_site_has_a_heading_and_count_per_group(self):
+        rows = []
+        for n, group in ((1, "draft"), (2, "contributor"), (3, "contributor"), (4, "reviewers")):
+            r = row_for(None, number=n)
+            r.update(group=group, number=n)
+            rows.append(r)
+        page = site.index_html(rows)
+        self.assertLess(page.index("Waiting on reviewers"), page.index("Waiting on the contributor"))
+        self.assertLess(page.index("Waiting on the contributor"), page.index("Drafts"))
+        for key, count in (("draft", 1), ("contributor", 2), ("reviewers", 1)):
+            sec = page[page.index(f'id="g-{key}"'):]
+            sec = sec[:sec.index("</section>")]
+            self.assertEqual(sec.count('<li class="item"'), count, key)
+            self.assertIn(f'<span class="count">{count}</span>', sec)
+        self.assertNotIn('id="g-ready"', page)  # empty groups are left out
+
+    def test_row_uses_the_reports_derived_view(self):
+        r = row_for(None)
+        self.assertEqual(r["label"], model.derive_view(model.build(bundle(), checks.run_all(bundle()), triage(bundle()), render.load_docs(),
+                                                                  diffview.unavailable("x")))["verdict"]["headline"])
+        self.assertIn(r["acts"], ("Contributor", "Committer", "Reviewers"))
+        self.assertIn(r["effort"].split(" ")[0], ("Small", "Medium", "Large"))
+        self.assertIn(" lines in ", r["effort"])
+
+    def test_chips_only_when_review_or_build_ran(self):
+        plain = row_for(None)
+        self.assertIsNone(plain["review_chip"])
+        self.assertIsNone(plain["build_chip"])
+        self.assertNotIn("Code review:", site.index_html([plain]))
+
+        def ran(m):
+            m["review"] = {"status": "ran", "complete": True, "lenses": [], "counts": {}, "issue_counts": {"blocker": 1, "major": 2}}
+            m["build"] = {**m["build"], "status": "tests-failed"}
+        r = row_for(None, ran)
+        self.assertEqual(r["review_chip"], ("fail", "Code review: 1 blocker, 2 major"))
+        self.assertEqual(r["build_chip"], ("fail", "Tests failed"))
+        page = site.index_html([r])
+        self.assertIn("Code review: 1 blocker, 2 major", page)
+        self.assertIn("Tests failed", page)
+
+    def test_newest_first_within_a_group(self):
+        a, b = row_for(None, number=10), row_for(None, number=11)
+        a.update(group="contributor", generated_at="2026-10-01 10:00 UTC")
+        b.update(group="contributor", generated_at="2026-10-02 10:00 UTC")
+        page = site.index_html([a, b])
+        self.assertLess(page.index('data-pr="11"'), page.index('data-pr="10"'))
+        self.assertIn("Updated 2026-10-02", page)
+        self.assertNotIn("10:00", page)  # date only
 
 
 class Merge(unittest.TestCase):
@@ -116,9 +209,9 @@ class Merge(unittest.TestCase):
         site.rebuild_index(self.site)
         with open(os.path.join(self.site, "index.html")) as f:
             page = f.read()
-        self.assertIn("code review: 0 blocker", page)
-        self.assertIn("build: pass", page)
-        self.assertIn("generated ", page)
+        self.assertIn("Code review: no issues", page)
+        self.assertIn("Built, tests passed", page)
+        self.assertIn("Updated ", page)
 
     def test_published_heads(self):
         self.put(head="d" * 40)
