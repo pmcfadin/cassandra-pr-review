@@ -116,3 +116,13 @@ class Panel(unittest.TestCase):
         configured = set(lenses.load_config()["lenses"])
         for lens in self.panel:
             self.assertIn(lens["name"], configured, f"{lens['name']} has no checklist bundle in lenses.json")
+
+
+class PanelModel(unittest.TestCase):
+    """Owner decision 2026-10-07: every panel lens runs on Sonnet (see benchmark.md, Haiku 5.5 quick loop)."""
+
+    def test_lenses_pinned_to_sonnet(self):
+        from cpr import review
+        for lens in review.load_panel():
+            fm = front_matter(read(os.path.join(AGENTS, lens["agent"] + ".md")))
+            self.assertEqual(fm.get("model"), "sonnet", lens["agent"])

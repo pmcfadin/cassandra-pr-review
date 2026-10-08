@@ -30,7 +30,8 @@ If `tier` is `none` (docs-only PR), run no lenses: go straight to step 4 without
 ## 2. Run every lens in parallel
 
 Spawn one Agent per panel entry **in a single message** so they run concurrently, with
-`subagent_type` = the entry's `agent`. Skip a lens whose `bundle` status is `missing` (write no
+`subagent_type` = the entry's `agent`. Every lens runs on Sonnet: the agent files pin `model: sonnet`; when
+spawning, also pass `model: "sonnet"` so a fallback agent cannot inherit the session's model. Skip a lens whose `bundle` status is `missing` (write no
 file for it; the report records it as missing and names the checklist path from `error`). A panel
 lens with no `bundle` entry runs with an empty bundle. Each prompt is:
 
