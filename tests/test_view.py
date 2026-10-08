@@ -49,8 +49,12 @@ class View5201(unittest.TestCase):
 
     def test_steps_to_merge(self):
         steps = {s["label"].split(" (")[0]: s["state"] for s in self.v["steps"]}
-        self.assertEqual(steps, {"Ticket": "ok", "Tests": "bad", "Code review": "bad", "CI": "bad", "+1 votes": "bad"})
+        self.assertEqual(steps, {"Ticket": "ok", "Tests": "bad", "Code review": "bad", "CI": "later", "+1 votes": "later"})
         self.assertIn("+1 votes (0 of 2)", [s["label"] for s in self.v["steps"]])
+
+    def test_ci_and_votes_stay_failed_without_contributor_fixes(self):
+        steps = model._later_steps([{"label": "CI", "state": "bad", "note": "x"}], {"fix_count": 0})
+        self.assertEqual(steps[0]["state"], "bad")
 
     def test_now_is_the_contributors_fixes_then_is_steps(self):
         todo = self.v["todo"]

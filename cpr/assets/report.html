@@ -1078,8 +1078,13 @@ body.no-data #no-data { display: block; }
     var steps = h("ol", "steps");
     steps.setAttribute("aria-label", "Steps to merge");
     (V.steps || []).forEach(function (s) {
-      var k = s.state === "ok" ? "pass" : s.state === "bad" ? "fail" : "unknown";
-      var li = h("li", "s-" + k, [svg(k, 14, 3, s.state === "ok" ? "Done" : s.state === "bad" ? "Not done" : "Unknown"), s.label]);
+      var li;
+      if (s.state === "later") {
+        li = h("li", "s-na", [svg("waiting", 14, 2.6, "Later"), s.label]);
+      } else {
+        var k = s.state === "ok" ? "pass" : s.state === "bad" ? "fail" : "unknown";
+        li = h("li", "s-" + k, [svg(k, 14, 3, s.state === "ok" ? "Done" : s.state === "bad" ? "Not done" : "Unknown"), s.label]);
+      }
       if (s.note) li.title = s.note;
       steps.appendChild(li);
     });

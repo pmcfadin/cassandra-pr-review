@@ -642,6 +642,20 @@ def _effort_text(tr):
     return text + (". Raised by: " + ", ".join(raised) + "." if raised else ".")
 
 
+_LATER_STEPS = ("CI", "+1 votes")
+
+
+def _later_steps(steps, todo):
+    """CI and votes wait on the contributor's fixes, so while fixes remain they read as later, not failed."""
+    if not todo.get("fix_count"):
+        return steps
+    for s in steps:
+        if s["state"] == "bad" and s["label"].startswith(_LATER_STEPS):
+            s["state"] = "later"
+            s["note"] = "After the contributor's fixes: " + s["note"]
+    return steps
+
+
 def derive_view(model):
     """Fields the report layout needs, computed from the model alone (no check or verdict logic changes)."""
     by_id = {c["id"]: c for c in model["checks"]}
@@ -651,7 +665,7 @@ def derive_view(model):
     return {
         "header": {"first_time_contributor": model["pr"].get("author_association") in ("FIRST_TIME_CONTRIBUTOR", "FIRST_TIMER")},
         "verdict": _derive_verdict(model, todo),
-        "steps": _derive_steps(model, groups),
+        "steps": _later_steps(_derive_steps(model, groups), todo),
         "todo": todo,
         "groups": groups,
         "headlines": {i["id"]: first_sentence(i["problem"], 110) for i in (model.get("review") or {}).get("issues") or []},
