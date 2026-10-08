@@ -1,0 +1,26 @@
+{
+  "branches": {
+    "cassandra-4.0": {"jdk": 11, "env": {"CASSANDRA_USE_JDK11": "true"}, "jna_swap": true},
+    "cassandra-4.1": {"jdk": 11, "env": {"CASSANDRA_USE_JDK11": "true"}},
+    "cassandra-5.0": {"jdk": 17},
+    "cassandra-6.0": {"jdk": 17},
+    "trunk": {"jdk": 17}
+  },
+  "jdk_homes": {
+    "11": ["~/.sdkman/candidates/java/11.0.32-tem"],
+    "17": ["~/.sdkman/candidates/java/17.0.13-tem"],
+    "21": ["/opt/homebrew/opt/openjdk@21"]
+  },
+  "sdk_install": {"11": "sdk install java 11.0.32-tem", "17": "sdk install java 17.0.13-tem"},
+  "ant_dirs": ["~/.sdkman/candidates/ant/current/bin"],
+  "maven_repository": "~/.m2/repository",
+  "jna_swap": {"from": "net/java/dev/jna/jna/5.13.0/jna-5.13.0.jar", "to": "lib/jna-5.6.0.jar", "also": "build/lib/jars/jna-5.6.0.jar"},
+  "selection": {
+    "cap": 25,
+    "cap_with_pr_tests": 30,
+    "min_score": 15,
+    "skip_dirs": ["test/distributed/", "test/long/", "test/burn/", "test/microbench/", "test/simulator/", "test/memory/", "test/anttasks/"]
+  },
+  "caps": {"wall_seconds": 1800, "test_timeout_ms": 240000, "ant_heap": "1g", "nice": 10, "resolve_seconds": 600},
+  "sandbox_artifact_patterns": ["transferTo0", "Operation not permitted"]
+}

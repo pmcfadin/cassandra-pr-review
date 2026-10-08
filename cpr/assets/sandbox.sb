@@ -1,0 +1,31 @@
+(version 1)
+;; Profile for every step that runs a PR's code (ant, javac, JUnit). Parameters are absolute, normalized paths:
+;; WT build clone, M2 Maven repository copy, GIT the build clone's repository dir, HOME, ROOT this tool's checkout,
+;; WORK the work directory, RUN this run's directory, OBJECTS the fetch clone's object store (alternates).
+(allow default)
+(deny network*)
+(allow network-bind)
+(allow network-inbound)
+(allow network-outbound (remote unix-socket))
+(allow network-outbound (remote ip "localhost:*"))
+(deny file-write*)
+(allow file-write*
+  (subpath (param "WT"))
+  (subpath (param "M2"))
+  (subpath (param "GIT"))
+  (subpath "/private/tmp")
+  (subpath "/private/var/folders")
+  (subpath (string-append (param "HOME") "/Library/Caches/JNA"))
+  (literal "/dev/null") (literal "/dev/tty") (literal "/dev/dtracehelper") (regex #"^/dev/fd/"))
+(deny file-read*
+  (subpath (string-append (param "HOME") "/.ssh"))
+  (subpath (string-append (param "HOME") "/.aws"))
+  (subpath (string-append (param "HOME") "/.gnupg"))
+  (subpath (string-append (param "HOME") "/.config/gh"))
+  (subpath (string-append (param "HOME") "/Library/Keychains"))
+  (subpath (string-append (param "HOME") "/Library/Application Support/Google"))
+  (subpath (string-append (param "HOME") "/.claude")))
+;; This tool's checkout and work directory hold the other PRs' data and the shared clone. file-read-data (not
+;; file-read*) so ant can still canonicalize parent directories; the later allow wins.
+(deny file-read-data (subpath (param "ROOT")) (subpath (param "WORK")))
+(allow file-read-data (subpath (param "RUN")) (subpath (param "OBJECTS")))

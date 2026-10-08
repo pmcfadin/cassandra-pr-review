@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuite errors="1" failures="0" name="org.apache.cassandra.streaming.StreamingTransferTest" skipped="0" tests="5" time="10.8">
+  <testcase classname="org.apache.cassandra.streaming.StreamingTransferTest" name="testRequestEmpty" time="1.3" />
+  <testcase classname="org.apache.cassandra.streaming.StreamingTransferTest" name="testTransferRangeTombstones" time="1.2">
+    <error message="org.apache.cassandra.streaming.StreamException: Stream failed" type="java.util.concurrent.ExecutionException">java.util.concurrent.ExecutionException: org.apache.cassandra.streaming.StreamException: Stream failed
+	at com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:552)</error>
+  </testcase>
+  <system-out><![CDATA[Caused by: java.io.IOException: Operation not permitted
+	at java.base/sun.nio.ch.FileChannelImpl.transferTo0(Native Method)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
