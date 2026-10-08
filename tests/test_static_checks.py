@@ -96,12 +96,19 @@ class Complexity(unittest.TestCase):
     def test_introduced_over_threshold_is_a_note(self):
         m1 = self.method(None, 20, name="big()")
         m2 = self.method(3, 4, "pre-existing-touched", "small()")
-        f = finding(tool="pmd", score=20, method_sig="big()")
+        f = finding(tool="pmd", score=20, method_sig="big()", rule="CognitiveComplexity")
         r = get(with_sa(complexity={"threshold": 15, "methods": [m2, m1], "findings": [f]}), "static.complexity")
         self.assertEqual(r["status"], "warn")
         self.assertFalse(r["action_required"])
         self.assertIn("new → 20", r["evidence"][0]["text"])
         self.assertIn("3 → 4", r["evidence"][1]["text"])
+
+    def test_other_rules_do_not_count_as_cognitive(self):
+        m1 = self.method(None, 20, name="big()")
+        f = finding(tool="pmd", score=20, method_sig="big()", rule="CyclomaticComplexity")
+        r = get(with_sa(complexity={"threshold": 15, "methods": [m1], "findings": [f]}), "static.complexity")
+        self.assertEqual(r["status"], "pass")
+        self.assertIn("1 CyclomaticComplexity", r["evidence"][0]["text"])
 
     def test_removed_method_and_pre_existing_finding(self):
         m = self.method(9, None, "fixed")

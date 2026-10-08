@@ -19,4 +19,4 @@
 ## 4. Docs and ship
 
 - [x] 4.1 Update docs/report/static.md and the commits doc (statuses, introduced vs pre-existing, perf rule, limits)
-- [ ] 4.2 Run on PR 5201 and PR 4967, re-render, review with the owner
+- [x] 4.2 Run on PR 5201 and PR 4967, re-render, review with the owner

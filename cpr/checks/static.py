@@ -115,6 +115,9 @@ def checkstyle(bundle, ctx):
     return Result("pass", f"No checkstyle errors introduced ({ver})", counts)
 
 
+METHOD_ROWS = 200
+
+
 def _sig(m):
     return f"{m.get('class')}.{m.get('method_sig')}"
 
@@ -129,12 +132,28 @@ def complexity(bundle, ctx):
     methods = sorted(cx.get("methods") or [],
                      key=lambda m: (not str(m.get("classification", "")).startswith("introduced"),
                                     str(m.get("file")), _sig(m)))
+    def weight(m):
+        b, h = m.get("base") or 0, m.get("head") or 0
+        return (-(h >= thr), -abs(h - b), str(m.get("file")), _sig(m))
+
+    shown = sorted(methods, key=weight)
     rows = []
-    for m in methods:
+    for m in shown[:METHOD_ROWS]:
         b = "new" if m.get("base") is None else m["base"]
         h = "removed" if m.get("head") is None else m["head"]
         rows.append(ev(f"`{_sig(m)}`: {b} → {h}", location=m.get("file")))
-    bad = [f for f in cx.get("findings") or [] if _intro(f) and (f.get("score") or 0) >= thr]
+    if len(shown) > METHOD_ROWS:
+        rows.append(ev(f"… and {len(shown) - METHOD_ROWS} more changed method(s) with unchanged scores"))
+    intro = [f for f in cx.get("findings") or [] if _intro(f)]
+    bad = sorted((f for f in intro if f.get("rule") == "CognitiveComplexity" and (f.get("score") or 0) >= thr),
+                 key=lambda f: -(f.get("score") or 0))
+    other = {}
+    for f in intro:
+        if f.get("rule") != "CognitiveComplexity":
+            other[f.get("rule")] = other.get(f.get("rule"), 0) + 1
+    if other:
+        rows.insert(0, ev("Also introduced above PMD's thresholds: "
+                          + ", ".join(f"{n} {r}" for r, n in sorted(other.items()))))
     if bad:
         top = "; ".join(f"`{f.get('class')}.{f.get('method_sig')}` {f.get('score')}" for f in bad[:5])
         return Result("warn", f"{len(bad)} method(s) introduced at or above cognitive complexity {thr}: {top}",
