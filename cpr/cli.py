@@ -1,4 +1,4 @@
-"""Command line: `cpr review <PR number>` and `cpr prepare <PR number>`."""
+"""Command line: `cpr review <PR number>`, `cpr prepare <PR number>`, `cpr build <PR number>`, and helpers."""
 
 import argparse
 import json
@@ -217,6 +217,33 @@ def cmd_comment(args):
     return 0
 
 
+def cmd_build(args):
+    from cpr import build as build_pkg
+    from cpr.build import gate, runner
+    work_dir = os.path.abspath(args.work_dir)
+    log = lambda m: print(f"  {m}", file=sys.stderr)  # noqa: E731
+    try:
+        bundle = bundle_mod.load_cached(work_dir, args.pr)
+    except bundle_mod.IngestError:
+        print(f"error: PR #{args.pr} was never ingested in {work_dir}; run `cpr review {args.pr}` first", file=sys.stderr)
+        return 1
+    decision = gate.decide(bundle, work_dir, approve=args.approve)
+    if not decision["allowed"]:
+        path, st = runner.not_built(bundle, work_dir, decision)
+    else:
+        log(f"building #{args.pr} head {bundle['pr']['head_sha'][:8]} in the sandbox ({decision['reason']})")
+        path, st = runner.build(bundle, work_dir, build_pkg.load_config(), decision, root=ROOT, offline=args.offline, log=log)
+    print(f"#{args.pr}: {st['status']}" + (f" · {st['reason']}" if st.get("reason") else ""))
+    if st.get("tests"):
+        t = st["tests"]
+        print(f"tests: {t['run']} run, {t['failed']} failed, {t['errors']} errors, {t['skipped']} skipped in {t['classes']} classes")
+    if st.get("changed_total") and st["changed_total"]["executable"]:
+        c = st["changed_total"]
+        print(f"changed lines: {c['covered'] + c['partial']} of {c['executable']} executed ({c['pct_executed']}%)")
+    print(path)
+    return 0
+
+
 def cmd_tools(args):
     from cpr.staticanalysis import tools
     work_dir = os.path.abspath(args.work_dir)
@@ -292,6 +319,13 @@ def main(argv=None):
     pp.add_argument("--offline", action="store_true", help="use the cached ingest")
     pp.add_argument("--work-dir", default=default_work)
     pp.set_defaults(func=cmd_prepare)
+
+    bd = sub.add_parser("build", help="build a PR in a sandbox, run selected tests with JaCoCo, save status.json")
+    bd.add_argument("pr", type=int)
+    bd.add_argument("--approve", action="store_true", help="the owner approves building this exact head sha")
+    bd.add_argument("--offline", action="store_true", help="skip the networked dependency resolve at the merge-base")
+    bd.add_argument("--work-dir", default=default_work)
+    bd.set_defaults(func=cmd_build)
 
     cm = sub.add_parser("comment", help="build the report-link comment for a PR; --post posts or edits it")
     cm.add_argument("pr", type=int)
