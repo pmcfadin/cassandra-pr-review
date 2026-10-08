@@ -178,7 +178,7 @@ def base_status(bundle, decision, jdk=None):
             "author_is_committer": decision["author_is_committer"], "gate": decision["reason"],
             "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "timings_s": {}, "tests": None, "selected": [], "not_run": [], "changed_lines": {},
-            "changed_total": None, "coverage": "none", "compile_errors": [], "sandbox_unknowns": [], "notes": []}
+            "changed_total": None, "coverage": "none", "classpath": None, "compile_errors": [], "sandbox_unknowns": [], "notes": []}
 
 
 def write_status(rd, status):
@@ -186,6 +186,101 @@ def write_status(rd, status):
     with open(os.path.join(rd, "status.json"), "w") as f:
         json.dump(status, f, indent=1)
     return os.path.join(rd, "status.json")
+
+
+# ---- kept classpath -----------------------------------------------------------------------------------
+
+KEEP_RUNS = 5  # runs whose compiled classes and jars stay on disk for PMD's type resolution
+CLASS_DIRS = ((("build", "classes", "main"), "main"), (("build", "test", "classes"), "test"))
+JAR_DIRS = (("build", "lib", "jars"), ("build", "test", "lib", "jars"))
+
+
+def _link_or_copy(src, dest):
+    """Hard-link (same filesystem: no extra disk) else copy. Regular files only; the PR controls the source tree.
+    Returns the size, or None when src was not a regular file."""
+    if os.path.islink(src) or not os.path.isfile(src):
+        return None
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    try:
+        os.link(src, dest)
+    except OSError:
+        shutil.copy2(src, dest)
+    return os.path.getsize(dest)
+
+
+def _keep_tree(src, dest):
+    """Link/copy every regular file under src into dest, skipping symlinks. Returns (files, bytes)."""
+    n = size = 0
+    for dp, dns, fns in os.walk(src, followlinks=False):
+        dns[:] = [d for d in dns if not os.path.islink(os.path.join(dp, d))]
+        for fn in fns:
+            got = _link_or_copy(os.path.join(dp, fn), os.path.join(dest, os.path.relpath(os.path.join(dp, fn), src)))
+            if got is not None:
+                n += 1
+                size += got
+    return n, size
+
+
+def keep_classpath(wt, rd):
+    """Keep the head's compiled classes and resolved jars under <rd>/classpath.
+
+    -> {"classes": [dirs], "jars": [files], "bytes": n} or None when nothing was compiled. Nothing leaves the run dir.
+    """
+    root = os.path.join(rd, "classpath")
+    shutil.rmtree(root, ignore_errors=True)
+    classes, jars, size = [], [], 0
+    for parts, label in CLASS_DIRS:
+        src = os.path.join(wt, *parts)
+        if os.path.isdir(src) and not os.path.islink(src):
+            dest = os.path.join(root, "classes", label)
+            n, b = _keep_tree(src, dest)
+            if n:
+                classes.append(dest)
+                size += b
+    if not classes:
+        shutil.rmtree(root, ignore_errors=True)
+        return None
+    seen = set()
+    for parts in JAR_DIRS:
+        src = os.path.join(wt, *parts)
+        if not os.path.isdir(src) or os.path.islink(src):
+            continue
+        for name in sorted(os.listdir(src)):
+            if name.endswith(".jar") and name not in seen:
+                seen.add(name)
+                dest = os.path.join(root, "jars", name)
+                got = _link_or_copy(os.path.join(src, name), dest)
+                if got is not None:
+                    jars.append(dest)
+                    size += got
+    return {"classes": classes, "jars": jars, "bytes": size}
+
+
+def prune_classpaths(work_dir, keep=KEEP_RUNS):
+    """Delete the kept classpath of every run but the `keep` newest (all PRs); mark their status.json. -> pruned dirs."""
+    runs = []
+    base = os.path.join(work_dir, "build-runs")
+    for pr in sorted(os.listdir(base)) if os.path.isdir(base) else []:
+        for head in sorted(os.listdir(os.path.join(base, pr))) if os.path.isdir(os.path.join(base, pr)) else []:
+            rd = os.path.join(base, pr, head)
+            if os.path.isdir(os.path.join(rd, "classpath")):
+                try:
+                    runs.append((os.path.getmtime(os.path.join(rd, "status.json")), rd))
+                except OSError:
+                    runs.append((0, rd))
+    runs.sort(reverse=True)
+    out = []
+    for _, rd in runs[keep:]:
+        shutil.rmtree(os.path.join(rd, "classpath"), ignore_errors=True)
+        try:
+            with open(os.path.join(rd, "status.json")) as f:
+                st = json.load(f)
+            st["classpath"] = {"classes": [], "jars": [], "bytes": 0, "pruned": True}
+            write_status(rd, st)
+        except (OSError, ValueError):
+            pass
+        out.append(rd)
+    return out
 
 
 def not_built(bundle, work_dir, decision):
@@ -538,6 +633,11 @@ class Build:
             st["status"] = "unknown"
             st["reason"] = "WARNING: the build changed the shared fetch clone: " + "; ".join(changes)
             st["notes"].append(st["reason"])
+        try:
+            st["classpath"] = keep_classpath(self.wt, self.rd)
+        except OSError as e:
+            st["classpath"] = None
+            st["notes"].append(f"The compiled classes could not be kept: {e}")
         for d in (self.wt, self.m2, self.accord_dir, self.gradle):
             shutil.rmtree(d, ignore_errors=True)
         st["tests"] = {"classes": len(st["selected"]), "run": tests["run"], "failed": tests["failed"],
@@ -555,6 +655,7 @@ class Build:
         st["timings_s"] = dict(self.timings, total_wall=round(self.clock() - self.start))
         st["finished_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         write_status(self.rd, st)
+        prune_classpaths(self.work_dir)
 
 
 def build(bundle, work_dir, cfg, decision, shell=None, root=None, offline=False, log=print,

@@ -19,6 +19,7 @@ import time
 
 from cpr.staticanalysis import run
 
+VERSION = 2  # 2: per-rule violation counts and the lines of code scanned (the usual-for-Cassandra rate test)
 MAX_AGE_DAYS = 7
 _METHOD_BODY = re.compile(r'\s*<rule name="MethodBody".*?</rule>', re.S)
 _COMPLEXITY = re.compile(r'^.*(CognitiveComplexity|CyclomaticComplexity|NPathComplexity).*\n?', re.M)
@@ -39,7 +40,7 @@ def _load(path):
             data = json.load(f)
     except (OSError, ValueError):
         return None
-    return data if isinstance(data, dict) and data.get("files_scanned") else None
+    return data if isinstance(data, dict) and data.get("files_scanned") and data.get("version") == VERSION else None
 
 
 def newest_recent(cache_dir, branch, pmd_id, ruleset_sha, now=None, max_age_days=MAX_AGE_DAYS):
@@ -62,13 +63,13 @@ def newest_recent(cache_dir, branch, pmd_id, ruleset_sha, now=None, max_age_days
 
 
 def archive_sources(repo, ref, dest, exclude=()):
-    """Write the *.java files under src/java at `ref` into dest. Returns the file count. No checkout needed."""
+    """Write the *.java files under src/java at `ref` into dest. Returns (file count, non-blank lines). No checkout needed."""
     shutil.rmtree(dest, ignore_errors=True)
     os.makedirs(dest)
     proc = subprocess.Popen(["git", "-C", repo, "archive", "--format=tar", ref, "src/java"],
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
-        n = _extract(proc, dest, exclude)
+        n, loc = _extract(proc, dest, exclude)
     except BaseException:
         proc.kill()
         raise
@@ -79,11 +80,11 @@ def archive_sources(repo, ref, dest, exclude=()):
         proc.stderr.close()
     if rc != 0:
         raise RuntimeError(f"git archive failed: {err[:200]}")
-    return n
+    return n, loc
 
 
 def _extract(proc, dest, exclude):
-    n = 0
+    n = loc = 0
     with tarfile.open(fileobj=proc.stdout, mode="r|") as tar:
         for m in tar:
             name = m.name
@@ -91,10 +92,12 @@ def _extract(proc, dest, exclude):
                 continue
             target = os.path.join(dest, name)
             os.makedirs(os.path.dirname(target), exist_ok=True)
+            data = tar.extractfile(m).read()
             with open(target, "wb") as f:
-                shutil.copyfileobj(tar.extractfile(m), f)
+                f.write(data)
             n += 1
-    return n
+            loc += sum(1 for ln in data.splitlines() if ln.strip())
+    return n, loc
 
 
 def build(repo, ref, branch, tip, pmd_bin, env, ruleset_text, pmd_id, ruleset_sha, scratch, timeout, threads, exclude=()):
@@ -102,7 +105,7 @@ def build(repo, ref, branch, tip, pmd_bin, env, ruleset_text, pmd_id, ruleset_sh
     start = time.monotonic()
     root = os.path.join(scratch, "tree")
     try:
-        n = archive_sources(repo, ref, root, exclude)
+        n, loc = archive_sources(repo, ref, root, exclude)
         if not n:
             return None, f"no Java sources under src/java at {branch}"
         rules = os.path.join(scratch, "ruleset.xml")
@@ -115,9 +118,9 @@ def build(repo, ref, branch, tip, pmd_bin, env, ruleset_text, pmd_id, ruleset_sh
         rc, problem, secs = run._jvm_tool(env, run.pmd_command(pmd_bin, rules, lst, out, threads=threads), timeout, scratch)
         if problem and not (rc is None and problem.startswith("exit ") and os.path.exists(out)):
             return None, problem.replace(scratch.rstrip("/") + "/", "")
-        hits, listed, errors = run.count_pmd_files(out)
-        return {"branch": branch, "tip": tip, "pmd": pmd_id, "ruleset_sha": ruleset_sha, "built_at": int(time.time()),
-                "files_scanned": len(files), "files_hit": hits, "parse_errors": len(errors),
+        hits, listed, errors, counts = run.count_pmd_files(out)
+        return {"version": VERSION, "branch": branch, "tip": tip, "pmd": pmd_id, "ruleset_sha": ruleset_sha, "built_at": int(time.time()),
+                "files_scanned": len(files), "loc": loc, "files_hit": hits, "violations": counts, "parse_errors": len(errors),
                 "seconds": round(time.monotonic() - start, 1)}, None
     except (OSError, RuntimeError, tarfile.TarError, ValueError) as e:
         return None, f"baseline failed: {type(e).__name__}: {e}"[:300]
@@ -131,7 +134,7 @@ def from_touched(base_files):
     for entry in base_files.values():
         for rule in {v[0] for v in entry.get("v") or []}:
             hits[rule] = hits.get(rule, 0) + 1
-    return {"files_scanned": len(base_files), "files_hit": hits}
+    return {"files_scanned": len(base_files), "files_hit": hits, "loc": 0, "violations": {}}  # a sample has no rate
 
 
 def shares(data):

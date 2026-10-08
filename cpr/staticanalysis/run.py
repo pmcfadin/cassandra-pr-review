@@ -179,11 +179,11 @@ def parse_pmd(xml_text, root):
 
 
 def count_pmd_files(xml_path):
-    """Stream a big PMD report -> ({rule: number of files with it}, files listed, [(file, message)] errors).
+    """Stream a big PMD report -> ({rule: files with it}, files listed, [(file, message)] errors, {rule: violations}).
 
     Used for the baseline, where the report can run to hundreds of MB.
     """
-    hits, listed, errors = {}, 0, []
+    hits, listed, errors, counts = {}, 0, [], {}
     current = None
     for event, el in ET.iterparse(xml_path, events=("start", "end")):
         kind = _tag(el)
@@ -193,6 +193,7 @@ def count_pmd_files(xml_path):
             continue
         if kind == "violation" and current is not None:
             current.add(el.get("rule"))
+            counts[el.get("rule")] = counts.get(el.get("rule"), 0) + 1
         elif kind == "file":
             for r in current or ():
                 hits[r] = hits.get(r, 0) + 1
@@ -202,7 +203,7 @@ def count_pmd_files(xml_path):
             errors.append((el.get("filename") or "", (el.get("msg") or "").strip()[:200]))
         if kind in ("violation", "file", "error"):
             el.clear()
-    return hits, listed, errors
+    return hits, listed, errors, counts
 
 
 def _jvm_tool(java_env_, cmd, timeout, scratch):

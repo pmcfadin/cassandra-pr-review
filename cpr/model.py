@@ -154,23 +154,28 @@ def pmd_rule_url(version, category, rule):
 
 
 def pmd_rules_block(bundle):
-    """The PMD rules block: introduced violations per rule, coloured by category, house-style rules apart.
+    """The PMD rules block: introduced violations per rule, coloured by category.
 
-    rows: rules outside house style, red then yellow then green, most introduced first, each with at most 50
-    locations (2,000 in all; counts stay exact). house: rules the base branch itself does not follow, counted
-    but never listed per line.
+    rows: rules outside house style and not usual for Cassandra, red then yellow then green, most introduced first,
+    each with at most 50 locations (2,000 in all; counts stay exact). A rule that needs compiled classes, when PMD ran
+    without them, is a row with `untyped` set: listed last, greyed, and left out of the tallies. house: rules the
+    base branch itself does not follow in many files. usual: rules whose production count is within the base branch's
+    rate for this many added lines (observed vs expected); their test-file violations stay in rows. house and usual
+    are counted but never listed per line.
     """
     sa = bundle.get("static_analysis") or {}
     pr = sa.get("pmd_rules") or {}
     pmd = (sa.get("tools") or {}).get("pmd") or {}
     if sa.get("status") != "ran" or pmd.get("status") != "ran" or pr.get("status") != "ran":
         reason = pr.get("reason") or pmd.get("reason") or sa.get("reason") or "PMD did not run on this head."
-        return {"status": "unavailable", "reason": reason, "rows": [], "house": [], "categories": []}
+        return {"status": "unavailable", "reason": reason, "rows": [], "house": [], "usual": [], "categories": []}
     version = pmd.get("version") or ""
+    typed = bool(pr.get("type_info"))
     labels = {slug: label for slug, label, _ in PMD_CATEGORIES}
-    rows, house, left = [], [], PMD_LOCATIONS_TOTAL
+    rows, house, usual, left = [], [], [], PMD_LOCATIONS_TOTAL
     ordered = sorted((r for r in pr.get("rules") or [] if r.get("introduced")),
-                     key=lambda r: (PMD_BAND_RANK[PMD_BAND.get(r.get("category"), "yellow")], -r["introduced"], r["rule"]))
+                     key=lambda r: (bool(r.get("needs_types")) and not typed,
+                                    PMD_BAND_RANK[PMD_BAND.get(r.get("category"), "yellow")], -r["introduced"], r["rule"]))
     for r in ordered:
         cat = r.get("category")
         row = {"rule": r["rule"], "category": cat, "category_label": labels.get(cat, cat or "Other"),
@@ -180,24 +185,40 @@ def pmd_rules_block(bundle):
         if r.get("house"):
             house.append({**row, "locations": []})
             continue
+        locations = r.get("locations") or []
+        if r.get("usual"):
+            usual.append({**row, "locations": [], "production": r.get("production", r["introduced"] - row["in_tests"]),
+                          "expected": r.get("expected", 0), "trunk": r.get("trunk", 0), "p": r.get("p")})
+            if not row["in_tests"]:
+                continue
+            row["introduced"] = row["in_tests"]  # the production part is usual; the test-file part is still counted
+            locations = [x for x in locations if str(x[0]).startswith("test/")]
         locs = [{"file": f, "line": ln, "message": m, "test": str(f).startswith("test/")}
-                for f, ln, m in (r.get("locations") or [])[:min(PMD_LOCATIONS_PER_RULE, left)]]
+                for f, ln, m in locations[:min(PMD_LOCATIONS_PER_RULE, left)]]
         left -= len(locs)
-        rows.append({**row, "locations": locs, "more": r["introduced"] - len(locs)})
+        rows.append({**row, "locations": locs, "more": row["introduced"] - len(locs),
+                     "untyped": bool(r.get("needs_types")) and not typed})
     house.sort(key=lambda r: (-r["introduced"], r["rule"]))
+    usual.sort(key=lambda r: (-r["production"], r["rule"]))
+    counted = [r for r in rows if not r["untyped"]]
     cats = []
     for slug, label, band in PMD_CATEGORIES:
-        mine = [r for r in rows if r["category"] == slug]
+        mine = [r for r in counted if r["category"] == slug]
         cats.append({"id": slug, "label": label, "band": band, "introduced": sum(r["introduced"] for r in mine),
-                     "rules": len(mine), "house": sum(r["introduced"] for r in house if r["category"] == slug)})
+                     "rules": len(mine), "house": sum(r["introduced"] for r in house if r["category"] == slug),
+                     "usual": sum(r["production"] for r in usual if r["category"] == slug)})
     base = pr.get("baseline") or {}
     return {"status": "ran", "reason": None, "rules_run": pr.get("rules_run"), "version": version,
-            "type_info": bool(pr.get("type_info")), "type_note": pr.get("type_note"),
-            "threshold": pr.get("threshold"), "baseline": base,
+            "type_info": typed, "type_note": pr.get("type_note"),
+            "threshold": pr.get("threshold"), "usual_p": pr.get("usual_p"), "rate": pr.get("rate") or {},
+            "baseline": base,
             "house_rule_count": len(pr.get("house_style") or []),
-            "introduced": sum(r["introduced"] for r in rows), "introduced_house": sum(r["introduced"] for r in house),
+            "introduced": sum(r["introduced"] for r in counted), "introduced_house": sum(r["introduced"] for r in house),
+            "introduced_usual": sum(r["production"] for r in usual),
+            "introduced_untyped": sum(r["introduced"] for r in rows if r["untyped"]),
+            "untyped_rules": sum(1 for r in rows if r["untyped"]),
             "pre_existing": sum(r.get("pre_existing", 0) for r in pr.get("rules") or []),
-            "categories": cats, "rows": rows, "house": house}
+            "categories": cats, "rows": rows, "house": house, "usual": usual}
 
 
 def build(bundle, checks, triage, docs, diffview, review=None, context=None):

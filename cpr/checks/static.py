@@ -180,10 +180,17 @@ RED_CATEGORIES = ("errorprone", "multithreading", "security")
 
 
 def pmd_rules_rows(sa):
-    """Introduced PMD catalog violations outside house style: [(rule, category, production count, test count)]."""
+    """Introduced PMD catalog violations that count: [(rule, category, production count, test count)].
+
+    Left out: house-style rules, rules usual for Cassandra (the production count is within the branch's rate), and
+    rules that need compiled classes when PMD ran without them.
+    """
     out = []
-    for r in (sa.get("pmd_rules") or {}).get("rules") or []:
-        if r.get("house") or not r.get("introduced"):
+    pr = sa.get("pmd_rules") or {}
+    for r in pr.get("rules") or []:
+        if r.get("house") or r.get("usual") or not r.get("introduced"):
+            continue
+        if r.get("needs_types") and not pr.get("type_info"):
             continue
         prod = r["introduced"] - r.get("in_tests", 0)
         out.append((r["rule"], r.get("category"), prod, r.get("in_tests", 0)))
@@ -206,6 +213,16 @@ def pmd_rules(bundle, ctx):
     if partial:
         rows.insert(0, ev(f"PMD skipped some files ({partial}); they are not scored"))
     rest = pmd_rules_rows(sa)
+    usual = [r for r in pr.get("rules") or [] if r.get("usual") and not r.get("house") and r.get("production", 0) > 0]
+    if usual:
+        rows.append(ev(f"{len(usual)} rule(s) are usual for Cassandra at this size (not counted): "
+                       + ", ".join(f"{r['rule']} {r['production']} vs {r['expected']:g} expected" for r in usual[:6])
+                       + (" ..." if len(usual) > 6 else "")))
+    untyped = [r for r in pr.get("rules") or [] if r.get("needs_types") and not pr.get("type_info") and not r.get("house")
+               and r.get("introduced")]
+    if untyped:
+        rows.append(ev(f"{len(untyped)} rule(s) need compiled classes and are not counted: "
+                       + ", ".join(r["rule"] for r in untyped[:6]) + (" ..." if len(untyped) > 6 else "")))
     red = sorted((r for r in rest if r[1] in RED_CATEGORIES and r[2] > 0), key=lambda r: (-r[2], r[0]))
     other = sum(r[2] for r in rest if r[1] not in RED_CATEGORIES)
     if red:
