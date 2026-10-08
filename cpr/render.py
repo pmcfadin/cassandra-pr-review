@@ -3,7 +3,7 @@
 import json
 import os
 
-from cpr.model import ASPECTS, validate
+from cpr.model import ASPECTS, derive_view, validate
 
 TEMPLATE = os.path.join(os.path.dirname(__file__), "assets", "report.html")
 MARKER = "<!--REPORT_MODEL-->"
@@ -33,6 +33,8 @@ def script_tag(model):
 
 
 def render_html(model, template_path=TEMPLATE):
+    if "view" not in model:  # models saved before the redesign get their view fields here
+        model = {**model, "view": derive_view(model)}
     validate(model)
     with open(template_path) as f:
         template = f.read()

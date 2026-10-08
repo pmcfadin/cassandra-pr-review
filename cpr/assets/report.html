@@ -3,340 +3,345 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light dark">
+<meta name="color-scheme" content="light">
 <title>Cassandra PR review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Mono:wght@400;500&amp;family=Red+Hat+Text:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
 <style>
 /* ---------------------------------------------------------------------------
-   Tokens. Light is the default; dark follows the system unless the reader
-   picked light, and is forced when the reader picked dark.
+   Tokens. Light theme only. Fonts load from Google Fonts when online; the system
+   fallbacks keep the report readable offline.
    --------------------------------------------------------------------------- */
 :root {
-  --bg: #e9edf1;
-  --panel: #ffffff;
-  --panel-2: #f4f6f8;
-  --ink: #16202a;
-  --ink-2: #44525f;
-  --ink-3: #6f7c88;
-  --rule: #d3d9df;
-  --rule-strong: #b7c0c8;
-  --accent: #245a8c;
-  --accent-soft: #e2ecf5;
-  --focus: #1f6fd1;
-  --nav-bg: #f7f8fa;
-  --self-row: #eef4fb;
+  --bg: #F3F5F8; --panel: #FFFFFF; --soft: #F8FAFC; --ink: #0F2236; --ink-2: #34445A; --ink-3: #56657A;
+  --rule: #D9DEE5; --rule-2: #E4E8EE; --link: #0B5CAD; --link-hover: #083F78; --hover: #F3F6FA;
+  --navy: #0F2236; --navy-active: #1F3A5C; --navy-ink: #D3DDEA; --navy-mute: #9DB0C7;
+  --chip-line: #C9D1DC;
 
-  --pass: #17663f; --pass-bg: #e2f1e8;
-  --warn: #855600; --warn-bg: #fbefd6;
-  --fail: #b0251d; --fail-bg: #fbe5e2;
-  --unknown: #5c4799; --unknown-bg: #ebe6f6;
-  --info: #2c5d7f; --info-bg: #e2edf5;
-  --na: #66717c; --na-bg: #eceff2;
+  /* Status chips: text on tint is at least 4.5:1. icon is the stroke colour on light backgrounds. */
+  --fail-fg: #8A2606; --fail-bg: #FDEDE6; --fail-icon: #C0360C;
+  --should-fg: #5E4300; --should-bg: #FBF3DC; --should-icon: #8C6400;
+  --note-fg: #083F78; --note-bg: #E6EEF8; --note-icon: #0B5CAD;
+  --pass-fg: #005A52; --pass-bg: #E3F4F1; --pass-icon: #00766C;
+  --unknown-fg: #4B3A8C; --unknown-bg: #ECE8F6; --unknown-icon: #5B49A8;
+  --na-fg: #56657A; --na-bg: #EEF1F5; --na-icon: #6B7684;
 
-  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --radius: 6px;
-  --nav-w: 264px;
+  --sans: 'Red Hat Text', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: 'Red Hat Mono', ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0d1217; --panel: #151c23; --panel-2: #1b232b;
-    --ink: #e3e8ed; --ink-2: #a7b2bd; --ink-3: #7b8793;
-    --rule: #28323c; --rule-strong: #3a4652;
-    --accent: #84b6e6; --accent-soft: #1a2a3a; --focus: #6aa8f0;
-    --nav-bg: #11171d; --self-row: #172535;
-    --pass: #5cc98e; --pass-bg: #132a1e;
-    --warn: #e5b04a; --warn-bg: #2d2310;
-    --fail: #ff7d73; --fail-bg: #3a1715;
-    --unknown: #b8a5f3; --unknown-bg: #241d3b;
-    --info: #80b8de; --info-bg: #132635;
-    --na: #95a0ab; --na-bg: #1d242c;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #0d1217; --panel: #151c23; --panel-2: #1b232b;
-  --ink: #e3e8ed; --ink-2: #a7b2bd; --ink-3: #7b8793;
-  --rule: #28323c; --rule-strong: #3a4652;
-  --accent: #84b6e6; --accent-soft: #1a2a3a; --focus: #6aa8f0;
-  --nav-bg: #11171d; --self-row: #172535;
-  --pass: #5cc98e; --pass-bg: #132a1e;
-  --warn: #e5b04a; --warn-bg: #2d2310;
-  --fail: #ff7d73; --fail-bg: #3a1715;
-  --unknown: #b8a5f3; --unknown-bg: #241d3b;
-  --info: #80b8de; --info-bg: #132635;
-  --na: #95a0ab; --na-bg: #1d242c;
-}
-
-/* ---------------------------------------------------------------------------
-   Base
-   --------------------------------------------------------------------------- */
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--ink);
-  font: 14.5px/1.55 var(--sans);
-  font-feature-settings: "tnum" 1;
-}
-a { color: var(--accent); text-underline-offset: 2px; text-decoration-thickness: 1px; }
-a:hover { text-decoration-thickness: 2px; }
-:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 3px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 var(--sans); }
+a { color: var(--link); text-underline-offset: 2px; }
+a:hover { color: var(--link-hover); }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; cursor: pointer; text-align: left; }
+button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; border-radius: 6px; }
 code, .mono { font-family: var(--mono); font-size: 0.9em; }
-code { background: var(--panel-2); border: 1px solid var(--rule); border-radius: 4px; padding: 0 4px; overflow-wrap: anywhere; }
-pre { font-family: var(--mono); font-size: 12.5px; line-height: 1.5; background: var(--panel-2); border: 1px solid var(--rule);
-  border-radius: var(--radius); padding: 12px 14px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; margin: 8px 0; }
+code { background: #F0F3F7; border: 1px solid var(--rule-2); border-radius: 4px; padding: 0 4px; overflow-wrap: anywhere; }
+pre { font-family: var(--mono); font-size: 13px; line-height: 1.5; background: var(--soft); border: 1px solid var(--rule-2);
+  border-radius: 6px; padding: 12px 14px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; margin: 8px 0; max-width: 100%; }
 pre code { background: none; border: 0; padding: 0; }
-h1, h2, h3, h4 { line-height: 1.25; margin: 0; letter-spacing: -0.01em; }
+h1, h2, h3, h4 { margin: 0; line-height: 1.3; }
 p { margin: 6px 0; }
 ul, ol { margin: 6px 0; padding-left: 22px; }
 li { margin: 2px 0; }
-.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
 .muted { color: var(--ink-3); }
-.eyebrow { font: 600 11px/1.3 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+svg { flex: none; }
+[hidden] { display: none !important; }
+.chev { transition: transform .15s; }
+[aria-expanded="true"] > .chev, [aria-expanded="true"] .chev { transform: rotate(180deg); }
+.row:hover { background: var(--hover); }
+.stack > *, .gx > *, .cc-body > *, .bg-card > *, .blk, .group-body, .card { min-width: 0; max-width: 100%; }
 
 /* ---------------------------------------------------------------------------
-   Shell: nav + main
+   Shell: dark nav on the left, one scrolling column on the right
    --------------------------------------------------------------------------- */
-.shell { display: grid; grid-template-columns: var(--nav-w) minmax(0, 1fr); min-height: 100vh;
-  background: linear-gradient(90deg, var(--nav-bg) calc(var(--nav-w) - 1px), var(--rule) calc(var(--nav-w) - 1px), var(--rule) var(--nav-w), transparent var(--nav-w)); }
-#nav {
-  position: sticky; top: 0; height: 100vh; overflow-y: auto;
-  background: var(--nav-bg); border-right: 1px solid var(--rule);
-  padding: 18px 12px 18px 14px; display: flex; flex-direction: column; gap: 14px;
-}
-.nav-head { padding: 0 6px; }
-.nav-head .pr-num { font: 700 20px/1.2 var(--sans); letter-spacing: -0.02em; margin-top: 4px; }
-.nav-head .pr-num a { color: var(--ink); text-decoration: none; }
-.nav-head .pr-num a:hover { text-decoration: underline; }
-.nav-verdict { margin-top: 6px; }
-#nav ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
-#nav li { margin: 0; }
-#nav ol a {
-  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px;
-  padding: 7px 8px 7px 10px; border-radius: var(--radius); color: var(--ink-2); text-decoration: none;
-  border-left: 3px solid transparent; font-weight: 500;
-}
-#nav ol a:hover { background: var(--panel-2); color: var(--ink); }
-#nav ol a[aria-current="page"] { background: var(--panel); color: var(--ink); border-left-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--rule); font-weight: 650; }
-.nav-foot { margin-top: auto; padding: 0 6px; font-size: 12px; color: var(--ink-3); }
+.app { display: grid; grid-template-columns: 264px minmax(0, 1fr); min-height: 100vh; }
+.navcol { background: var(--navy); }
+#nav { position: sticky; top: 0; max-height: 100vh; overflow-y: auto; padding: 24px 14px 24px; display: flex; flex-direction: column; gap: 22px; }
+.nav-head { padding: 0 8px; display: flex; flex-direction: column; gap: 8px; }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--navy-mute); }
+.nav-pr { font-size: 22px; font-weight: 700; color: #fff; text-decoration: none; letter-spacing: -0.01em; }
+.nav-pr:hover { color: #fff; text-decoration: underline; }
+.pill { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; padding: 3px 10px; border-radius: 3px; }
+#nav-toggle { display: none; color: var(--navy-ink); border: 1px solid #3A5373; border-radius: 6px; min-height: 44px; padding: 0 14px; align-items: center; gap: 8px; font-size: 15px; }
+#nav-body { display: flex; flex-direction: column; gap: 22px; }
+.nav-group { display: flex; flex-direction: column; gap: 2px; }
+.nav-group .eyebrow { padding: 0 8px 6px; }
+.nav-link { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border-radius: 3px; text-decoration: none; font-size: 15px; color: var(--navy-ink); }
+.nav-link:hover { background: #172C45; color: #fff; }
+.nav-link[aria-current="location"] { background: var(--navy-active); color: #fff; font-weight: 600; }
+.nav-link:focus-visible { outline-color: #fff; }
+.nav-link .lbl { flex: 1; min-width: 0; }
+.nav-link .cnt { font-size: 12px; color: var(--navy-mute); }
+.nav-dot { flex: none; width: 14px; display: flex; justify-content: center; }
+.nav-dot i { width: 6px; height: 6px; border-radius: 50%; background: #7E94AF; display: block; }
+.nav-foot { margin-top: auto; padding: 0 8px; font-size: 12px; color: var(--navy-mute); display: flex; flex-direction: column; gap: 2px; }
 
-main { min-width: 0; }
-.toolbar {
-  position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 12px;
-  padding: 10px 40px; background: color-mix(in srgb, var(--bg) 88%, transparent);
-  backdrop-filter: blur(6px); border-bottom: 1px solid var(--rule);
-}
-.toolbar .crumb { flex: 1; min-width: 0; color: var(--ink-3); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.toolbar .crumb strong { color: var(--ink); font-weight: 600; }
-button.tool {
-  font: 500 13px/1 var(--sans); color: var(--ink); background: var(--panel); border: 1px solid var(--rule-strong);
-  border-radius: var(--radius); padding: 7px 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
-}
-button.tool:hover { border-color: var(--accent); }
-#nav-toggle { display: none; }
-.content { padding: 28px 40px 64px; max-width: 1120px; }
+.col { min-width: 0; }
+header.pr { background: var(--panel); border-bottom: 1px solid var(--rule); }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
+header.pr .wrap { padding-top: 22px; padding-bottom: 20px; display: flex; flex-direction: column; gap: 6px; }
+.facts { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 14px; color: var(--ink-3); }
+.facts .mono { font-size: 13px; color: var(--ink); }
+.facts .tag { font-size: 12px; }
+.add { color: var(--pass-icon); } .del { color: var(--fail-icon); }
+h1.title { font-size: 24px; font-weight: 600; max-width: 52ch; overflow-wrap: anywhere; }
+.ticket-line { margin: 0; font-size: 14px; color: var(--ink-3); }
+main { max-width: 1040px; margin: 0 auto; padding: 24px 24px 64px; display: flex; flex-direction: column; gap: 36px; }
+section[id], div[id^="sec-"], div[id^="bg-"], div[id^="check-"], li[id^="check-"] { scroll-margin-top: 12px; }
+.card { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
+.sec-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px; }
+.sec-head > div { display: flex; flex-direction: column; gap: 4px; }
+h2.sec { font-size: 22px; font-weight: 600; }
+.sub { margin: 0; color: var(--ink-3); }
+.stack { display: flex; flex-direction: column; gap: 16px; }
+.outline-btn { font-size: 14px; font-weight: 500; color: var(--link); padding: 10px 14px; min-height: 44px; border: 1px solid var(--chip-line); border-radius: 8px; background: #fff; }
+.outline-btn:hover { background: var(--hover); }
+.linkbtn { font-size: 14px; font-weight: 500; color: var(--link); min-height: 44px; display: inline-flex; align-items: center; gap: 6px; }
+.linkbtn:hover { color: var(--link-hover); text-decoration: underline; }
+
+/* Status chips */
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; padding: 3px 10px; border-radius: 3px; white-space: nowrap; color: var(--c-fg); background: var(--c-bg); }
+.chip.wide { width: 104px; flex: none; }
+.s-fail { --c-fg: var(--fail-fg); --c-bg: var(--fail-bg); --c-icon: var(--fail-icon); }
+.s-should { --c-fg: var(--should-fg); --c-bg: var(--should-bg); --c-icon: var(--should-icon); }
+.s-note { --c-fg: var(--note-fg); --c-bg: var(--note-bg); --c-icon: var(--note-icon); }
+.s-pass { --c-fg: var(--pass-fg); --c-bg: var(--pass-bg); --c-icon: var(--pass-icon); }
+.s-unknown { --c-fg: var(--unknown-fg); --c-bg: var(--unknown-bg); --c-icon: var(--unknown-icon); }
+.s-na { --c-fg: var(--na-fg); --c-bg: var(--na-bg); --c-icon: var(--na-icon); }
+.tag { display: inline-block; font-size: 12px; color: var(--ink-3); border: 1px solid var(--rule); border-radius: 3px; padding: 1px 8px; white-space: nowrap; height: fit-content; }
+.tag.strong { color: var(--ink); border-color: var(--ink-3); }
 
 /* ---------------------------------------------------------------------------
-   Sections
+   Verdict and To do
    --------------------------------------------------------------------------- */
-.report-section { display: none; }
-.report-section.active { display: block; }
-.sec-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 2px solid var(--ink); }
-.sec-head h2 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
-.sec-head h2:focus { outline: none; }
-.block { margin: 22px 0; }
-.block > h3 { font-size: 15px; font-weight: 650; margin-bottom: 10px; display: flex; align-items: baseline; gap: 8px; }
-.block > h3 .count { font: 500 12px var(--mono); color: var(--ink-3); }
-.panel { background: var(--panel); border: 1px solid var(--rule); border-radius: var(--radius); padding: 14px 16px; }
+.verdict { display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: center; padding: 18px 24px; }
+.verdict-main { display: flex; gap: 14px; align-items: center; flex: 1 1 340px; min-width: 0; }
+.v-icon { flex: none; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--c-fg); background: var(--c-bg); }
+.v-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 260px; }
+.v-text h2 { font-size: 26px; line-height: 1.2; font-weight: 700; overflow-wrap: anywhere; }
+.v-text p { margin: 0; color: var(--ink-2); }
+.v-text p.note { font-size: 14px; color: var(--ink-3); }
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; flex: 0 1 auto; }
+.steps li { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 3px; font-size: 14px; font-weight: 500; margin: 0; color: var(--c-fg); background: var(--c-bg); }
+.v-extra { border-top: 1px solid var(--rule-2); padding: 0 24px 4px; }
+.todo { border-top: 1px solid var(--rule-2); }
+.todo-head { width: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; padding: 12px 24px; min-height: 48px; background: var(--soft); }
+.todo-head .t { font-weight: 600; }
+.todo-head .r { display: inline-flex; align-items: center; gap: 6px; font-size: 15px; color: var(--ink-2); }
+.count { min-width: 22px; text-align: center; font-size: 13px; font-weight: 600; padding: 1px 6px; border-radius: 3px; color: var(--na-fg); background: var(--na-bg); }
+.count.must { color: var(--fail-fg); background: var(--fail-bg); }
+.todo-head .toggle { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 500; color: var(--link); }
+.role { display: flex; flex-wrap: wrap; border-top: 1px solid var(--rule-2); }
+.role-name { flex: 0 0 170px; padding: 14px 20px; font-weight: 600; font-size: 15px; display: flex; flex-direction: column; }
+.role-name small { font-weight: 400; font-size: 13px; color: var(--ink-3); overflow-wrap: anywhere; }
+.role ul { list-style: none; margin: 0; padding: 0; flex: 1 1 360px; min-width: 0; }
+.role li { margin: 0; }
+.todo-item { width: 100%; display: flex; gap: 10px; align-items: center; padding: 10px 20px 10px 0; min-height: 44px; }
+.todo-item .tx { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.todo-detail { padding: 0 20px 12px 24px; font-size: 15px; color: var(--ink-2); display: flex; flex-direction: column; gap: 6px; }
+.todo-detail p { margin: 0; }
+.todo-detail .tg { font-size: 12px; color: var(--ink-3); }
+.todo:not(.show-opt) .opt { display: none; }
+.todo:not(.show-opt) .role.only-opt { display: none; }
+#opt-toggle { width: 100%; padding: 12px 20px; min-height: 44px; font-size: 14px; font-weight: 500; color: var(--link); background: var(--soft); border-top: 1px solid var(--rule-2); }
+
+/* ---------------------------------------------------------------------------
+   Check groups
+   --------------------------------------------------------------------------- */
+.group { border-bottom: 1px solid var(--rule-2); }
+.group:last-child { border-bottom: 0; }
+.group-head { width: 100%; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 16px 20px; min-height: 56px; }
+.group-head .l { display: flex; align-items: center; gap: 12px; flex: 1 1 280px; min-width: 0; font-weight: 600; font-size: 16px; }
+.group-head .r { flex: 999 1 280px; min-width: 0; display: flex; align-items: center; gap: 12px; color: var(--ink-2); font-size: 15px; }
+.group-head .r .sum { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.group-head .r .n { font-size: 13px; color: var(--ink-3); white-space: nowrap; }
+.group-body { background: var(--soft); padding: 4px 20px 18px; }
+.checklist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.checklist > li { display: flex; gap: 12px; padding: 12px 14px; border: 1px solid var(--rule-2); border-radius: 4px; background: #fff; margin: 0; }
+.ck-icon { flex: none; margin-top: 2px; width: 20px; display: flex; justify-content: center; }
+.ck-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.ck-title { font-weight: 500; overflow-wrap: anywhere; }
+.ck-sum { font-size: 14px; color: var(--ink-3); overflow-wrap: anywhere; }
+.ck-ev { margin: 2px 0 0; padding-left: 18px; font-size: 13.5px; color: var(--ink-2); overflow-wrap: anywhere; }
+.howfix { margin-top: 6px; font-size: 14px; background: #F4F6FA; border-radius: 8px; padding: 8px 12px; overflow-wrap: anywhere; }
+.ck-tags { flex: none; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+.ck-flash { box-shadow: 0 0 0 3px rgba(11, 92, 173, .35); }
+.gx { margin-top: 16px; display: flex; flex-direction: column; gap: 14px; }
+.gx .blk > h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; display: flex; gap: 8px; align-items: baseline; }
+.gx .blk > h3 .count { font-size: 12px; }
+.gx .blk > h4 { font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-3); margin: 8px 0 4px; }
+.panel { background: #fff; border: 1px solid var(--rule-2); border-radius: 6px; padding: 12px 16px; }
 .empty { color: var(--ink-3); font-style: italic; }
-.labplan-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
-.labplan-plan .md { overflow-x: auto; }
-.lead { font-size: 15px; margin-bottom: 10px; }
-.notice { border: 1px solid var(--rule-strong); border-left-width: 4px; border-radius: var(--radius); padding: 10px 14px; background: var(--panel); margin: 10px 0; }
-.notice.s-fail { border-left-color: var(--fail); }
-.notice.s-warn { border-left-color: var(--warn); }
-.notice.s-unknown { border-left-color: var(--unknown); }
-.notice.s-info { border-left-color: var(--info); }
+.notice { border: 1px solid var(--rule); border-left-width: 4px; border-radius: 6px; padding: 10px 14px; background: #fff; margin: 6px 0; font-size: 15px; overflow-wrap: anywhere; }
+.notice.s-fail { border-left-color: var(--fail-icon); } .notice.s-should { border-left-color: var(--should-icon); }
+.notice.s-unknown { border-left-color: var(--unknown-icon); } .notice.s-note { border-left-color: var(--note-icon); }
+.notice.s-pass { border-left-color: var(--pass-icon); } .notice.s-na { border-left-color: var(--na-icon); }
 
-/* Status badge: color is never the only signal; each badge carries a glyph and a word. */
-.badge {
-  display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
-  font: 600 11.5px/1 var(--mono); letter-spacing: 0.02em; padding: 3px 7px 3px 4px; border-radius: 999px;
-  color: var(--c); background: var(--cb); border: 1px solid color-mix(in srgb, var(--c) 35%, transparent);
-}
-.badge .g { display: inline-grid; place-items: center; width: 15px; height: 15px; border-radius: 50%;
-  background: var(--c); color: var(--panel); font: 800 10px/1 var(--sans); }
-.s-pass { --c: var(--pass); --cb: var(--pass-bg); }
-.s-warn { --c: var(--warn); --cb: var(--warn-bg); }
-.s-fail { --c: var(--fail); --cb: var(--fail-bg); }
-.s-unknown { --c: var(--unknown); --cb: var(--unknown-bg); }
-.s-info { --c: var(--info); --cb: var(--info-bg); }
-.s-not-applicable { --c: var(--na); --cb: var(--na-bg); }
-.tag { display: inline-block; font: 600 10.5px/1 var(--mono); letter-spacing: 0.06em; text-transform: uppercase;
-  padding: 3px 6px; border-radius: 3px; border: 1px solid var(--rule-strong); color: var(--ink-2); white-space: nowrap; }
-.tag.blocking { color: var(--ink); border-color: var(--ink); background: var(--panel); }
-.tag.owner { border-style: dashed; }
-
-/* ---------------------------------------------------------------------------
-   Summary
-   --------------------------------------------------------------------------- */
-.pr-head h1 { font-size: 23px; font-weight: 700; letter-spacing: -0.02em; margin: 6px 0 8px; overflow-wrap: anywhere; }
-.pr-head h1 a { color: var(--ink); text-decoration: none; }
-.pr-head h1 a:hover { text-decoration: underline; }
-.meta-row { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--ink-2); font-size: 13.5px; }
-.meta-row > span { white-space: nowrap; }
-.meta-row .k { color: var(--ink-3); margin-right: 4px; }
-
-.verdict {
-  margin-top: 20px; background: var(--panel); border: 1px solid var(--rule); border-radius: var(--radius);
-  border-left: 8px solid var(--c); padding: 16px 20px 14px;
-}
-.verdict .v-label { display: flex; align-items: center; gap: 12px; margin-top: 6px; font-size: 26px; font-weight: 750; letter-spacing: -0.025em; line-height: 1.15; color: var(--ink); }
-.verdict .v-glyph { flex: none; display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--c); color: var(--panel); font-size: 18px; font-weight: 800; }
-.verdict .v-note { margin: 10px 0 0; font-size: 15px; font-weight: 600; color: var(--ink); }
-.verdict .waiting { margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-2); }
-.reasons { list-style: none; padding: 0; margin: 14px 0 0; border-top: 1px solid var(--rule); }
-.reasons > li { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; padding: 12px 0; border-bottom: 1px solid var(--rule); margin: 0; }
-.reasons > li:last-child { border-bottom: 0; padding-bottom: 2px; }
-.reasons > li > .badge { align-self: start; justify-self: start; margin-top: 1px; }
-.reasons .r-title { font-weight: 650; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
-.reasons .r-title a { color: var(--ink); }
-.reasons .r-body { grid-column: 2; color: var(--ink-2); }
-.next { grid-column: 2; margin-top: 4px; background: var(--panel-2); border-radius: 4px; padding: 7px 10px; border: 1px solid var(--rule); }
-.next .lead { font: 700 11px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink); margin-right: 6px; }
-
-.summary-left { display: grid; gap: 18px; align-content: start; }
-.reviewers-card ul { margin: 6px 0 0; padding-left: 18px; }
-.reviewers-card li { margin: 4px 0; }
-.panel.expert { margin: 0 0 10px; }
-.panel.expert ul { margin: 6px 0 0; padding-left: 18px; }
-.summary-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.9fr); gap: 18px; margin-top: 18px; align-items: start; }
-.triage-card .rating { font-size: 22px; font-weight: 750; letter-spacing: -0.02em; text-transform: capitalize; }
-.triage-card .pts { font: 500 12.5px var(--mono); color: var(--ink-3); margin-left: 6px; }
-.sig { list-style: none; padding: 0; margin: 10px 0 0; font-size: 13px; }
-.sig li { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 4px 0; border-top: 1px dotted var(--rule); margin: 0; }
-.sig li .sv { color: var(--ink-3); }
-.sig li.scored { color: var(--ink); font-weight: 600; }
-.sig li .pp { font: 600 12px var(--mono); }
-
-/* The gate matrix: every check, grouped by section, one row each. */
-.matrix { display: flex; flex-direction: column; gap: 12px; }
-.matrix-group h4 { font: 600 11px/1.3 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 4px; }
-.matrix-group ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 4px; }
-.matrix-group li { margin: 0; }
-.gate { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 4px;
-  background: var(--panel); border: 1px solid var(--rule); color: var(--ink); text-decoration: none; font-size: 13px; line-height: 1.3; }
-.gate:hover { border-color: var(--c); }
-.gate.blocking { box-shadow: inset 3px 0 0 var(--ink); }
-.gate .gk { font: 600 10px/1 var(--mono); letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-3); }
-.gate.blocking .gk { color: var(--ink); }
-.gate .badge { padding: 2px; }
-.gate .badge .w { display: none; }
-
-/* ---------------------------------------------------------------------------
-   Checks
-   --------------------------------------------------------------------------- */
-.checks { display: flex; flex-direction: column; gap: 10px; }
-.check { background: var(--panel); border: 1px solid var(--rule); border-left: 4px solid var(--c); border-radius: var(--radius); padding: 12px 14px; scroll-margin-top: 70px; }
-.check.flash { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent); }
-.check-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
-.check-head .ct { font-weight: 650; font-size: 15px; }
-.check-head .cid { font: 12px var(--mono); color: var(--ink-3); }
-.check-head .spacer { flex: 1; }
-.check .csum { margin: 6px 0 0; }
-.evidence { margin: 8px 0 0; padding-left: 18px; color: var(--ink-2); font-size: 13.5px; }
-.check .next { margin-top: 10px; }
-
-/* ---------------------------------------------------------------------------
-   Tables, field lists, details
-   --------------------------------------------------------------------------- */
-.table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--panel); }
-table { border-collapse: collapse; width: 100%; font-size: 13px; }
-th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
-th { font: 600 11px/1.3 var(--mono); letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-3); background: var(--panel-2); white-space: nowrap; }
+/* Tables, field lists, details */
+.table-wrap { overflow-x: auto; border: 1px solid var(--rule-2); border-radius: 6px; background: #fff; max-width: 100%; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--rule-2); vertical-align: top; }
+th { font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); background: var(--soft); white-space: nowrap; }
 tbody tr:last-child td { border-bottom: 0; }
-td.num, th.num { text-align: right; font-family: var(--mono); white-space: nowrap; }
+td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .nowrap { white-space: nowrap; }
-tr.self td { background: var(--self-row); }
-tr.self td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
-.add { color: var(--pass); } .del { color: var(--fail); }
+tr.self td { background: var(--note-bg); }
 dl.fields { display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; margin: 0; }
-dl.fields dt { color: var(--ink-3); font-size: 13px; }
+dl.fields dt { color: var(--ink-3); font-size: 14px; }
 dl.fields dd { margin: 0; overflow-wrap: anywhere; }
-details { border: 1px solid var(--rule); border-radius: var(--radius); background: var(--panel); margin: 8px 0; }
-details > summary { cursor: pointer; padding: 8px 12px; font-weight: 600; font-size: 13.5px; list-style-position: inside; }
-details > summary:hover { background: var(--panel-2); }
-details[open] > summary { border-bottom: 1px solid var(--rule); }
-details > .d-body { padding: 10px 14px; }
+details { border: 1px solid var(--rule-2); border-radius: 6px; background: #fff; margin: 8px 0; }
+details > summary { cursor: pointer; padding: 10px 14px; min-height: 44px; display: flex; align-items: center; font-weight: 500; font-size: 14px; color: var(--link); }
+details > summary:hover { background: var(--hover); }
+details[open] > summary { border-bottom: 1px solid var(--rule-2); }
+details > .d-body { padding: 10px 14px; overflow-wrap: anywhere; }
 details.inline { border: 0; background: none; margin: 0; }
-details.inline > summary { padding: 0; font-weight: 500; color: var(--accent); }
+details.inline > summary { padding: 0; min-height: 0; display: list-item; }
 details.inline[open] > summary { border: 0; }
 details.inline > .d-body { padding: 6px 0 0; }
 details.howto > summary { color: var(--ink-2); }
-details.howto > summary::after { content: " — scoring rules and sources"; font-weight: 400; color: var(--ink-3); }
-.comment { border-top: 1px solid var(--rule); padding: 10px 0; }
+details.howto > summary::after { content: " \2014  scoring rules and sources"; font-weight: 400; color: var(--ink-3); white-space: pre; }
+.comment { border-top: 1px solid var(--rule-2); padding: 10px 0; }
 .comment:first-child { border-top: 0; padding-top: 0; }
 .comment .who { font-size: 13px; color: var(--ink-2); margin-bottom: 4px; }
-
-/* Markdown output */
-.md h1 { font-size: 19px; margin: 14px 0 8px; } .md h2 { font-size: 16px; margin: 14px 0 6px; }
-.md h3, .md h4, .md h5, .md h6 { font-size: 14px; margin: 12px 0 4px; }
+.md h1 { font-size: 19px; margin: 14px 0 8px; } .md h2 { font-size: 17px; margin: 14px 0 6px; }
+.md h3, .md h4, .md h5, .md h6 { font-size: 15px; margin: 12px 0 4px; }
 .md > :first-child { margin-top: 0; }
-.md table { margin: 8px 0; border: 1px solid var(--rule); }
+.md { overflow-wrap: anywhere; }
 
-/* Changes */
-.diff-frame { display: block; width: 100%; height: calc(100vh - 190px); min-height: 480px; border: 1px solid var(--rule-strong); border-radius: var(--radius); background: #fff; }
+/* ---------------------------------------------------------------------------
+   Code review findings
+   --------------------------------------------------------------------------- */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; font-size: 14px; align-items: center; }
+.sevchip { padding: 4px 12px; border-radius: 3px; font-weight: 600; background: #EEF1F5; color: var(--ink-2); }
+.sevchip.blocker { background: #C0360C; color: #fff; }
+.sevchip.major { background: var(--fail-bg); color: var(--fail-fg); }
+.finding { background: #fff; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
+.finding-head { width: 100%; display: flex; gap: 14px; align-items: flex-start; padding: 16px 20px; min-height: 56px; }
+.sev { flex: none; width: 70px; text-align: center; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 3px 0; border-radius: 6px; background: #EEF1F5; color: var(--ink-2); }
+.sev.blocker { background: #C0360C; color: #fff; } .sev.major { background: var(--fail-bg); color: var(--fail-fg); }
+.finding-head .m { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.finding-head .hl { font-weight: 600; overflow-wrap: anywhere; }
+.finding-head .loc { font-family: var(--mono); font-size: 13px; color: var(--ink-3); overflow-wrap: anywhere; }
+.finding-body { padding: 0 20px 20px 104px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.finding-body .lab { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-3); }
+.finding-body p { margin: 6px 0 0; font-size: 15px; color: var(--ink-2); overflow-wrap: anywhere; }
+.finding-body .full { grid-column: 1 / -1; font-size: 13px; color: var(--ink-3); overflow-wrap: anywhere; }
+.lens-card { background: #fff; border: 1px solid var(--rule-2); border-radius: 6px; padding: 12px 16px; margin: 8px 0; }
+.lens-card { overflow-wrap: anywhere; min-width: 0; }
+.lens-card h4 { font-size: 16px; font-weight: 600; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.lens-card .fd { border-top: 1px solid var(--rule-2); padding: 10px 0 0; margin-top: 10px; }
+.lens-card .fd .t { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-weight: 500; }
+
+/* ---------------------------------------------------------------------------
+   Background cards
+   --------------------------------------------------------------------------- */
+.bg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; align-items: start; }
+.bg-card { background: #fff; border: 1px solid var(--rule); border-radius: 6px; padding: 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.bg-card.full { grid-column: 1 / -1; }
+.bg-card h3 { font-size: 17px; font-weight: 600; }
+.bg-card .hd { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.rating { font-size: 14px; font-weight: 600; color: var(--note-fg); background: var(--note-bg); padding: 2px 10px; border-radius: 3px; text-transform: capitalize; }
+.bar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.bar i { height: 6px; border-radius: 3px; background: #DDE1E7; display: block; }
+.bar i.on { background: var(--link); }
+.bg-card p { margin: 0; font-size: 14px; color: var(--ink-2); }
+.sig { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.sig li { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 6px; border-bottom: 1px solid #EEF1F5; margin: 0; }
+.sig li .v { text-align: right; overflow-wrap: anywhere; }
+.sig li .why { display: block; font-size: 13px; color: var(--ink-3); }
+.people { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.people li { display: flex; gap: 12px; align-items: center; margin: 0; }
+.avatar { flex: none; width: 36px; height: 36px; border-radius: 50%; background: #EEF1F5; color: var(--ink-2); font-weight: 600; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+.avatar.involved { background: var(--note-bg); color: var(--note-fg); }
+.people .who { display: flex; flex-direction: column; min-width: 0; }
+.people .who .nm { font-weight: 500; overflow-wrap: anywhere; }
+.people .who small { font-size: 13px; color: var(--ink-3); }
+.hist { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.hist + .hist { border-top: 1px solid #EEF1F5; padding-top: 12px; }
+.hist .a { font-weight: 500; } .hist .b { color: var(--ink-2); overflow-wrap: anywhere; } .hist .c { color: var(--ink-3); font-size: 13px; }
+.filelist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.filelist li { display: flex; gap: 10px; align-items: baseline; font-size: 14px; margin: 0; }
+.filelist .p { font-family: var(--mono); font-size: 13px; overflow-wrap: anywhere; flex: 1; min-width: 0; }
+.filelist .st { font-size: 12px; color: var(--ink-3); }
+.filelist .d { white-space: nowrap; }
+.diff-wrap { display: flex; flex-direction: column; gap: 8px; }
+.diff-frame { display: block; width: 100%; height: 80vh; min-height: 480px; border: 1px solid var(--rule); border-radius: 6px; background: #fff; }
+.actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.bg-card.collapsible-card { padding: 0; gap: 0; }
+.collapsible-card > .cc-head { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 20px; min-height: 56px; }
+.cc-head .tt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cc-head .tt b { font-weight: 600; font-size: 17px; }
+.cc-head .tt span { font-size: 14px; color: var(--ink-3); overflow-wrap: anywhere; }
+.cc-body { padding: 0 20px 20px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+dl.gloss { margin: 0; padding: 0 20px 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px 28px; }
+dl.gloss div { display: flex; flex-direction: column; gap: 2px; }
+dl.gloss dt { font-weight: 600; } dl.gloss dd { margin: 0; font-size: 15px; color: var(--ink-2); }
+footer.ft { font-size: 13px; color: var(--ink-3); display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--rule); padding-top: 16px; }
+footer.ft .line { display: flex; flex-wrap: wrap; gap: 6px 20px; }
+footer.ft .mono { color: var(--ink); }
+footer.ft .about { background: #fff; }
+footer.ft .about ul { margin: 4px 0; }
 .print-only { display: none; }
 
-/* Missing-data banner */
-#no-data { display: none; margin: 40px auto; max-width: 640px; padding: 20px 24px; border: 2px solid var(--fail); border-radius: var(--radius); background: var(--panel); }
-#no-data h1 { font-size: 20px; color: var(--fail); margin-bottom: 8px; }
-body.no-data .shell { display: none; }
+#no-data { display: none; margin: 40px auto; max-width: 640px; padding: 20px 24px; border: 2px solid var(--fail-icon); border-radius: 6px; background: #fff; }
+#no-data h1 { font-size: 20px; color: var(--fail-fg); margin-bottom: 8px; }
+body.no-data .app { display: none; }
 body.no-data #no-data { display: block; }
 
 /* ---------------------------------------------------------------------------
-   Narrow screens: nav slides in from the left behind a toggle.
+   Phone width: the nav becomes a top bar with a Sections button; nothing scrolls sideways.
    --------------------------------------------------------------------------- */
 @media (max-width: 799.98px) {
-  .shell { grid-template-columns: minmax(0, 1fr); background: none; }
-  .verdict { padding: 14px 14px 12px; border-left-width: 6px; }
-  .reasons > li { grid-template-columns: 1fr; }
-  .reasons .r-body, .next { grid-column: 1; }
-  #nav {
-    position: fixed; z-index: 20; left: 0; top: 0; width: min(300px, 86vw); height: 100vh;
-    transform: translateX(-100%); visibility: hidden; transition: transform 0.18s ease, visibility 0s linear 0.18s;
-    box-shadow: 0 0 40px rgba(0,0,0,0.25);
-  }
-  body.nav-open #nav { transform: none; visibility: visible; transition: transform 0.18s ease; }
-  #nav-scrim { position: fixed; inset: 0; z-index: 15; background: rgba(0,0,0,0.35); }
-  #nav-toggle { display: inline-flex; }
-  .toolbar { padding: 8px 16px; }
-  .content { padding: 18px 16px 48px; }
-  .summary-grid { grid-template-columns: minmax(0, 1fr); }
-  .verdict .v-label { font-size: 21px; }
+  .app { display: block; }
+  #nav { position: static; max-height: none; padding: 14px 16px; gap: 12px; }
+  .nav-head { padding: 0; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+  .nav-head .eyebrow { flex-basis: 100%; }
+  #nav-toggle { display: inline-flex; margin-left: auto; }
+  #nav-body { display: none; }
+  #nav.open #nav-body { display: flex; }
+  .wrap, main { padding-left: 16px; padding-right: 16px; }
+  main { gap: 28px; padding-top: 18px; }
+  .verdict { padding: 16px; }
+  .v-text h2 { font-size: 22px; }
+  h1.title { font-size: 21px; }
+  .todo-head { padding: 12px 16px; }
+  .role-name { flex-basis: 100%; padding: 12px 16px 0; }
+  .todo-item { padding-left: 16px; }
+  .todo-detail { padding-left: 16px; }
+  .group-head { padding: 14px 16px; }
+  .group-body { padding: 4px 12px 14px; }
+  .checklist > li { flex-wrap: wrap; }
+  .ck-tags { flex-direction: row; flex-wrap: wrap; align-items: center; flex-basis: 100%; padding-left: 32px; }
+  .finding-head { padding: 14px 16px; gap: 10px; }
+  .sev { width: 62px; }
+  .finding-body { padding: 0 16px 16px 16px; }
   dl.fields { grid-template-columns: 1fr; gap: 0; }
   dl.fields dd { margin-bottom: 8px; }
+  .bg-card { padding: 16px; }
+  .cc-head, .collapsible-card > .cc-head { padding: 14px 16px; }
+  .cc-body { padding: 0 16px 16px; }
+  dl.gloss { padding: 0 16px 16px; }
 }
-@media (prefers-reduced-motion: reduce) { #nav { transition: none !important; } }
+@media (prefers-reduced-motion: reduce) { .chev { transition: none; } }
 
 /* ---------------------------------------------------------------------------
-   Print: every section in order, no navigation, panels expanded.
+   Print: everything expanded, no navigation, diff view replaced by the file list
    --------------------------------------------------------------------------- */
 @media print {
-  :root { --bg: #fff; --panel: #fff; --panel-2: #f5f5f5; --nav-bg: #fff; }
   body { background: #fff; font-size: 11.5pt; }
-  #nav, #nav-scrim, .toolbar, .no-print, .diff-frame, details > summary::marker { display: none !important; }
-  .shell { display: block; background: none; }
-  .content { padding: 0; max-width: none; }
-  .report-section { display: block !important; break-before: page; }
-  .report-section:first-child { break-before: auto; }
-  .print-only { display: block; }
+  .navcol, .no-print, .diff-wrap, .chev { display: none !important; }
+  .app { display: block; }
+  main, .wrap { max-width: none; padding-left: 0; padding-right: 0; }
+  [hidden].cbody { display: block !important; }
+  .todo .opt { display: flex !important; }
+  .todo .role.only-opt { display: flex !important; }
   details::details-content { content-visibility: visible; display: block; }
-  details > summary { padding: 4px 0; }
-  .check, .gate, .verdict, tr { break-inside: avoid; }
+  .card, .finding, .bg-card, .checklist > li { break-inside: avoid; }
+  .print-only { display: block; }
   a { color: inherit; }
-  .table-wrap { overflow: visible; }
 }
 </style>
 </head>
@@ -345,29 +350,28 @@ body.no-data #no-data { display: block; }
   <h1>No report data</h1>
   <p>This page is the report template without a report model, or the model failed to load. Generate a report with <code>cpr review &lt;PR number&gt;</code> and open the file it prints.</p>
 </div>
-<div class="shell">
-  <nav id="nav" aria-label="Report sections">
-    <div class="nav-head">
-      <div class="eyebrow">apache/cassandra review</div>
-      <div class="pr-num" id="nav-pr"></div>
-      <div class="nav-verdict" id="nav-verdict"></div>
-    </div>
-    <ol id="nav-list"></ol>
-    <div class="nav-foot" id="nav-foot"></div>
-  </nav>
-  <main id="main">
-    <div class="toolbar">
-      <button type="button" class="tool" id="nav-toggle" aria-controls="nav" aria-expanded="false"><span aria-hidden="true">&#9776;</span> Sections</button>
-      <div class="crumb" id="crumb"></div>
-      <button type="button" class="tool" id="theme-toggle" title="Switch colour theme">Theme: system</button>
-    </div>
-    <div class="content" id="content"></div>
-  </main>
+<div class="app" id="app">
+  <div class="navcol">
+    <nav id="nav" aria-label="Report sections">
+      <div class="nav-head">
+        <div class="eyebrow">Cassandra PR review</div>
+        <span id="nav-pr"></span>
+        <span id="nav-pill"></span>
+        <button type="button" id="nav-toggle" aria-expanded="false" aria-controls="nav-body">Sections</button>
+      </div>
+      <div id="nav-body"></div>
+    </nav>
+  </div>
+  <div class="col">
+    <header class="pr" id="top"><div class="wrap" id="header"></div></header>
+    <main id="main"></main>
+  </div>
 </div>
 <!--REPORT_MODEL-->
 <script>
 (function () {
   "use strict";
+
 
   // -------------------------------------------------------------------------
   // Escaping and links. Everything from the model is untrusted text.
@@ -564,24 +568,100 @@ body.no-data #no-data { display: block; }
   }
   function empty(text) { return h("p", "empty", text); }
 
-  var STATUS = {
-    "pass": { g: "✓", w: "Pass" },
-    "warn": { g: "!", w: "Warning" },
-    "fail": { g: "✕", w: "Fail" },
-    "unknown": { g: "?", w: "Unknown" },
-    "info": { g: "i", w: "Info" },
-    "not-applicable": { g: "–", w: "N/A" }
+  // -------------------------------------------------------------------------
+  // Status words, kinds and icons (design D2). Colour is never the only signal:
+  // every status carries an icon shape and a word.
+  // -------------------------------------------------------------------------
+  var WORD_KIND = { "Must fix": "fail", "Should fix": "should", "Note": "note", "Unknown": "unknown", "Passed": "pass", "Not needed": "na" };
+  var STATUS_KIND = { "pass": "pass", "fail": "fail", "warn": "should", "unknown": "unknown", "info": "note", "not-applicable": "na" };
+  var STATUS_WORD = { "pass": "Passed", "fail": "Must fix", "warn": "Should fix", "unknown": "Unknown", "info": "Note", "not-applicable": "Not needed" };
+  function kindOfWord(w) { return WORD_KIND[w] || "unknown"; }
+  function kindOfStatus(s) { return STATUS_KIND[s] || "unknown"; }
+  function wordOfKind(k) { return { fail: "Must fix", should: "Should fix", note: "Note", pass: "Passed", na: "Not needed" }[k] || "Unknown"; }
+
+  var CIRCLE = "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z";
+  var ICONS = {
+    fail: ["M7 7l10 10M17 7L7 17"],
+    should: ["M12 4L2.5 20h19z", "M12 10v4M12 17v.5"],
+    note: [CIRCLE, "M12 11v5M12 7.5v.5"],
+    unknown: [CIRCLE, "M9.7 9.7a2.4 2.4 0 1 1 3.6 2.1c-.8.5-1.3 1-1.3 1.9M12 16.5v.5"],
+    pass: ["M5 12.5l4.5 4.5L19 7.5"],
+    na: ["M6 12h12"],
+    chev: ["M6 9l6 6 6-6"],
+    blocked: ["M8 8l8 8M16 8l-8 8"],
+    waiting: ["M12 4a8 8 0 1 0 0 16a8 8 0 1 0 0-16z", "M12 8v4l3 2"],
+    ready: ["M5 12.5l4.5 4.5L19 7.5"],
+    draft: ["M6 12h12"]
   };
-  function st(s) { return STATUS[s] ? s : "unknown"; }
-  function badge(status, label) {
-    var s = st(status);
-    var b = h("span", "badge s-" + s, [h("span", "g", STATUS[s].g), h("span", "w", label || STATUS[s].w)]);
-    b.lastChild.previousSibling.setAttribute("aria-hidden", "true");
-    b.title = STATUS[s].w;
-    return b;
+  function svg(name, size, sw, label) {
+    var s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    s.setAttribute("width", String(size));
+    s.setAttribute("height", String(size));
+    s.setAttribute("viewBox", "0 0 24 24");
+    s.setAttribute("fill", "none");
+    s.setAttribute("stroke", "currentColor");
+    s.setAttribute("stroke-width", String(sw));
+    s.setAttribute("stroke-linecap", "round");
+    s.setAttribute("stroke-linejoin", "round");
+    if (label) { s.setAttribute("role", "img"); s.setAttribute("aria-label", label); } else s.setAttribute("aria-hidden", "true");
+    (ICONS[name] || ICONS.na).forEach(function (d) {
+      var p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      p.setAttribute("d", d);
+      s.appendChild(p);
+    });
+    return s;
+  }
+  function chev(size) { var s = svg("chev", size || 16, 2); s.setAttribute("class", "chev"); return s; }
+  // A status chip: icon + word on a tint (design: 13px, 600, radius 3px).
+  function chip(kind, label, wide) {
+    return h("span", "chip s-" + kind + (wide ? " wide" : ""), [svg(kind, 12, 3.5), label || wordOfKind(kind)]);
+  }
+  function statusIcon(kind, size, label) {
+    var w = h("span", "s-" + kind, svg(kind, size || 18, 2.6, label || wordOfKind(kind)));
+    w.style.color = "var(--c-icon)";
+    w.style.display = "inline-flex";
+    return w;
   }
   function ownerLabel(o) { return o ? o.charAt(0).toUpperCase() + o.slice(1) : "Unassigned"; }
-  function kindTag(blocking) { return h("span", "tag" + (blocking ? " blocking" : ""), blocking ? "Blocking" : "Advisory"); }
+  var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  function monthYear(d) {
+    var m = /^(\d{4})-(\d{2})/.exec(String(d || ""));
+    return m ? MONTHS[Number(m[2]) - 1] + " " + m[1] : String(d || "");
+  }
+  function initials(name) {
+    var parts = String(name || "?").replace(/[^A-Za-z0-9À-ɏ ]/g, " ").split(/\s+/).filter(Boolean);
+    return ((parts[0] || "?").charAt(0) + (parts.length > 1 ? parts[parts.length - 1].charAt(0) : "")).toUpperCase();
+  }
+
+  // -------------------------------------------------------------------------
+  // Collapsible regions: a real button with aria-expanded controls a hidden panel.
+  // -------------------------------------------------------------------------
+  var ctls = [];
+  function collapsible(btn, body, open) {
+    if (!body.id) body.id = "cb-" + (ctls.length + 1);
+    body.classList.add("cbody");
+    btn.setAttribute("aria-controls", body.id);
+    var ctl = {
+      btn: btn, body: body,
+      isOpen: function () { return btn.getAttribute("aria-expanded") === "true"; },
+      set: function (o) {
+        btn.setAttribute("aria-expanded", o ? "true" : "false");
+        body.hidden = !o;
+        if (ctl.onchange) ctl.onchange(o);
+      }
+    };
+    btn.addEventListener("click", function () { ctl.set(!ctl.isOpen()); });
+    body._ctl = ctl;
+    ctls.push(ctl);
+    ctl.set(!!open);
+    return ctl;
+  }
+  function openAncestors(el) {
+    for (var n = el; n && n !== document.body; n = n.parentNode) {
+      if (n._ctl && !n._ctl.isOpen()) n._ctl.set(true);
+      if (n.tagName === "DETAILS" && !n.open) n.open = true;
+    }
+  }
 
   // -------------------------------------------------------------------------
   // Model
@@ -592,18 +672,16 @@ body.no-data #no-data { display: block; }
     if (typeof console !== "undefined") console.error("report: window.REPORT_MODEL is missing or malformed");
     return;
   }
-
+  var V = M.view || {};
   var pr = M.pr || {};
   var checks = Array.isArray(M.checks) ? M.checks : [];
   var checkById = {};
   checks.forEach(function (c) { checkById[c.id] = c; });
-  var sectionOfCheck = {};
-  M.sections.forEach(function (s) { (s.checks || []).forEach(function (id) { sectionOfCheck[id] = s.id; }); });
-  var sectionIds = M.sections.map(function (s) { return s.id; });
   var sectionById = {};
   M.sections.forEach(function (s) { sectionById[s.id] = s; });
+  var words = V.words || {};
+  function checkWord(c) { return words[c.id] || STATUS_WORD[c.status] || "Unknown"; }
 
-  // Path classification, mirroring cpr/paths.py.
   var TEST_SUITES = [
     ["test/unit/", "Unit (test/unit)"], ["test/distributed/", "In-JVM dtest (test/distributed)"],
     ["test/burn/", "Burn (test/burn)"], ["test/long/", "Long (test/long)"],
@@ -617,7 +695,6 @@ body.no-data #no-data { display: block; }
     return isTest(p) ? "Other tests" : null;
   }
   function fileLines(f) { return (Number(f.additions) || 0) + (Number(f.deletions) || 0); }
-
   function prCommitUrl(sha) {
     return pr.url && isSafeLinkUrl(pr.url) ? String(pr.url).replace(/\/+$/, "") + "/commits/" + encodeURIComponent(sha) : null;
   }
@@ -626,222 +703,80 @@ body.no-data #no-data { display: block; }
     if (!repo || !ref) return null;
     return "https://github.com/" + String(repo).split("/").map(encodeURIComponent).join("/") + "/tree/" + String(ref).split("/").map(encodeURIComponent).join("/");
   }
-
-  // -------------------------------------------------------------------------
-  // Check cards
-  // -------------------------------------------------------------------------
-  function nextStep(action, owner) {
-    return h("div", "next", [h("span", "lead", "Next step"), mdInline("span", action), " ",
-      h("span", "tag owner", "Who acts: " + ownerLabel(owner))]);
-  }
-  function checkCard(c) {
-    var card = h("article", "check s-" + st(c.status));
-    card.id = "check-" + c.id;
-    append(card, h("div", "check-head", [badge(c.status), h("span", "ct", c.title || c.id), h("span", "cid", c.id),
-      h("span", "spacer"), kindTag(c.blocking), h("span", "tag owner", "Owner: " + ownerLabel(c.owner))]));
-    if (c.summary) append(card, mdInline("p", c.summary, "csum"));
-    var ev = Array.isArray(c.evidence) ? c.evidence : [];
-    if (ev.length) {
-      var ul = h("ul", "evidence");
-      ev.forEach(function (e) {
-        var li = h("li");
-        if (e && e.url && isSafeLinkUrl(e.url)) {
-          var a = trustedHtml("a", null, inlineMD(e.text || e.url));
-          a.href = String(e.url); a.target = "_blank"; a.rel = "noopener noreferrer";
-          li.appendChild(a);
-        } else {
-          li.appendChild(mdInline("span", (e && e.text) || ""));
-          if (e && e.url) append(li, [" ", h("span", "muted", "(" + e.url + ")")]);
-        }
-        ul.appendChild(li);
-      });
-      append(card, ul);
-    }
-    if (c.action) append(card, nextStep(c.action, c.owner));
-    return card;
-  }
-  function checksBlock(sec) {
-    var ids = sec.checks || [];
-    if (!ids.length) return null;
-    var cs = ids.map(function (id) { return checkById[id]; }).filter(Boolean);
-    var order = { "fail": 0, "unknown": 1, "warn": 2, "pass": 3, "not-applicable": 4 };
-    cs.sort(function (a, b) { return (order[a.status] - order[b.status]) || ((b.blocking ? 1 : 0) - (a.blocking ? 1 : 0)); });
-    return block("Checks", [h("div", "checks", cs.map(checkCard))], cs.length);
+  function people(arr) {
+    if (!Array.isArray(arr) || !arr.length) return null;
+    return arr.map(function (p) { return p.display ? p.display + (p.name ? " (" + p.name + ")" : "") : p.name; }).join(", ");
   }
   function docsBlock(sec) {
-    var aspects = sec.docs || [];
+    var aspects = (sec && sec.docs) || [];
     if (!aspects.length) return null;
-    return h("div", "block", aspects.map(function (a) {
+    return h("div", null, aspects.map(function (a) {
       var doc = (M.docs || {})[a];
       var title = aspects.length > 1 ? "How this is judged: " + a : "How this is judged";
       return details(title, doc ? md(doc) : empty("No document for " + a + "."), { cls: "howto" });
     }));
   }
+  function gblock(title, children, count) {
+    return h("div", "blk", [h("h3", null, [title, count !== undefined ? h("span", "count", String(count)) : null])].concat(children));
+  }
 
   // -------------------------------------------------------------------------
-  // Files
+  // Check lists
   // -------------------------------------------------------------------------
-  var STATUS_WORD = { A: "added", M: "modified", D: "deleted", R: "renamed", C: "copied", T: "type changed" };
+  var CHECK_ORDER = { "fail": 0, "warn": 1, "unknown": 2, "pass": 3, "not-applicable": 4 };
+  function checkItem(c) {
+    var kind = kindOfWord(checkWord(c));
+    var li = h("li");
+    li.id = "check-" + c.id;
+    li.setAttribute("data-check", c.id);
+    li.title = c.id;
+    var icon = h("span", "ck-icon s-" + kind, svg(kind, 18, 2.6, checkWord(c)));
+    icon.style.color = "var(--c-icon)";
+    var main = h("span", "ck-main", [h("span", "ck-title", c.title || c.id)]);
+    if (c.summary) append(main, mdInline("span", c.summary, "ck-sum"));
+    var ev = Array.isArray(c.evidence) ? c.evidence : [];
+    if (ev.length) {
+      var ul = h("ul", "ck-ev");
+      ev.forEach(function (e) {
+        var item = h("li");
+        if (e && e.url && isSafeLinkUrl(e.url)) {
+          var a = trustedHtml("a", null, inlineMD(e.text || e.url));
+          a.href = String(e.url); a.target = "_blank"; a.rel = "noopener noreferrer";
+          item.appendChild(a);
+        } else {
+          item.appendChild(mdInline("span", (e && e.text) || ""));
+          if (e && e.url) append(item, [" ", h("span", "muted", "(" + e.url + ")")]);
+        }
+        ul.appendChild(item);
+      });
+      append(main, ul);
+    }
+    if (c.action) append(main, h("span", "howfix", [h("strong", null, "How to fix: "), mdInline("span", c.action)]));
+    append(li, [icon, main, h("span", "ck-tags", [c.blocking ? h("span", "tag strong", "Blocking") : null, h("span", "tag", ownerLabel(c.owner))])]);
+    return li;
+  }
+  function checkList(sec) {
+    var cs = (sec.checks || []).map(function (id) { return checkById[id]; }).filter(Boolean);
+    cs.sort(function (a, b) { return ((CHECK_ORDER[a.status] === undefined ? 2 : CHECK_ORDER[a.status]) - (CHECK_ORDER[b.status] === undefined ? 2 : CHECK_ORDER[b.status])) || ((b.blocking ? 1 : 0) - (a.blocking ? 1 : 0)); });
+    return cs.length ? h("ul", "checklist", cs.map(checkItem)) : null;
+  }
+
+  // -------------------------------------------------------------------------
+  // Group details: everything the old report showed besides the check cards
+  // -------------------------------------------------------------------------
   function fileTable(files) {
     if (!files.length) return empty("No files in the model.");
+    var word = { A: "added", M: "modified", D: "deleted", R: "renamed", C: "copied", T: "type changed" };
     return table(["Path", "Status", "+ Added", "− Deleted"], files.map(function (f) {
       var path = [h("span", "mono", f.path)];
       if (f.previous_path) append(path[0], h("span", "muted", " (from " + f.previous_path + ")"));
-      var stw = STATUS_WORD[String(f.status || "").charAt(0)] || f.status || "";
+      var stw = word[String(f.status || "").charAt(0)] || f.status || "";
       return { cells: [{ node: path }, stw + (f.binary ? " (binary)" : ""),
         { num: true, node: h("span", "add", "+" + (f.additions || 0)) }, { num: true, node: h("span", "del", "−" + (f.deletions || 0)) }] };
     }));
   }
 
-  // -------------------------------------------------------------------------
-  // Sections
-  // -------------------------------------------------------------------------
-  var verdictStatus = (sectionById.summary && sectionById.summary.status) || "unknown";
-
-  function renderSummary() {
-    var out = [];
-    var jira = M.jira || {};
-    var t = jira.ticket;
-    var key = (M.jira_key && M.jira_key.key) || (t && t.key);
-
-    var head = h("header", "pr-head");
-    append(head, h("div", "eyebrow", "apache/cassandra · Pull request #" + pr.number + " · " + (pr.draft ? "draft" : (pr.state || ""))));
-    append(head, h("h1", null, link(pr.url, pr.title || "(untitled)")));
-    var meta = h("div", "meta-row");
-    append(meta, h("span", null, [h("span", "k", "Author"), link(ghUser(pr.author), pr.author || "unknown"),
-      pr.author_association ? h("span", "muted", " (" + String(pr.author_association).toLowerCase().replace(/_/g, " ") + ")") : null]));
-    append(meta, h("span", null, [h("span", "k", "Base"), link(ghTree("apache/cassandra", pr.base), pr.base || "?", "mono")]));
-    if (pr.head_repo) append(meta, h("span", null, [h("span", "k", "From"), link(ghTree(pr.head_repo, pr.head_ref), pr.head_repo + ":" + (pr.head_ref || ""), "mono")]));
-    append(meta, h("span", null, [h("span", "k", "Size"), h("span", "add", "+" + (pr.additions || 0)), " ", h("span", "del", "−" + (pr.deletions || 0)),
-      " in " + plural(pr.changed_files || 0, "file")]));
-    append(meta, h("span", null, [h("span", "k", "JIRA"), key ? link(t && t.url ? t.url : "https://issues.apache.org/jira/browse/" + encodeURIComponent(key), key, "mono") : h("span", "muted", "no ticket key found"),
-      " ", t ? h("span", "tag", t.status || "?") : (key ? h("span", "tag", "ticket " + (jira.status || "unavailable")) : null)]));
-    append(head, meta);
-    if (t && t.summary) append(head, h("p", "muted", t.summary));
-    out.push(head);
-
-    // Recommendation
-    var rec = M.recommendation || {};
-    var v = h("section", "verdict s-" + st(verdictStatus));
-    v.setAttribute("aria-label", "Recommendation");
-    append(v, h("div", "eyebrow", "Recommendation"));
-    var glyph = h("span", "v-glyph", STATUS[st(verdictStatus)].g);
-    glyph.setAttribute("aria-hidden", "true");
-    append(v, h("div", "v-label", [glyph, h("span", "v-text", rec.label || rec.verdict || "No recommendation")]));
-    var headline = reviewHeadline();
-    if (headline) {
-      var hl = h("p", "v-note review-headline", [headline, " "]);
-      var hla = h("a", null, "Code review");
-      hla.href = "#review";
-      append(hl, hla);
-      append(v, hl);
-    }
-    if (rec.verdict === "requirements-met-unreviewed")
-      append(v, h("p", "v-note", "Code review has not run yet. The merge requirements below pass, but no review lens has read the code, so this is not a ready-to-merge verdict."));
-    if (rec.verdict === "draft" || pr.draft)
-      append(v, h("p", "v-note", "This PR is a draft. Treat everything here as early feedback, not a merge decision."));
-    if (rec.verdict === "awaiting-review")
-      append(v, h("p", "v-note", "The contributor's part is done. What remains is owned by reviewers or committers: votes, CI runs, or both."));
-    if (rec.verdict === "needs-contributor-work")
-      append(v, h("p", "v-note", "The contributor has blocking items to fix before this can move forward. They are listed first below."));
-    if (rec.verdict === "ready")
-      append(v, h("p", "v-note", "Every blocking requirement passes and every code review lens approved. A committer makes the final call."));
-    if (rec.verdict === "insufficient-evidence")
-      append(v, h("p", "v-note", "Some required inputs could not be read, so the tool cannot say whether the requirements are met."));
-    if (Array.isArray(rec.waiting_on) && rec.waiting_on.length) {
-      var w = h("div", "waiting", h("strong", null, "Waiting on:"));
-      rec.waiting_on.forEach(function (o) { append(w, h("span", "tag owner", ownerLabel(o))); });
-      append(v, w);
-    }
-    var reasons = (Array.isArray(rec.reasons) ? rec.reasons : []).slice();
-    function rank(r) {
-      var c = r.check ? checkById[r.check] : null;
-      var blocking = typeof r.blocking === "boolean" ? r.blocking : (c ? !!c.blocking : false);
-      var s = { "fail": 0, "unknown": 1, "warn": 2 }[r.status];
-      return (blocking ? 0 : 10) + (s === undefined ? 5 : s);
-    }
-    reasons = reasons.map(function (r, i) { return { r: r, i: i }; })
-      .sort(function (a, b) { return (rank(a.r) - rank(b.r)) || (a.i - b.i); }).map(function (x) { return x.r; });
-    if (reasons.length) {
-      var ol = h("ol", "reasons");
-      ol.setAttribute("aria-label", "Reasons");
-      reasons.forEach(function (r) {
-        var c = r.check ? checkById[r.check] : null;
-        var sec = r.check ? sectionOfCheck[r.check] : (r.finding ? "review" : null);
-        var title = sec ? h("a", null, r.title || r.check) : h("span", null, r.title || "");
-        if (sec) { title.href = "#" + sec; if (r.check) title.setAttribute("data-check", r.check); }
-        var li = h("li", null, [badge(r.status), h("div", "r-title", [title, c ? kindTag(c.blocking) : null, r.check ? h("span", "cid mono muted", r.check) : null])]);
-        if (r.summary) append(li, mdInline("div", r.summary, "r-body"));
-        if (r.action) append(li, nextStep(r.action, r.owner));
-        else if (r.owner) append(li, h("div", "r-body", [h("span", "tag owner", "Who acts: " + ownerLabel(r.owner))]));
-        ol.appendChild(li);
-      });
-      append(v, ol);
-    }
-    out.push(v);
-
-    // Triage + matrix
-    var grid = h("div", "summary-grid");
-    var tr = M.triage || {};
-    var tc = h("section", "panel triage-card");
-    tc.setAttribute("aria-label", "Review difficulty");
-    append(tc, h("div", "eyebrow", "Review difficulty"));
-    append(tc, h("div", null, [h("span", "rating", tr.rating || "unknown"), h("span", "pts", plural(tr.points || 0, "point"))]));
-    if (tr.forced_by) append(tc, h("p", null, [h("strong", null, "Rated hard because it "), tr.forced_by + "."]));
-    if (tr.capped_by) append(tc, h("p", null, [h("strong", null, "Capped: "), tr.capped_by + "."]));
-    var sig = h("ul", "sig");
-    (tr.signals || []).forEach(function (s) {
-      var pts = Number(s.points) || 0;
-      sig.appendChild(h("li", pts ? "scored" : null, [h("span", null, [s.signal + ": ", h("span", "sv", String(s.value))]),
-        h("span", "pp", (pts > 0 ? "+" : "") + pts)]));
-    });
-    append(tc, sig);
-    var tl = h("a", null, "Triage details");
-    tl.href = "#triage";
-    append(tc, h("p", null, tl));
-    var left = h("div", "summary-left");
-    left.appendChild(tc);
-    left.appendChild(reviewersCard());
-    grid.appendChild(left);
-
-    var mx = h("section", "matrix");
-    mx.setAttribute("aria-label", "Every check");
-    append(mx, h("div", "eyebrow", "Every check · " + checks.length));
-    var placed = {};
-    M.sections.forEach(function (s) {
-      var ids = (s.checks || []).filter(function (id) { return checkById[id]; });
-      if (!ids.length) return;
-      ids.forEach(function (id) { placed[id] = true; });
-      mx.appendChild(matrixGroup(s.title, s.id, ids));
-    });
-    var stray = checks.filter(function (c) { return !placed[c.id]; }).map(function (c) { return c.id; });
-    if (stray.length) mx.appendChild(matrixGroup("Other", null, stray));
-    grid.appendChild(mx);
-    out.push(grid);
-
-    if (pr.body) out.push(h("div", "block", details("PR description", h("pre", null, pr.body))));
-    return out;
-  }
-  function matrixGroup(title, sid, ids) {
-    var g = h("div", "matrix-group", h("h4", null, title));
-    var ul = h("ul");
-    ids.forEach(function (id) {
-      var c = checkById[id];
-      var a = h(sid ? "a" : "div", "gate s-" + st(c.status) + (c.blocking ? " blocking" : ""),
-        [badge(c.status), h("span", "gt", c.title || c.id), h("span", "gk", (c.blocking ? "Blocking" : "Advisory") + " · " + (STATUS[st(c.status)].w))]);
-      if (sid) { a.href = "#" + sid; a.setAttribute("data-check", c.id); }
-      a.title = c.id + ": " + (c.summary || "");
-      ul.appendChild(h("li", null, a));
-    });
-    g.appendChild(ul);
-    return g;
-  }
-
-  function people(arr) {
-    if (!Array.isArray(arr) || !arr.length) return null;
-    return arr.map(function (p) { return p.display ? p.display + (p.name ? " (" + p.name + ")" : "") : p.name; }).join(", ");
-  }
-  function renderTicket() {
+  function extraTicket() {
     var jira = M.jira || {};
     var t = jira.ticket;
     var out = [];
@@ -855,14 +790,14 @@ body.no-data #no-data { display: block; }
       out.push(h("div", "notice s-" + (jira.status === "not_found" ? "fail" : "unknown"), [h("strong", null, "No ticket data. "), msg,
         jira.error ? h("div", "muted mono", String(jira.error)) : null]));
     }
-    out.push(block("Ticket key", [fields([
+    out.push(gblock("Ticket key", [h("div", "panel", fields([
       ["Key", jk.key ? link("https://issues.apache.org/jira/browse/" + encodeURIComponent(jk.key), jk.key, "mono") : null],
       ["Found in", (jk.sources || []).join(", ")],
       ["Also mentioned", (jk.mentioned || []).filter(function (k) { return k !== jk.key; }).join(", ") || "none"],
       ["Conflicts", (jk.conflicts || []).length ? (jk.conflicts || []).map(function (c) { return typeof c === "string" ? c : JSON.stringify(c); }).join("; ") : "none"]
-    ])]));
+    ]))]));
     if (t) {
-      out.push(block("Fields", [h("div", "panel", fields([
+      out.push(gblock("Fields", [h("div", "panel", fields([
         ["Summary", t.summary],
         ["Status", [t.status || "", t.resolution ? " (" + t.resolution + ")" : ""].join("")],
         ["Type", t.issuetype],
@@ -876,31 +811,25 @@ body.no-data #no-data { display: block; }
         ["Impacts", (t.impacts || []).join(", ")],
         ["Ticket", link(t.url, "Open " + t.key + " in JIRA")]
       ]))]));
-    }
-    var cb = checksBlock(sectionById.ticket);
-    if (cb) out.splice(t ? 0 : 1, 0, cb);
-    if (t) {
-      out.push(block("Description", [t.description ? details("Show description", h("pre", null, t.description)) : empty("No description.")]));
+      out.push(gblock("Description", [t.description ? details("Show description", h("pre", null, t.description)) : empty("No description.")]));
       var cms = t.comments || [];
       var body = cms.length ? cms.map(function (c) {
         return h("div", "comment", [h("div", "who", [h("strong", null, c.display || c.author || "unknown"), " · " + (c.created || "").slice(0, 16).replace("T", " ") + " · ",
           link(c.url, "link")]), h("pre", null, c.body || "")]);
       }) : empty("No comments.");
       var label = cms.length ? "Show " + (t.comment_count > cms.length ? "the last " + cms.length + " of " + t.comment_count + " comments" : plural(cms.length, "comment")) : "Comments";
-      out.push(block("Comments", [details(label, body)], t.comment_count || 0));
+      out.push(gblock("Comments", [details(label, body)], t.comment_count || 0));
     }
     return out;
   }
 
-  function renderCi() {
-    var out = [checksBlock(sectionById.ci)];
+  function extraCi() {
+    var out = [];
     var rows = (M.branches || []).map(function (b) {
       var ci = b.ci;
       var ciCells;
       if (ci) {
-        var match = ci.sha ? (ci.sha_matches ? h("span", "badge s-pass", [h("span", "g", "✓"), h("span", "w", "matches head")])
-                                             : h("span", "badge s-warn", [h("span", "g", "!"), h("span", "w", "older commit")]))
-                           : h("span", "muted", "no sha");
+        var match = ci.sha ? (ci.sha_matches ? chip("pass", "matches head") : chip("should", "older commit")) : h("span", "muted", "no sha");
         var fails = (ci.failures || []);
         ciCells = [
           { node: [link(ci.url, ci.attachment || "summary"), ci.overall ? h("div", "muted", "overall: " + ci.overall) : null] },
@@ -913,7 +842,7 @@ body.no-data #no-data { display: block; }
               h("div", "d-body", list(fails, function (f) { return h("span", "mono", typeof f === "string" ? f : JSON.stringify(f)); }))]) : h("span", "muted", "none") }
         ];
       } else {
-        ciCells = [{ node: badge("fail", "no CI attached") }, "", "", "", "", "", ""];
+        ciCells = [{ node: chip("fail", "no CI attached") }, "", "", "", "", "", ""];
       }
       return {
         cls: b.is_self ? "self" : null,
@@ -923,23 +852,22 @@ body.no-data #no-data { display: block; }
           { node: h("span", "mono", short(b.head_sha)) }].concat(ciCells)
       };
     });
-    out.push(block("Target branches", [rows.length ? table(["Branch", "PR", "State", "Head", "CI summary", "CI sha", "Passed", "Failed", "Total", "Upgrade tests", "Failures"], rows)
+    out.push(gblock("Target branches", [rows.length ? table(["Branch", "PR", "State", "Head", "CI summary", "CI sha", "Passed", "Failed", "Total", "Upgrade tests", "Failures"], rows)
       : empty("No sibling PRs found for this ticket.")], rows.length));
     var un = M.ci_unmapped || [];
-    out.push(block("CI summaries not matched to a branch", [un.length ? list(un, function (u) {
+    out.push(gblock("CI summaries not matched to a branch", [un.length ? list(un, function (u) {
       return [link(u.url, u.attachment || "attachment"), " — parse: " + (u.parse_status || "?"),
         u.ref ? [" · ref ", h("span", "mono", u.ref)] : null, u.error ? h("div", "muted", u.error) : null];
     }) : empty("Every attached CI summary was matched to a branch.")], un.length));
     var ar = M.ci_archives || [];
-    out.push(block("Result archives", [ar.length ? list(ar, function (a) {
+    out.push(gblock("Result archives", [ar.length ? list(ar, function (a) {
       return [link(a.url, a.filename || "archive"), h("span", "muted", " · " + (a.size ? (a.size / 1048576).toFixed(1) + " MB" : "size unknown") +
         " · " + (a.target_branch || "branch unknown"))];
     }) : empty("No result_details archives attached.")], ar.length));
-    out.push(docsBlock(sectionById.ci));
     return out;
   }
 
-  function renderTesting() {
+  function extraTesting() {
     var files = M.files || [];
     var groups = {}, order = [], prodLines = 0, testLines = 0, prodFiles = 0;
     files.forEach(function (f) {
@@ -950,192 +878,318 @@ body.no-data #no-data { display: block; }
         groups[s].push(f);
       } else { prodLines += fileLines(f); prodFiles++; }
     });
-    var out = [checksBlock(sectionById.testing)];
-    out.push(block("Lines changed", [h("div", "panel", fields([
+    var out = [gblock("Lines changed", [h("div", "panel", fields([
       ["Non-test", plural(prodLines, "line") + " in " + plural(prodFiles, "file")],
       ["Test", plural(testLines, "line") + " in " + plural(files.length - prodFiles, "file")]
-    ]))]));
-    if (!order.length) out.push(block("Test files by suite", [empty("No test files changed.")], 0));
-    else out.push(block("Test files by suite", order.map(function (s) {
-      return h("div", "block", [h("h4", "eyebrow", s + " · " + groups[s].length), fileTable(groups[s])]);
+    ]))])];
+    if (!order.length) out.push(gblock("Test files by suite", [empty("No test files changed.")], 0));
+    else out.push(gblock("Test files by suite", order.map(function (s) {
+      return h("div", null, [h("h4", null, s + " · " + groups[s].length), fileTable(groups[s])]);
     }), files.length - prodFiles));
-    out.push(docsBlock(sectionById.testing));
     return out;
   }
 
-  function renderCommits() {
+  function extraCommits() {
     var cs = M.commits || [];
-    var out = [checksBlock(sectionById.commits)];
-    out.push(block("Commits", [cs.length ? h("div", "checks", cs.map(function (c) {
+    return [gblock("Commits", [cs.length ? h("div", null, cs.map(function (c) {
       var msg = String(c.message || "");
       var first = msg.split("\n")[0];
       var rest = msg.slice(first.length).replace(/^\n+/, "");
-      var card = h("article", "check s-info", [h("div", "check-head", [link(prCommitUrl(c.sha), short(c.sha), "mono"), h("span", "ct", first),
-        h("span", "spacer"), h("span", "muted", c.login ? c.author_name + " (@" + c.login + ")" : (c.author_name || ""))])]);
+      var card = h("div", "panel", [h("div", "ck-title", [link(prCommitUrl(c.sha), short(c.sha), "mono"), " ", first]),
+        h("div", "muted", c.login ? c.author_name + " (@" + c.login + ")" : (c.author_name || ""))]);
       if (rest) append(card, details("Full message", h("pre", null, msg), { cls: "inline" }));
       var trs = c.trailers || [];
-      if (trs.length) append(card, h("div", null, [h("span", "eyebrow", "Trailers"), list(trs, function (t) { return [h("strong", null, t.name + ": "), t.value]; })]));
+      if (trs.length) append(card, h("div", null, [h("h4", null, "Trailers"), list(trs, function (t) { return [h("strong", null, t.name + ": "), t.value]; })]));
+      card.style.marginBottom = "8px";
       return card;
-    })) : empty("No commits in the model.")], cs.length));
-    out.push(docsBlock(sectionById.commits));
-    return out;
+    })) : empty("No commits in the model.")], cs.length)];
   }
 
-  function renderCompat() {
+  function extraCompat() {
     var surf = M.compat_surfaces || {};
     var names = Object.keys(surf);
-    var out = [checksBlock(sectionById.compatibility)];
-    out.push(block("Surfaces touched", [names.length ? list(names, function (n) {
+    return [gblock("Surfaces touched", [names.length ? list(names, function (n) {
       return [h("strong", null, n), list(surf[n] || [], function (p) { return h("span", "mono", p); })];
-    }) : empty("No compatibility surfaces touched.")], names.length));
-    out.push(docsBlock(sectionById.compatibility));
-    return out;
+    }) : empty("No compatibility surfaces touched.")], names.length)];
   }
 
-  function renderVotes() {
+  function extraVotes() {
     var rv = M.github_reviews || [];
-    var out = [checksBlock(sectionById.votes)];
-    out.push(block("GitHub reviews", [rv.length ? table(["Reviewer", "State", "Association", "Submitted", "Link"], rv.map(function (r) {
+    return [gblock("GitHub reviews", [rv.length ? table(["Reviewer", "State", "Association", "Submitted", "Link"], rv.map(function (r) {
       var s = String(r.state || "");
       return { cells: [{ node: link(ghUser(r.user), r.user || "?") },
-        { node: badge(s === "APPROVED" ? "pass" : s === "CHANGES_REQUESTED" ? "fail" : "info", s.toLowerCase().replace(/_/g, " ")) },
+        { node: chip(s === "APPROVED" ? "pass" : s === "CHANGES_REQUESTED" ? "fail" : "note", s.toLowerCase().replace(/_/g, " ")) },
         String(r.association || "").toLowerCase().replace(/_/g, " "), String(r.submitted_at || "").replace("T", " ").replace("Z", ""),
         { node: link(r.url, "view") }] };
-    })) : empty("No GitHub reviews yet.")], rv.length));
-    out.push(docsBlock(sectionById.votes));
-    return out;
+    })) : empty("No GitHub reviews yet.")], rv.length)];
   }
 
-  function personLine(p) {
-    return [h("strong", null, p.name), p.asf_id ? h("span", "mono muted", " " + p.asf_id) : null,
-      h("span", "muted", " · " + p.patches + (p.patches === 1 ? " patch" : " patches") + ", " + plural(p.reviews, "review") + ", latest " + p.latest)];
+  var BUILD_BANNER = {
+    "pass": ["pass", "Built and tested.", "The branch compiled and the selected tests passed."],
+    "tests-failed": ["fail", "Tests failed.", "The branch compiled; some selected tests failed."],
+    "build-failed": ["fail", "Build failed.", "The branch did not compile; no tests ran."],
+    "timeout": ["unknown", "Timed out.", "The run hit its time limit; results are incomplete."],
+    "unknown": ["unknown", "Inconclusive.", "The run could not prove a pass or a failure."],
+    "not-built": ["note", "Not built for this head.", ""]
+  };
+  var BUILD_NOTE = "Line coverage shows which changed lines ran under the selected tests; it does not show that the fix's behaviour is tested. Read with the test regime lens.";
+  function buildItemText(u) {
+    if (u && typeof u === "object") return (u["class"] ? u["class"] + (u.test ? "." + u.test : "") : "") + (u.message ? ": " + u.message : "");
+    return String(u);
   }
-  function reviewersCard() {
-    var cx = M.context || {};
-    var card = h("section", "panel reviewers-card");
-    card.setAttribute("aria-label", "Suggested reviewers");
-    append(card, h("div", "eyebrow", "Suggested reviewers"));
-    if (cx.status !== "ok") { append(card, h("p", "muted", cx.reason || "Not available.")); return card; }
-    var sug = cx.suggested_reviewers || [], already = cx.already_reviewing || [];
-    if (!sug.length && !already.length) {
-      append(card, h("p", "muted", cx.new_files_only ? "The PR only adds new files, so there is no prior history for the changed code."
-        : "No committer has recent history with the changed files."));
-    } else {
-      if (sug.length) append(card, list(sug, personLine));
-      if (already.length) {
-        append(card, h("div", "eyebrow", "Already involved"));
-        append(card, list(already, personLine));
-      }
-    }
-    var cl = h("a", null, "Context details");
-    cl.href = "#context";
-    append(card, h("p", null, cl));
-    return card;
-  }
-
-  function renderContext() {
-    var cx = M.context || {};
+  function extraBuild() {
+    var b = M.build || { status: "not-built" };
     var out = [];
-    if (cx.status !== "ok") {
-      out.push(h("div", "notice s-unknown", cx.reason || "Reviewer context is not available."));
-      out.push(docsBlock(sectionById.context));
+    var ban = BUILD_BANNER[b.status] || BUILD_BANNER.unknown;
+    if (b.status === "not-built") {
+      out.push(h("div", "notice s-note build-banner", [h("strong", null, ban[1] + " "),
+        b.reason || "No build result for this head.",
+        h("div", "muted", "Builds run automatically only for PRs by committers" + (b.author_is_committer === false ? " (this PR’s author is not on the committer roster)" : "") +
+          ". The owner can approve one head with "), h("code", null, "cpr build " + (pr.number || "<N>") + " --approve"), "."]));
+      out.push(gblock("Build & coverage", [empty("Nothing was built, so no test or coverage numbers are shown.")]));
+      out.push(h("p", "muted build-note", BUILD_NOTE));
       return out;
     }
-    if (cx.new_files_only) out.push(h("div", "notice s-info", "The PR only adds new files, so there is no prior history for the changed code."));
-    var b = cx.budget || {};
-    if (b.hunks_skipped || b.files_skipped) {
-      out.push(h("div", "notice s-info", "Work was bounded on this large PR: blamed " + b.hunks_blamed + " of " + b.hunks_total +
-        " hunks (" + b.hunks_skipped + " skipped) and read history for " + b.files_logged + " of " + b.files_total + " files (" + b.files_skipped + " skipped). Production files were done first."));
+    out.push(h("div", "notice s-" + ban[0] + " build-banner", [h("strong", null, ban[1] + " "), ban[2],
+      b.reason ? h("div", null, b.reason) : null,
+      h("div", "muted", [b.base_branch ? "Base " + b.base_branch : null, b.jdk ? " · " + b.jdk : null,
+        b.timings_s && b.timings_s.total_wall ? " · " + b.timings_s.total_wall + " s wall clock" : null,
+        b.approved ? " · owner-approved" : null])]));
+    var t = b.tests;
+    if (t) {
+      out.push(gblock("Tests", [table(["Classes", "Run", "Failed", "Errors", "Skipped"],
+        [{ cells: [{ num: true, node: String(t.classes) }, { num: true, node: String(t.run) }, { num: true, node: String(t.failed) },
+          { num: true, node: String(t.errors) }, { num: true, node: String(t.skipped) }] }], { cls: "build-tests" }),
+        (t.failures || []).length ? list(t.failures, function (f) {
+          return [h("span", "mono", f["class"] + "." + f.test), f.message ? h("div", "muted", f.message) : null];
+        }) : h("p", "empty", "No test failed.")], t.run));
     }
-    if (cx.tickets_error) out.push(h("div", "notice s-unknown", "Ticket details could not be fetched: " + cx.tickets_error));
-
-    var sug = cx.suggested_reviewers || [];
-    out.push(block("Suggested reviewers", [sug.length ? table(["Committer", "Score", "Patches", "Reviews", "Latest", "Files"], sug.map(function (p) {
-      return { cells: [h("span", null, [h("strong", null, p.name), p.asf_id ? h("span", "mono muted", " " + p.asf_id) : null]),
-        { num: true, node: String(p.score) }, { num: true, node: String(p.patches) }, { num: true, node: String(p.reviews) }, p.latest,
-        h("span", "mono", p.files.map(function (f) { return f.split("/").pop(); }).join(", "))] };
-    })) : empty("No committer has recent history with the changed files.")].concat(
-      (cx.already_reviewing || []).length ? [h("p", "muted", "Already involved (Reviewers field or ticket comments): " + cx.already_reviewing.map(function (p) { return p.name; }).join(", "))] : []), sug.length));
-
-    var rt = cx.related_tickets || [];
-    out.push(block("Tickets that last changed this code", [rt.length ? table(["Ticket", "Summary", "Status", "Lines", "Last changed"], rt.map(function (t) {
-      var commits = details(plural(t.commits.length, "commit"), list(t.commits, function (c) { return [h("span", "mono", c.sha.slice(0, 10)), " " + c.date + " " + c.subject]; }));
-      return { cells: [link(t.url, t.key, "mono"), h("div", null, [t.summary || h("span", "muted", "summary unavailable"), commits]),
-        t.status ? t.status + (t.resolution ? " (" + t.resolution + ")" : "") : "", { num: true, node: String(t.lines) }, t.last_changed] };
-    })) : empty("No earlier tickets own the changed lines.")], rt.length));
-
-    var li = cx.linked_issues || [];
-    if (li.length) out.push(block("Issues linked to this ticket", [table(["Relation", "Ticket", "Summary", "Status"], li.map(function (l) {
-      return { cells: [l.relation || "", link(l.url, l.key, "mono"), l.summary || "", l.status || ""] };
-    }))], li.length));
-
-    var un = cx.untracked_commits || [];
-    if (un.length) out.push(block("Commits without a ticket", [table(["Commit", "Date", "Subject", "Author", "Lines"], un.map(function (u) {
-      return { cells: [h("span", "mono", u.sha.slice(0, 10)), u.date, u.subject, u.author, { num: true, node: String(u.lines) }] };
-    }))], un.length));
-
-    var ex = cx.experts || {};
-    var paths = Object.keys(ex);
-    out.push(block("Most experienced with each file", [paths.length ? h("div", null, paths.map(function (p) {
-      var from = (cx.experts_from || {})[p];
-      return h("div", "panel expert", [h("div", null, [h("span", "mono", p), from ? h("span", "muted", " · history from " + from) : null]), ex[p].length ? list(ex[p], function (x) {
-        return [h("strong", null, x.name), x.asf_id ? h("span", "mono muted", " " + x.asf_id) : h("span", "muted", " (not matched to a committer)"),
-          h("span", "muted", " · score " + x.score + " · " + x.patches + " authored, " + x.reviews + " reviewed · latest " + x.latest)];
-      }) : h("p", "muted", "No commits in the last 5 years.")]);
-    })) : empty("No existing files changed.")], paths.length));
-
-    out.push(docsBlock(sectionById.context));
+    var files = b.changed_lines ? Object.keys(b.changed_lines).sort() : [];
+    if (b.changed_lines) {
+      var rows = files.map(function (path) {
+        var i = b.changed_lines[path] || {};
+        var cov = (i.covered || []).length, part = (i.partial || []).length, miss = (i.missed || []).length;
+        var n = cov + part + miss;
+        return { cells: [{ node: h("span", "mono", path) },
+          n ? (cov + part) + "/" + n + (part ? " (" + part + " partly)" : "") : "no executable lines",
+          miss ? h("span", "mono del", (i.missed || []).join(", ")) : h("span", "muted", n ? "none" : "")] };
+      });
+      var tot = b.changed_total || {};
+      out.push(gblock("Changed-line coverage", [
+        h("p", null, tot.executable ? (tot.covered + (tot.partial || 0)) + " of " + plural(tot.executable, "added executable line") + " ran under the selected tests."
+          : "No added executable lines under src/java."),
+        files.length ? table(["File", "Covered", "Missed lines"], rows, { cls: "build-cov" }) : null], files.length));
+    } else {
+      out.push(gblock("Changed-line coverage", [empty("Coverage was not measured for this run.")]));
+    }
+    var sel = b.selected || [];
+    out.push(gblock("Selected tests", [sel.length ? details("Show " + (sel.length === 1 ? "1 selected test class" : sel.length + " selected test classes") + " and why", list(sel, function (c) {
+      return [h("span", "mono", c["class"]), h("span", "muted", " — " + (c.reasons || []).join("; "))];
+    }), { cls: "build-selected" }) : empty("No test classes were selected.")], sel.length));
+    var unk = b.sandbox_unknowns || [];
+    if (unk.length) out.push(gblock("Sandbox artifacts (unknown, not failures)", [h("div", "build-unknowns", list(unk, function (u) { return buildItemText(u); }))], unk.length));
+    if ((b.notes || []).length) out.push(gblock("Notes", [details("Show run notes", list(b.notes, function (n) { return String(n); }), {})]));
+    out.push(h("p", "muted build-note", BUILD_NOTE));
     return out;
   }
 
-  function renderTriage() {
-    var tr = M.triage || {};
-    var out = [];
-    out.push(block("Rating", [h("div", "panel", fields([
-      ["Rating", h("strong", null, tr.rating || "unknown")],
-      ["Points", String(tr.points || 0)],
-      ["Forced to hard by", tr.forced_by || "nothing; rated by points"],
-      ["Counted lines", tr.lines === undefined ? null : String(tr.lines)],
-      ["Counted files", tr.files === undefined ? null : String(tr.files)]
-    ]))]));
-    out.push(block("Signals", [table(["Signal", "Value", "Points", "Why"], (tr.signals || []).map(function (s) {
-      return { cls: s.points ? null : null, cells: [s.signal, String(s.value), { num: true, node: String(s.points || 0) }, s.why || ""] };
-    }))], (tr.signals || []).length));
-    var sp = tr.split_suggestion;
-    if (sp) {
-      out.push(block("Consider splitting", [h("div", "notice s-warn", [
-        "This patch changes " + sp.src_lines + " production lines, over the " + sp.threshold + "-line threshold. The largest files:",
-        list(sp.largest || [], function (f) { return [h("span", "mono", f.path), h("span", "muted", " · " + plural(f.lines, "line"))]; })
-      ])]));
-    }
-    out.push(docsBlock(sectionById.triage));
-    return out;
+  var EXTRAS = { ticket: extraTicket, ci: extraCi, testing: extraTesting, build: extraBuild, commits: extraCommits,
+    compatibility: extraCompat, votes: extraVotes };
+
+  // -------------------------------------------------------------------------
+  // Header
+  // -------------------------------------------------------------------------
+  function renderHeader() {
+    var jira = M.jira || {};
+    var t = jira.ticket;
+    var key = (M.jira_key && M.jira_key.key) || (t && t.key);
+    var wrap = document.getElementById("header");
+    var facts = h("div", "facts");
+    append(facts, link(pr.url, "#" + pr.number));
+    append(facts, h("span", null, ["into ", link(ghTree("apache/cassandra", pr.base), pr.base || "?", "mono")]));
+    append(facts, h("span", null, ["by ", link(ghUser(pr.author), pr.author || "unknown"),
+      (V.header && V.header.first_time_contributor) ? " (first-time contributor)" :
+        (pr.author_association ? " (" + String(pr.author_association).toLowerCase().replace(/_/g, " ") + ")" : "")]));
+    if (key) append(facts, link(t && t.url ? t.url : "https://issues.apache.org/jira/browse/" + encodeURIComponent(key), key));
+    else append(facts, h("span", null, "no ticket key found"));
+    if (t && t.status) append(facts, h("span", "tag", t.status));
+    else if (key) append(facts, h("span", "tag", "ticket " + (jira.status || "unavailable")));
+    if (pr.draft || pr.state) append(facts, h("span", "tag", pr.draft ? "draft" : pr.state));
+    append(facts, h("span", null, [h("span", "add", "+" + (pr.additions || 0)), " ", h("span", "del", "−" + (pr.deletions || 0)),
+      " in " + plural(pr.changed_files || 0, "file")]));
+    if (pr.head_repo) append(facts, h("span", null, ["from ", link(ghTree(pr.head_repo, pr.head_ref), pr.head_repo + ":" + (pr.head_ref || ""), "mono")]));
+    append(wrap, facts);
+    append(wrap, h("h1", "title", pr.title || "(untitled)"));
+    if (t && t.summary) append(wrap, h("p", "ticket-line", t.summary));
+    if (pr.body) append(wrap, details("PR description", h("pre", null, pr.body)));
   }
 
-  var SEV_ORDER = { blocker: 0, major: 1, minor: 2, nit: 3 };
-  var SEV_STATUS = { blocker: "fail", major: "fail", minor: "warn", nit: "info" };
+  // -------------------------------------------------------------------------
+  // Verdict card and To do
+  // -------------------------------------------------------------------------
+  var VERDICT_KIND = { blocked: "fail", waiting: "should", ready: "pass", unknown: "unknown", draft: "na" };
+  var verdict = V.verdict || { kind: "unknown", headline: (M.recommendation || {}).label || "No recommendation", sentence: "", note: "" };
+  var vKind = VERDICT_KIND[verdict.kind] || "unknown";
+
+  function todoItem(it) {
+    var li = h("li", it.must ? null : "opt");
+    var kind = it.must ? (it.word === "Unknown" ? "unknown" : "fail") : kindOfWord(it.word);
+    var btn = h("button", "todo-item row", [statusIcon(kind, 14, it.must ? it.word : "Optional"), mdInline("span", it.text || it.title, "tx"), chev(14)]);
+    btn.type = "button";
+    var detail = h("div", "todo-detail");
+    if (it.title && it.title !== it.text) append(detail, h("p", null, h("strong", null, it.title)));
+    if (it.summary) append(detail, mdInline("p", it.summary));
+    if (it.action) append(detail, h("p", null, [h("strong", null, "How to fix: "), mdInline("span", it.action)]));
+    var target = it.check ? "#check-" + it.check : (it.finding ? "#findings" : null);
+    append(detail, h("p", "tg", [it.tag, target ? [" · ", (function () { var a = h("a", null, it.check ? "See the check" : "See the findings"); a.href = target; return a; })()] : null]));
+    append(li, [btn, detail]);
+    collapsible(btn, detail, false);
+    return li;
+  }
+  function renderStatus() {
+    var sec = h("section", "card");
+    sec.id = "status";
+    sec.setAttribute("aria-labelledby", "verdict-h");
+    var top = h("div", "verdict");
+    var h2 = h("h2", null, verdict.headline);
+    h2.id = "verdict-h";
+    var icon = h("span", "v-icon s-" + vKind, svg(verdict.kind in ICONS ? verdict.kind : "na", 24, 2.5));
+    append(top, h("div", "verdict-main", [icon, h("div", "v-text", [h2, verdict.sentence ? h("p", null, verdict.sentence) : null,
+      verdict.note ? h("p", "note", verdict.note) : null])]));
+    var steps = h("ol", "steps");
+    steps.setAttribute("aria-label", "Steps to merge");
+    (V.steps || []).forEach(function (s) {
+      var k = s.state === "ok" ? "pass" : s.state === "bad" ? "fail" : "unknown";
+      var li = h("li", "s-" + k, [svg(k, 14, 3, s.state === "ok" ? "Done" : s.state === "bad" ? "Not done" : "Unknown"), s.label]);
+      if (s.note) li.title = s.note;
+      steps.appendChild(li);
+    });
+    append(top, steps);
+    sec.appendChild(top);
+
+    var rec = M.recommendation || {};
+    var docs = docsBlock(sectionById.summary);
+    var extra = h("div", "v-extra", [
+      h("p", "muted", "Overall: " + (rec.label || rec.verdict || "") + "."),
+      docs
+    ]);
+
+    // To do panel, grouped by who acts.
+    var todo = V.todo || { roles: [], optional_count: 0 };
+    var panel = h("div", "todo");
+    panel.id = "next";
+    var headBtn = h("button", "todo-head row");
+    headBtn.type = "button";
+    append(headBtn, h("span", "t", "To do"));
+    todo.roles.forEach(function (r) {
+      append(headBtn, h("span", "r", [r.role, " ", h("span", "count" + (r.must_count ? " must" : ""), String(r.must_count))]));
+    });
+    var tlabel = h("span", "toggle", [h("span", null, "Hide"), chev(14)]);
+    append(headBtn, tlabel);
+    panel.appendChild(headBtn);
+    var body = h("div");
+    if (!todo.roles.length) append(body, h("p", "empty", "Nothing is left to do."));
+    todo.roles.forEach(function (r) {
+      var onlyOpt = !r.items.some(function (i) { return i.must; });
+      var role = h("div", "role" + (onlyOpt ? " only-opt" : ""), [
+        h("div", "role-name", [h("span", null, r.role), r.who ? h("small", null, r.who) : null]),
+        h("ul", null, r.items.map(todoItem))]);
+      body.appendChild(role);
+    });
+    var optBtn = null;
+    if (todo.optional_count) {
+      optBtn = h("button", "no-print", "Show " + plural(todo.optional_count, "optional item"));
+      optBtn.type = "button";
+      optBtn.id = "opt-toggle";
+      optBtn.setAttribute("aria-expanded", "false");
+      optBtn.addEventListener("click", function () {
+        var on = !panel.classList.contains("show-opt");
+        panel.classList.toggle("show-opt", on);
+        optBtn.setAttribute("aria-expanded", on ? "true" : "false");
+        optBtn.textContent = on ? "Hide optional items" : "Show " + plural(todo.optional_count, "optional item");
+      });
+      body.appendChild(optBtn);
+    }
+    panel.appendChild(body);
+    var tctl = collapsible(headBtn, body, true);
+    tctl.onchange = function (o) { tlabel.firstChild.textContent = o ? "Hide" : "Show"; };
+    sec.appendChild(panel);
+    sec.appendChild(extra);
+    return sec;
+  }
+
+  // -------------------------------------------------------------------------
+  // All checks
+  // -------------------------------------------------------------------------
+  var groupCtls = [];
+  var allBtn = null;
+  function syncAllLabel() {
+    if (!allBtn) return;
+    allBtn.textContent = groupCtls.length && groupCtls.every(function (c) { return c.isOpen(); }) ? "Close all" : "Open all";
+  }
+  function renderChecks() {
+    var sec = h("section", "stack");
+    sec.id = "checks";
+    sec.setAttribute("aria-labelledby", "checks-h");
+    var h2 = h("h2", "sec", "All checks");
+    h2.id = "checks-h";
+    allBtn = h("button", "outline-btn no-print", "Open all");
+    allBtn.type = "button";
+    allBtn.id = "toggle-all";
+    allBtn.addEventListener("click", function () {
+      var open = !groupCtls.every(function (c) { return c.isOpen(); });
+      groupCtls.forEach(function (c) { c.set(open); });
+    });
+    append(sec, h("div", "sec-head", [h("div", null, [h2, h("p", "sub", "Problems first. Open a group to see each check.")]), allBtn]));
+    var card = h("div", "card");
+    var groups = V.groups || [];
+    groups.forEach(function (g, idx) {
+      var s = sectionById[g.id] || { id: g.id, checks: [], docs: [] };
+      var kind = kindOfWord(g.word);
+      var wrap = h("div", "group");
+      wrap.id = "sec-" + g.id;
+      var head = h("button", "group-head row", [
+        h("span", "l", [chip(kind, g.word, true), h("span", null, g.title)]),
+        h("span", "r", [mdInline("span", g.summary || "", "sum"), h("span", "n", g.count_label || ""), chev(16)])]);
+      head.type = "button";
+      var body = h("div", "group-body");
+      try {
+        if (g.is_review) {
+          var a = h("a", null, "See the " + ((M.review || {}).status === "ran" ? plural(((M.review || {}).issues || []).length, "code review finding") + " below" : "code review section below"));
+          a.href = "#findings";
+          append(body, h("p", null, a));
+        } else {
+          append(body, checkList(s));
+          var ex = EXTRAS[g.id];
+          if (ex) append(body, h("div", "gx", ex()));
+        }
+        if (!g.is_review) append(body, h("div", "gx", docsBlock(s)));
+      } catch (e) {
+        if (typeof console !== "undefined") console.error(e);
+        append(body, h("div", "notice s-fail", [h("strong", null, "This group failed to render. "), String(e && e.message || e)]));
+      }
+      append(wrap, [head, body]);
+      var ctl = collapsible(head, body, idx === 0);
+      ctl.onchange = syncAllLabel;
+      groupCtls.push(ctl);
+      card.appendChild(wrap);
+    });
+    if (!groups.length) append(card, h("p", "empty", "No checks in this report."));
+    sec.appendChild(card);
+    syncAllLabel();
+    return sec;
+  }
+
+  // -------------------------------------------------------------------------
+  // Code review findings
+  // -------------------------------------------------------------------------
+  var SEV_KIND = { blocker: "fail", major: "fail", minor: "should", nit: "note" };
   function impactTags(x) {
     var tags = [];
-    if (x.impact) tags.push(h("span", "tag impact", "impact: " + x.impact));
-    if (x.confidence) tags.push(h("span", "tag confidence", "confidence: " + x.confidence));
-    if (x.severity_corrected) tags.push(h("span", "tag corrected", "was " + x.severity_corrected.from));
+    if (x.impact) tags.push(h("span", "tag", "impact: " + x.impact));
+    if (x.confidence) tags.push(h("span", "tag", "confidence: " + x.confidence));
+    if (x.severity_corrected) tags.push(h("span", "tag", "was " + x.severity_corrected.from));
     return tags;
-  }
-  function issueCard(i) {
-    var card = h("article", "check issue s-" + (SEV_STATUS[i.severity] || "unknown"));
-    card.setAttribute("data-issue", i.id);
-    append(card, h("div", "check-head", [badge(SEV_STATUS[i.severity] || "unknown", i.severity), h("span", "ct", i.rule), h("span", "cid", i.id),
-      h("span", "spacer"), (i.lenses || []).map(function (l) { return h("span", "tag lens-chip", l); })]));
-    var meta = impactTags(i);
-    if (meta.length) append(card, h("div", "check-head", meta));
-    var locs = i.locations && i.locations.length ? i.locations : [i.location];
-    append(card, h("p", "muted", locs.map(function (l, n) { return [n ? ", " : "", h("span", "mono", l)]; })));
-    append(card, mdInline("p", i.problem, "csum"));
-    append(card, h("div", "next", [h("span", "lead", "Fix"), mdInline("span", i.fix)]));
-    (i.also_fixes || []).forEach(function (a) {
-      append(card, h("div", "next also-fix", [h("span", "lead", "Also suggested by " + a.lens), mdInline("span", a.fix)]));
-    });
-    return card;
   }
   function reviewHeadline() {
     var rv = M.review || {};
@@ -1145,54 +1199,216 @@ body.no-data #no-data { display: block; }
     var reporting = (rv.lenses || []).filter(function (l) { return (l.findings || []).length; }).length;
     return plural(rv.issues.length, "issue") + " (" + plural(findings, "finding") + " from " + plural(reporting, "lens").replace(/lenss$/, "lenses") + ")";
   }
-
-  function renderReview() {
+  function issueCard(i) {
+    var wrap = h("div", "finding");
+    wrap.setAttribute("data-issue", i.id);
+    var locs = i.locations && i.locations.length ? i.locations : [i.location];
+    var hl = (V.headlines || {})[i.id] || i.rule;
+    var head = h("button", "finding-head row", [h("span", "sev " + i.severity, i.severity),
+      h("span", "m", [mdInline("span", hl, "hl"), h("span", "loc", locs.join(", "))]), chev(16)]);
+    head.type = "button";
+    var body = h("div", "finding-body", [
+      h("div", null, [h("div", "lab", "Problem"), mdInline("p", i.problem)]),
+      h("div", null, [h("div", "lab", "Suggested fix"), mdInline("p", i.fix)])
+    ]);
+    (i.also_fixes || []).forEach(function (a) {
+      append(body, h("div", null, [h("div", "lab", "Also suggested by " + a.lens), mdInline("p", a.fix)]));
+    });
+    var raised = (i.lenses || []).join(", ") + (i.lenses && i.lenses.length > 1 ? " (" + i.lenses.length + " lenses agree)" : "");
+    append(body, h("div", "full", ["Raised by: ", h("span", "lenses", raised), " · rule ", h("code", null, i.rule), " · ", h("span", "mono", i.id), impactTags(i)]));
+    append(wrap, [head, body]);
+    collapsible(head, body, false);
+    return wrap;
+  }
+  function lensFinding(f) {
+    return h("div", "fd", [
+      h("div", "t", [h("span", "sev " + f.severity, f.severity), h("span", null, f.rule), h("span", "mono muted", f.id), impactTags(f),
+        h("span", "mono muted", f.location)]),
+      mdInline("p", f.problem), h("p", null, [h("strong", null, "Fix: "), mdInline("span", f.fix)])]);
+  }
+  function renderFindings() {
     var rv = M.review || {};
-    var out = [];
-    if (rv.status === "not-run" || !rv.status) {
-      out.push(h("div", "notice s-unknown", [h("strong", null, "Not run in this version. "),
-        "No code review lens has read this patch. The recommendation cannot go past “requirements met, unreviewed” until one does."]));
-    } else {
-      var lenses = rv.lenses || [];
-      if (!lenses.length) out.push(empty("No lenses reported."));
-      var counts = rv.counts || {};
-      var panelState = !rv.complete ? "unknown" : (rv.approved ? "pass" : "fail");
-      var panelText = !rv.complete ? "Panel incomplete: a lens is missing or returned invalid output, so this cannot count as an approval."
-        : (rv.approved ? "Every lens approved with no blocker or major findings." : "At least one lens did not approve, or a blocker/major finding was reported.");
-      out.push(h("div", "notice s-" + panelState, [badge(panelState, !rv.complete ? "incomplete" : (rv.approved ? "approved" : "not approved")), " ", panelText,
-        h("span", "muted", " Findings: " + ["blocker", "major", "minor", "nit"].map(function (k) { return (counts[k] || 0) + " " + k; }).join(", ") + ".")]));
-      if (rv.checklists && rv.checklists.sha)
-        out.push(h("p", "muted checklists", "checklists: apache/cassandra trunk @ " + short(rv.checklists.sha, 10)));
-      var issues = rv.issues || [];
-      if (rv.issues) {
-        out.push(block("Issues", issues.length ? [h("div", "checks issues", issues.map(issueCard))]
-          : [empty("No issues reported.")], issues.length));
+    var sec = h("section", "stack");
+    sec.id = "findings";
+    sec.setAttribute("aria-labelledby", "findings-h");
+    var h2 = h("h2", "sec", "Code review findings");
+    h2.id = "findings-h";
+    var lenses = rv.lenses || [];
+    var sub = lenses.length ? "Found by " + plural(lenses.length, "automated review lens").replace(/lenss/, "lenses") + ". A finding several lenses agree on is listed once."
+      : "Found by automated review lenses. A finding several lenses agree on is listed once.";
+    append(sec, h("div", "sec-head", h("div", null, [h2, h("p", "sub", sub), reviewHeadline() ? h("p", "sub review-headline", reviewHeadline()) : null])));
+    try {
+      if (rv.status === "not-run" || !rv.status) {
+        append(sec, h("div", "notice s-unknown", [h("strong", null, "Not run in this version. "),
+          "No code review lens has read this patch. The recommendation cannot go past “requirements met, not reviewed” until one does."]));
+      } else {
+        var ic = rv.issue_counts || {};
+        var chips = h("div", "chips");
+        ["blocker", "major", "minor", "nit"].forEach(function (k) { if (ic[k]) chips.appendChild(h("span", "sevchip " + k, ic[k] + " " + k)); });
+        if (!chips.childNodes.length) chips.appendChild(h("span", "sevchip", "No issues"));
+        chips.appendChild(h("span", "muted", "Blockers and majors must be fixed. Minors are suggestions."));
+        append(sec, chips);
+        var kind = !rv.complete ? "unknown" : (rv.approved ? "pass" : "fail");
+        var text = !rv.complete ? "Panel incomplete: a lens is missing or returned invalid output, so this cannot count as an approval."
+          : (rv.approved ? "Every lens approved with no blocker or major findings." : "At least one lens did not approve, or a blocker/major finding was reported.");
+        var counts = rv.counts || {};
+        append(sec, h("div", "notice s-" + kind, [chip(kind, !rv.complete ? "incomplete" : (rv.approved ? "approved" : "not approved")), " ", text,
+          h("span", "muted", " Findings: " + ["blocker", "major", "minor", "nit"].map(function (k) { return (counts[k] || 0) + " " + k; }).join(", ") + ".")]));
+        if (rv.checklists && rv.checklists.sha)
+          append(sec, h("p", "muted checklists", "checklists: apache/cassandra trunk @ " + short(rv.checklists.sha, 10)));
+        var issues = rv.issues || [];
+        if (rv.issues) {
+          append(sec, issues.length ? h("div", "stack issues", issues.map(issueCard)) : empty("No issues reported."));
+        }
+        var inner = h("div", "cc-body");
+        lenses.forEach(function (lens) {
+          var fs = (lens.findings || []).slice().sort(function (a, b) { return ({ blocker: 0, major: 1, minor: 2, nit: 3 }[a.severity] - { blocker: 0, major: 1, minor: 2, nit: 3 }[b.severity]); });
+          var lk = lens.status !== "ran" ? "unknown" : (lens.approve ? "pass" : "fail");
+          var lword = lens.status !== "ran" ? lens.status : (lens.approve ? "approved" : "declined");
+          var card = h("div", "lens-card", [h("h4", null, [lens.name, chip(lk, lword), h("span", "mono muted", lens.agent || "")])]);
+          if (lens.error) append(card, h("p", null, "Error: " + lens.error));
+          if (lens.summary) append(card, mdInline("p", lens.summary));
+          if (lens.status === "ran" && lens.tests_detail) append(card, h("p", "muted", "Tests: " + (lens.tests_ran || "") + " — " + lens.tests_detail));
+          if (lens.status === "ran") {
+            if (fs.length) fs.forEach(function (f) { card.appendChild(lensFinding(f)); });
+            else append(card, h("p", "empty", "No findings from this lens."));
+          }
+          inner.appendChild(card);
+        });
+        if (lenses.length) {
+          var lbtn = h("button", "outline-btn lens-detail-toggle", [h("span", null, "Per-lens detail"), " ", chev(14)]);
+          lbtn.type = "button";
+          lbtn.style.display = "inline-flex";
+          lbtn.style.alignItems = "center";
+          lbtn.style.gap = "8px";
+          lbtn.style.alignSelf = "flex-start";
+          append(sec, [lbtn, inner]);
+          collapsible(lbtn, inner, false);
+        } else append(sec, empty("No lenses reported."));
       }
-      var detail = [];
-      lenses.forEach(function (lens) {
-        var fs = (lens.findings || []).slice().sort(function (a, b) { return (SEV_ORDER[a.severity] - SEV_ORDER[b.severity]); });
-        var lst = lens.status !== "ran" ? "unknown" : (lens.approve ? "pass" : "fail");
-        var lword = lens.status !== "ran" ? lens.status : (lens.approve ? "approved" : "declined");
-        var head = h("div", "lens-head", [badge(lst, lword), h("span", "mono muted", " " + (lens.agent || ""))]);
-        var intro = [head];
-        if (lens.error) intro.push(h("p", "csum", "Error: " + lens.error));
-        if (lens.summary) intro.push(mdInline("p", lens.summary, "csum"));
-        if (lens.status === "ran" && lens.tests_detail) intro.push(h("p", "muted", "Tests: " + (lens.tests_ran || "") + " — " + lens.tests_detail));
-        if (lens.status !== "ran") { detail.push(block(lens.name, intro, 0)); return; }
-        detail.push(block(lens.name, intro.concat([fs.length ? h("div", "checks", fs.map(function (f) {
-          return h("article", "check s-" + (SEV_STATUS[f.severity] || "unknown"), [
-            h("div", "check-head", [badge(SEV_STATUS[f.severity] || "unknown", f.severity), h("span", "ct", f.rule), h("span", "cid", f.id),
-              impactTags(f), h("span", "spacer"), h("span", "mono muted", f.location)]),
-            mdInline("p", f.problem, "csum"),
-            h("div", "next", [h("span", "lead", "Fix"), mdInline("span", f.fix)])
-          ]);
-        })) : empty("No findings from this lens.")]), fs.length));
-      });
-      out.push(h("h3", "lens-detail-title", "Per-lens detail"));
-      out = out.concat(detail);
+      append(sec, docsBlock(sectionById.review));
+    } catch (e) {
+      if (typeof console !== "undefined") console.error(e);
+      append(sec, h("div", "notice s-fail", [h("strong", null, "Code review failed to render. "), String(e && e.message || e)]));
     }
-    out.push(docsBlock(sectionById.review));
-    return out;
+    return sec;
+  }
+
+  // -------------------------------------------------------------------------
+  // Background: effort, people, history, files + diff view, lab plan
+  // -------------------------------------------------------------------------
+  function bgCard(id, title, extraCls) {
+    var c = h("div", "bg-card" + (extraCls ? " " + extraCls : ""));
+    c.id = id;
+    return c;
+  }
+  function toggleLink(label, hideLabel, body) {
+    var btn = h("button", "linkbtn", [h("span", null, label), chev(14)]);
+    btn.type = "button";
+    var ctl = collapsible(btn, body, false);
+    ctl.onchange = function (o) { btn.firstChild.textContent = o ? hideLabel : label; };
+    return btn;
+  }
+  function effortCard() {
+    var tr = M.triage || {};
+    var level = (V.effort && V.effort.level) || ({ easy: 1, moderate: 2, hard: 3 }[tr.rating] || 0);
+    var c = bgCard("bg-effort");
+    append(c, h("div", "hd", [h("h3", null, "Review effort"), h("span", "rating", tr.rating || "unknown")]));
+    var bar = h("div", "bar", [1, 2, 3].map(function (n) { return h("i", n <= level ? "on" : null); }));
+    bar.setAttribute("aria-label", "Effort: " + (tr.rating || "unknown") + ", " + level + " of 3");
+    bar.setAttribute("role", "img");
+    append(c, bar);
+    append(c, h("p", null, (V.effort && V.effort.text) || ""));
+    var body = h("div", "stack");
+    var sig = h("ul", "sig");
+    (tr.signals || []).forEach(function (s) {
+      var pts = Number(s.points) || 0;
+      sig.appendChild(h("li", null, [h("span", "k", s.signal),
+        h("span", "v", [String(s.value), pts ? " · +" + pts : "", s.why ? h("span", "why", s.why) : null])]));
+    });
+    append(body, sig);
+    append(body, h("p", null, "Points: " + (tr.points || 0) + (tr.lines !== undefined ? " · counted lines: " + tr.lines : "") +
+      (tr.files !== undefined ? " · counted files: " + tr.files : "") + (tr.forced_by ? " · forced to hard by: " + tr.forced_by : "")));
+    if (tr.capped_by) append(body, h("p", null, "Capped: " + tr.capped_by + "."));
+    var sp = tr.split_suggestion;
+    if (sp) {
+      append(body, h("div", "notice s-should", [
+        "Consider splitting. This patch changes " + sp.src_lines + " production lines, over the " + sp.threshold + "-line threshold. The largest files:",
+        list(sp.largest || [], function (f) { return [h("span", "mono", f.path), h("span", "muted", " · " + plural(f.lines, "line"))]; })]));
+    }
+    append(body, docsBlock(sectionById.triage));
+    append(c, [toggleLink("Show how this was rated", "Hide how this was rated", body), body]);
+    return c;
+  }
+  function personNote(p, involved) {
+    return (involved ? "Already involved" : "Suggested") + " · " + plural(p.patches, "patch").replace(/patchs/, "patches") + ", " + plural(p.reviews, "review") + " here, latest " + monthYear(p.latest);
+  }
+  function peopleCard() {
+    var cx = M.context || {};
+    var c = bgCard("bg-people");
+    append(c, h("h3", null, "Who knows this code"));
+    if (cx.status !== "ok") {
+      append(c, h("p", "muted", cx.reason || "Not available."));
+      append(c, docsBlock(sectionById.context));
+      return c;
+    }
+    var sug = cx.suggested_reviewers || [], already = cx.already_reviewing || [];
+    function person(p, involved) {
+      return h("li", null, [h("span", "avatar" + (involved ? " involved" : ""), initials(p.name)),
+        h("span", "who", [h("span", "nm", [p.name, p.asf_id ? h("span", "mono muted", " " + p.asf_id) : null]), h("small", null, personNote(p, involved))])]);
+    }
+    if (!sug.length && !already.length) {
+      append(c, h("p", "muted", cx.new_files_only ? "The PR only adds new files, so there is no prior history for the changed code."
+        : "No committer has recent history with the changed files."));
+    } else {
+      append(c, h("ul", "people", already.map(function (p) { return person(p, true); }).concat(sug.map(function (p) { return person(p, false); }))));
+    }
+    if (cx.new_files_only && (sug.length || already.length)) append(c, h("div", "notice s-note", "The PR only adds new files, so there is no prior history for the changed code."));
+    var b = cx.budget || {};
+    if (b.hunks_skipped || b.files_skipped) {
+      append(c, h("div", "notice s-note", "Work was bounded on this large PR: blamed " + b.hunks_blamed + " of " + b.hunks_total +
+        " hunks (" + b.hunks_skipped + " skipped) and read history for " + b.files_logged + " of " + b.files_total + " files (" + b.files_skipped + " skipped). Production files were done first."));
+    }
+    if (cx.tickets_error) append(c, h("div", "notice s-unknown", "Ticket details could not be fetched: " + cx.tickets_error));
+    var ex = cx.experts || {};
+    var paths = Object.keys(ex);
+    var body = h("div", "stack");
+    if (!paths.length) append(body, empty("No existing files changed."));
+    paths.forEach(function (p) {
+      var from = (cx.experts_from || {})[p];
+      append(body, h("div", "panel", [h("div", null, [h("span", "mono", p), from ? h("span", "muted", " · history from " + from) : null]),
+        ex[p].length ? list(ex[p], function (x) {
+          return [h("strong", null, x.name), x.asf_id ? h("span", "mono muted", " " + x.asf_id) : h("span", "muted", " (not matched to a committer)"),
+            h("span", "muted", " · score " + x.score + " · " + x.patches + " authored, " + x.reviews + " reviewed · latest " + x.latest)];
+        }) : h("p", "muted", "No commits in the last 5 years.")]));
+    });
+    append(body, docsBlock(sectionById.context));
+    append(c, [toggleLink("Show the most experienced person for each file", "Hide per-file detail", body), body]);
+    return c;
+  }
+  function historyCard() {
+    var cx = M.context || {};
+    var c = bgCard("bg-history");
+    append(c, h("h3", null, "History of this code"));
+    if (cx.status !== "ok") { append(c, h("p", "muted", cx.reason || "Not available.")); return c; }
+    var rt = cx.related_tickets || [];
+    if (!rt.length) append(c, h("p", "muted", "No earlier tickets own the changed lines."));
+    rt.forEach(function (t) {
+      var st = t.status ? (t.resolution || t.status) : "";
+      var el = h("div", "hist", [link(t.url, t.key, "a"), h("span", "b", t.summary || h("span", "muted", "summary unavailable")),
+        h("span", "c", [st, st ? " · " : "", "last changed " + monthYear(t.last_changed), " · ", t.lines + " of the changed " + (t.lines === 1 ? "line" : "lines")])]);
+      if ((t.commits || []).length) append(el, details(plural(t.commits.length, "commit"), list(t.commits, function (k) { return [h("span", "mono", k.sha.slice(0, 10)), " " + k.date + " " + k.subject]; }), { cls: "inline" }));
+      c.appendChild(el);
+    });
+    var li = cx.linked_issues || [];
+    if (li.length) append(c, gblock("Issues linked to this ticket", [table(["Relation", "Ticket", "Summary", "Status"], li.map(function (l) {
+      return { cells: [l.relation || "", link(l.url, l.key, "mono"), l.summary || "", l.status || ""] };
+    }))], li.length));
+    var un = cx.untracked_commits || [];
+    if (un.length) append(c, gblock("Commits without a ticket", [table(["Commit", "Date", "Subject", "Author", "Lines"], un.map(function (u) {
+      return { cells: [h("span", "mono", u.sha.slice(0, 10)), u.date, u.subject, u.author, { num: true, node: String(u.lines) }] };
+    }))], un.length));
+    return c;
   }
 
   function decodeB64Utf8(b64) {
@@ -1201,55 +1417,59 @@ body.no-data #no-data { display: block; }
     for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
     return new TextDecoder("utf-8").decode(bytes);
   }
-  function renderChanges() {
+  var openDiff = function () {};
+  function filesCard() {
     var dv = M.diffview || {};
     var files = M.files || [];
-    var out = [];
+    var c = bgCard("changes", "Files changed", "full");
+    append(c, h("h3", null, "Files changed"));
+    var ul = h("ul", "filelist");
+    if (!files.length) append(c, empty("No files in the model."));
+    files.forEach(function (f) {
+      var li = h("li", null, [h("span", "p", [f.path, f.previous_path ? h("span", "muted", " (from " + f.previous_path + ")") : null]),
+        h("span", "st", (f.status ? String(f.status).charAt(0) : "") + (f.binary ? " binary" : "")),
+        h("span", "d", [h("span", "add", "+" + (f.additions || 0)), " ", h("span", "del", "−" + (f.deletions || 0))])]);
+      ul.appendChild(li);
+    });
+    if (files.length) append(c, ul);
     var ok = dv.status === "ok" && dv.html_b64;
+    var diffBody = h("div", "diff-wrap");
+    var btn = null;
     if (ok) {
-      var frame = document.createElement("iframe");
-      frame.className = "diff-frame";
-      frame.setAttribute("sandbox", "allow-scripts");
-      frame.setAttribute("title", "Diff view for PR #" + pr.number);
-      frame.setAttribute("referrerpolicy", "no-referrer");
-      try {
-        frame.srcdoc = decodeB64Utf8(String(dv.html_b64));
-        out.push(frame);
-      } catch (e) {
-        ok = false;
-        out.push(h("div", "notice s-unknown", [h("strong", null, "Diff view could not be decoded. "), "The file list below is shown instead."]));
-      }
-      if (dv.version) out.push(h("p", "muted no-print", "Diff view from ide-explain " + dv.version + "."));
+      btn = h("button", "outline-btn no-print", [h("span", null, "Open the diff view"), " ", chev(14)]);
+      btn.type = "button";
+      btn.id = "diff-toggle";
+      btn.style.alignSelf = "flex-start";
+      var ctl = collapsible(btn, diffBody, false);
+      var built = false;
+      ctl.onchange = function (o) {
+        btn.firstChild.textContent = o ? "Close the diff view" : "Open the diff view";
+        if (o && !built) {
+          built = true;
+          var frame = document.createElement("iframe");
+          frame.className = "diff-frame";
+          frame.setAttribute("sandbox", "allow-scripts");
+          frame.setAttribute("title", "Diff view for PR #" + pr.number);
+          frame.setAttribute("referrerpolicy", "no-referrer");
+          try {
+            frame.srcdoc = decodeB64Utf8(String(dv.html_b64));
+            diffBody.appendChild(frame);
+          } catch (e) {
+            diffBody.appendChild(h("div", "notice s-unknown", [h("strong", null, "Diff view could not be decoded. "), "The file list above is shown instead."]));
+          }
+          if (dv.version) diffBody.appendChild(h("p", "muted", "Diff view from ide-explain " + dv.version + "."));
+        }
+      };
+      openDiff = function () { if (!ctl.isOpen()) ctl.set(true); };
+      append(c, [btn, diffBody]);
     } else {
-      out.push(h("div", "notice s-unknown", [h("strong", null, "Diff view unavailable. "), dv.reason || "No reason recorded."]));
+      append(c, h("div", "notice s-unknown", [h("strong", null, "Diff view unavailable. "), dv.reason || "No reason recorded."]));
     }
     var om = dv.omitted || [];
-    if (om.length) out.push(block("Left out of the diff view", [list(om, function (o) { return mdInline("span", typeof o === "string" ? o : JSON.stringify(o)); })], om.length));
-    var ft = details("Files changed (" + files.length + ")", fileTable(files), { open: !ok });
-    ft.id = "changes-files";
-    out.push(h("div", "block", ft));
-    out.push(docsBlock(sectionById.changes));
-    return out;
-  }
-
-  function renderAbout() {
-    var a = M.about || {};
-    var inp = a.inputs || {};
-    var tool = M.tool || {};
-    var out = [];
-    out.push(block("This report", [h("div", "panel", fields([
-      ["Tool", (tool.name || "") + " " + (tool.version || "")],
-      ["Generated", M.generated_at],
-      ["Model schema", String(M.schema)]
-    ].concat(Object.keys(inp).map(function (k) {
-      var v = inp[k];
-      var label = k.replace(/_/g, " ");
-      label = label.charAt(0).toUpperCase() + label.slice(1);
-      return [label, v === null || v === undefined ? null : h("span", /sha|merge_base/.test(k) ? "mono" : null, String(v))];
-    }))))]));
-    out.push(block("Not checked by this tool", [list(a.not_checked || [], function (x) { return mdInline("span", x); })], (a.not_checked || []).length));
-    out.push(block("Needs a human", [list(a.human_only || [], function (x) { return mdInline("span", x); })], (a.human_only || []).length));
-    return out;
+    if (om.length) append(c, gblock("Left out of the diff view", [list(om, function (o) { return mdInline("span", typeof o === "string" ? o : JSON.stringify(o)); })], om.length));
+    if (pr.url && isSafeLinkUrl(pr.url)) append(c, h("p", null, link(String(pr.url).replace(/\/+$/, "") + "/files", "Open the diff on GitHub")));
+    append(c, docsBlock(sectionById.changes));
+    return c;
   }
 
   function copyText(text, done) {
@@ -1273,268 +1493,273 @@ body.no-data #no-data { display: block; }
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
   }
-
-  var BUILD_BANNER = {
-    "pass": ["pass", "Built and tested.", "The branch compiled and the selected tests passed."],
-    "tests-failed": ["fail", "Tests failed.", "The branch compiled; some selected tests failed."],
-    "build-failed": ["fail", "Build failed.", "The branch did not compile; no tests ran."],
-    "timeout": ["unknown", "Timed out.", "The run hit its time limit; results are incomplete."],
-    "unknown": ["unknown", "Inconclusive.", "The run could not prove a pass or a failure."],
-    "not-built": ["info", "Not built for this head.", ""]
-  };
-  var BUILD_NOTE = "Line coverage shows which changed lines ran under the selected tests; it does not show that the fix's behaviour is tested. Read with the test regime lens.";
-
-  function buildItemText(u) {
-    if (u && typeof u === "object") return (u["class"] ? u["class"] + (u.test ? "." + u.test : "") : "") + (u.message ? ": " + u.message : "");
-    return String(u);
-  }
-  function renderBuild(sec) {
-    var b = M.build || { status: "not-built" };
-    var out = [];
-    var ban = BUILD_BANNER[b.status] || BUILD_BANNER.unknown;
-    if (b.status === "not-built") {
-      out.push(h("div", "notice s-info build-banner", [h("strong", null, ban[1] + " "),
-        b.reason || "No build result for this head.",
-        h("div", "muted", "Builds run automatically only for PRs by committers" + (b.author_is_committer === false ? " (this PR’s author is not on the committer roster)" : "") +
-          ". The owner can approve one head with "), h("code", null, "cpr build " + (pr.number || "<N>") + " --approve"), "."]));
-      out.push(block("Build & coverage", [empty("Nothing was built, so no test or coverage numbers are shown.")]));
-      out.push(checksBlock(sec));
-      out.push(h("p", "muted build-note", BUILD_NOTE));
-      out.push(docsBlock(sec));
-      return out;
-    }
-    out.push(h("div", "notice s-" + ban[0] + " build-banner", [h("strong", null, ban[1] + " "), ban[2],
-      b.reason ? h("div", null, b.reason) : null,
-      h("div", "muted", [b.base_branch ? "Base " + b.base_branch : null, b.jdk ? " · " + b.jdk : null,
-        b.timings_s && b.timings_s.total_wall ? " · " + b.timings_s.total_wall + " s wall clock" : null,
-        b.approved ? " · owner-approved" : null])]));
-    out.push(checksBlock(sec));
-    var t = b.tests;
-    if (t) {
-      out.push(block("Tests", [table(["Classes", "Run", "Failed", "Errors", "Skipped"],
-        [{ cells: [{ num: true, node: String(t.classes) }, { num: true, node: String(t.run) }, { num: true, node: String(t.failed) },
-          { num: true, node: String(t.errors) }, { num: true, node: String(t.skipped) }] }], { cls: "build-tests" }),
-        (t.failures || []).length ? list(t.failures, function (f) {
-          return [h("span", "mono", f["class"] + "." + f.test), f.message ? h("div", "muted", f.message) : null];
-        }) : h("p", "empty", "No test failed.")], t.run));
-    }
-    var files = b.changed_lines ? Object.keys(b.changed_lines).sort() : [];
-    if (b.changed_lines) {
-      var rows = files.map(function (path) {
-        var i = b.changed_lines[path] || {};
-        var cov = (i.covered || []).length, part = (i.partial || []).length, miss = (i.missed || []).length;
-        var n = cov + part + miss;
-        return { cells: [{ node: h("span", "mono", path) },
-          n ? (cov + part) + "/" + n + (part ? " (" + part + " partly)" : "") : "no executable lines",
-          miss ? h("span", "mono del", (i.missed || []).join(", ")) : h("span", "muted", n ? "none" : "")] };
-      });
-      var tot = b.changed_total || {};
-      out.push(block("Changed-line coverage", [
-        h("p", null, tot.executable ? (tot.covered + (tot.partial || 0)) + " of " + plural(tot.executable, "added executable line") + " ran under the selected tests."
-          : "No added executable lines under src/java."),
-        files.length ? table(["File", "Covered", "Missed lines"], rows, { cls: "build-cov" }) : null], files.length));
-    } else {
-      out.push(block("Changed-line coverage", [empty("Coverage was not measured for this run.")]));
-    }
-    var sel = b.selected || [];
-    out.push(block("Selected tests", [sel.length ? details("Show " + (sel.length === 1 ? "1 selected test class" : sel.length + " selected test classes") + " and why", list(sel, function (c) {
-      return [h("span", "mono", c["class"]), h("span", "muted", " — " + (c.reasons || []).join("; "))];
-    }), { cls: "build-selected" }) : empty("No test classes were selected.")], sel.length));
-    var unk = b.sandbox_unknowns || [];
-    if (unk.length) out.push(block("Sandbox artifacts (unknown, not failures)", [h("div", "build-unknowns", list(unk, function (u) { return buildItemText(u); }))], unk.length));
-    if ((b.notes || []).length) out.push(block("Notes", [details("Show run notes", list(b.notes, function (n) { return String(n); }), {})]));
-    out.push(h("p", "muted build-note", BUILD_NOTE));
-    out.push(docsBlock(sec));
-    return out;
-  }
-
-  function renderLabplan(sec) {
+  function labplanCard() {
     var lp = M.lab_plan || {};
-    var out = [];
-    if (sec.summary) out.push(h("p", "lead", sec.summary));
-    if (lp.status !== "plan") {
-      out.push(block("Lab plan", [h("div", "notice s-info", "No lab plan: " + (lp.reason || "not applicable") + ".")]));
-      out.push(docsBlock(sec));
-      return out;
+    var sec = sectionById.labplan || {};
+    var c = bgCard("labplan", "Lab plan", "full collapsible-card");
+    var planned = lp.status === "plan";
+    var head = h("button", "cc-head row", [h("span", "tt", [h("b", null, "Lab plan"),
+      h("span", null, sec.summary || (planned ? "A generated plan for a lab run." : "No lab plan: " + (lp.reason || "not applicable") + "."))]),
+      h("span", "r", [planned ? h("span", "tag", "Not run") : h("span", "tag", "No plan"), chev(16)])]);
+    head.type = "button";
+    head.querySelector(".r").style.display = "inline-flex";
+    head.querySelector(".r").style.gap = "10px";
+    head.querySelector(".r").style.alignItems = "center";
+    var body = h("div", "cc-body");
+    if (!planned) {
+      append(body, h("div", "notice s-note", "No lab plan: " + (lp.reason || "not applicable") + "."));
+    } else {
+      append(body, h("div", "notice s-should labplan-banner", [h("strong", null, "Not run. "),
+        "This plan was generated from the diff. No cluster was created and no command was executed. Run it with ",
+        h("code", null, "/easy-db-lab:run plan.md <cluster-dir>"), " only after reading it."]));
+      var scn = (lp.scenarios || []).map(function (s) {
+        return h("li", null, [h("strong", null, s.title), " (rule ", h("code", null, (s.rules || []).join(", ")), "; " +
+          plural(s.files, "file") + ", " + plural(s.lines, "line") + ")"]);
+      });
+      var rows = [["Cluster name", h("span", "mono", lp.cluster)], ["Estimated wall clock", lp.hours + " h"]];
+      if ((lp.dropped || []).length) rows.push(["Not chosen (cap)", lp.dropped.map(function (d) { return d.title; }).join(", ")]);
+      append(body, gblock("Scenarios", [h("div", "panel", [h("ul", null, scn), fields(rows)])], scn.length));
+      var status = h("span", "muted", "");
+      status.setAttribute("role", "status");
+      var copy = h("button", "outline-btn", "Copy plan");
+      copy.type = "button";
+      copy.id = "labplan-copy";
+      copy.addEventListener("click", function () {
+        copyText(lp.markdown, function (ok) { status.textContent = ok ? "Copied." : "Copy failed: select the text below."; });
+      });
+      var dl = h("button", "outline-btn", "Download " + lp.filename);
+      dl.type = "button";
+      dl.id = "labplan-download";
+      dl.addEventListener("click", function () { downloadText(lp.filename, lp.markdown); });
+      append(body, h("div", "actions no-print", [copy, dl, status]));
+      var shown = String(lp.markdown).split("\n").map(function (l) { return l.replace(/^>\s?/, ""); }).join("\n");
+      append(body, gblock("Plan", [h("div", "panel labplan-plan", md(shown))]));
+      append(body, gblock("Raw plan.md", [details("Show raw markdown", h("pre", null, lp.markdown), {})]));
     }
-    out.push(h("div", "notice s-warn labplan-banner", [h("strong", null, "Not run. "),
-      "This plan was generated from the diff. No cluster was created and no command was executed. Run it with ",
-      h("code", null, "/easy-db-lab:run plan.md <cluster-dir>"), " only after reading it."]));
-    var scn = (lp.scenarios || []).map(function (s) {
-      return h("li", null, [h("strong", null, s.title), " (rule ", h("code", null, (s.rules || []).join(", ")), "; " +
-        plural(s.files, "file") + ", " + plural(s.lines, "line") + ")"]);
-    });
-    var rows = [["Cluster name", h("span", "mono", lp.cluster)], ["Estimated wall clock", lp.hours + " h"]];
-    if ((lp.dropped || []).length)
-      rows.push(["Not chosen (cap)", lp.dropped.map(function (d) { return d.title; }).join(", ")]);
-    out.push(block("Scenarios", [h("div", "panel", [h("ul", null, scn), fields(rows)])], scn.length));
-    var status = h("span", "muted", "");
-    status.setAttribute("role", "status");
-    var copy = h("button", "tool", "Copy plan");
-    copy.type = "button";
-    copy.id = "labplan-copy";
-    copy.addEventListener("click", function () {
-      copyText(lp.markdown, function (ok) { status.textContent = ok ? "Copied." : "Copy failed: select the text below."; });
-    });
-    var dl = h("button", "tool", "Download " + lp.filename);
-    dl.type = "button";
-    dl.id = "labplan-download";
-    dl.addEventListener("click", function () { downloadText(lp.filename, lp.markdown); });
-    out.push(h("div", "labplan-actions no-print", [copy, dl, status]));
-    // The plan's own leading blockquote repeats the banner above; drop the "> " marker, keep the words.
-    var shown = String(lp.markdown).split("\n").map(function (l) { return l.replace(/^>\s?/, ""); }).join("\n");
-    out.push(block("Plan", [h("div", "panel labplan-plan", md(shown))]));
-    out.push(block("Raw plan.md", [details("Show raw markdown", h("pre", null, lp.markdown), {})]));
-    out.push(docsBlock(sec));
-    return out;
+    append(body, docsBlock(sec));
+    append(c, [head, body]);
+    collapsible(head, body, false);
+    return c;
   }
 
-  function renderGeneric(sec) { return [checksBlock(sec), docsBlock(sec)]; }
-
-  var RENDERERS = {
-    summary: function (s) { return renderSummary().concat([docsBlock(s)]); },
-    ticket: function (s) { return renderTicket().concat([docsBlock(s)]); },
-    ci: renderCi, testing: renderTesting, build: renderBuild, labplan: renderLabplan, commits: renderCommits, compatibility: renderCompat,
-    votes: renderVotes, triage: renderTriage, context: renderContext, review: renderReview, changes: renderChanges, about: renderAbout
-  };
+  function renderBackground() {
+    var sec = h("section", "stack");
+    sec.id = "background";
+    sec.setAttribute("aria-labelledby", "bg-h");
+    var h2 = h("h2", "sec", "Background for reviewers");
+    h2.id = "bg-h";
+    append(sec, h("div", "sec-head", h("div", null, [h2, h("p", "sub", "Information only. Nothing here passes or fails.")])));
+    var grid = h("div", "bg-grid");
+    [effortCard, peopleCard, historyCard, filesCard, labplanCard].forEach(function (fn) {
+      try { grid.appendChild(fn()); } catch (e) {
+        if (typeof console !== "undefined") console.error(e);
+        grid.appendChild(h("div", "bg-card full", h("div", "notice s-fail", [h("strong", null, "This card failed to render. "), String(e && e.message || e)])));
+      }
+    });
+    sec.appendChild(grid);
+    return sec;
+  }
 
   // -------------------------------------------------------------------------
-  // Build page
+  // Glossary and footer (About lives here)
+  // -------------------------------------------------------------------------
+  var GLOSSARY = [
+    ["Must fix", "The PR cannot merge until this is done."],
+    ["Should fix", "Not required to merge, but reviewers will likely ask for it."],
+    ["Note", "Worth knowing. Nobody has to act on it."],
+    ["Unknown", "The tool could not read what it needed, so it cannot say."],
+    ["Not needed", "The check does not apply to this change."],
+    ["Committer", "A project member who can merge code and run CI."],
+    ["+1 vote", "A committer says “I approve this change.” Two are needed."],
+    ["CI", "Continuous integration: the full automated test run."],
+    ["Fix Version", "The release versions in JIRA where this fix will ship."],
+    ["Blocker / major / minor", "How serious a code review finding is. Blockers and majors must be fixed."],
+    ["Lens", "One automated reviewer that looks at the code for one kind of problem."],
+    ["Review effort", "How much work a human review will take: easy, moderate or hard."],
+    ["Lab plan", "A generated plan for trying the change on a test cluster. It is not run for you."],
+    ["Diff view", "The code changes with the tool's notes beside them."]
+  ];
+  function renderGlossary() {
+    var sec = h("section", "card");
+    sec.id = "glossary";
+    sec.setAttribute("aria-labelledby", "gl-h");
+    var head = h("button", "cc-head row", [h("span", "tt", [h("b", null, "Words used in this report"), h("span", null, "Short explanations of project terms")]), chev(16)]);
+    head.type = "button";
+    head.querySelector(".tt b").id = "gl-h";
+    head.style.cssText = "width:100%;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 20px;min-height:56px";
+    var dl = h("dl", "gloss", GLOSSARY.map(function (g) { return h("div", null, [h("dt", null, g[0]), h("dd", null, g[1])]); }));
+    append(sec, [head, dl]);
+    collapsible(head, dl, false);
+    return sec;
+  }
+  function renderFooter() {
+    var tool = M.tool || {};
+    var a = M.about || {};
+    var inp = a.inputs || {};
+    var f = h("footer", "ft");
+    append(f, h("div", "line", [
+      h("span", null, "Made by " + (tool.name || "cassandra-pr-review") + " " + (tool.version || "") + " on " + (M.generated_at || "")),
+      h("span", null, ["Reviewed commit ", h("span", "mono", short(pr.head_sha, 7))]),
+      h("span", null, "This tool only reads. It never changes GitHub or JIRA.")]));
+    var body = h("div", "cc-body");
+    append(body, h("div", "panel", fields([
+      ["Tool", (tool.name || "") + " " + (tool.version || "")], ["Generated", M.generated_at], ["Model schema", String(M.schema)]
+    ].concat(Object.keys(inp).map(function (k) {
+      var v = inp[k];
+      var label = k.replace(/_/g, " ");
+      label = label.charAt(0).toUpperCase() + label.slice(1);
+      return [label, v === null || v === undefined ? null : h("span", /sha|merge_base/.test(k) ? "mono" : null, String(v))];
+    })))));
+    append(body, gblock("Not checked by this tool", [list(a.not_checked || [], function (x) { return mdInline("span", x); })], (a.not_checked || []).length));
+    append(body, gblock("Needs a human", [list(a.human_only || [], function (x) { return mdInline("span", x); })], (a.human_only || []).length));
+    var btn = h("button", "linkbtn", [h("span", null, "About this report"), chev(14)]);
+    btn.type = "button";
+    btn.id = "about-toggle";
+    append(f, [btn, body]);
+    body.id = "about";
+    collapsible(btn, body, false);
+    return f;
+  }
+
+  // -------------------------------------------------------------------------
+  // Build the page
   // -------------------------------------------------------------------------
   document.title = "PR #" + pr.number + ": " + (pr.title || "") + " — Cassandra PR review";
-  var navPr = document.getElementById("nav-pr");
-  append(navPr, link(pr.url, "PR #" + pr.number));
-  append(document.getElementById("nav-verdict"), badge(verdictStatus, (M.recommendation && M.recommendation.verdict || "").replace(/-/g, " ")));
-  append(document.getElementById("nav-foot"), [(M.tool && M.tool.name) + " " + (M.tool && M.tool.version), h("br"), "Generated " + (M.generated_at || "")]);
+  append(document.getElementById("nav-pr"), (function () { var a = link(pr.url, "PR #" + pr.number, "nav-pr"); return a; })());
+  append(document.getElementById("nav-pill"), h("span", "chip pill s-" + vKind, verdict.headline));
 
-  var navList = document.getElementById("nav-list");
-  var content = document.getElementById("content");
-  var navLinks = {}, sectionEls = {};
-  M.sections.forEach(function (s) {
-    var a = h("a", null, [h("span", null, s.title), badge(s.status)]);
-    a.href = "#" + s.id;
-    a.setAttribute("aria-label", s.title + ", status " + STATUS[st(s.status)].w);
-    navLinks[s.id] = a;
-    navList.appendChild(h("li", null, a));
-
-    var el = h("section", "report-section");
-    el.id = "section-" + s.id;
-    el.setAttribute("data-section", s.id);
-    el.setAttribute("aria-labelledby", "h-" + s.id);
-    var h2 = h("h2", null, s.title);
-    h2.id = "h-" + s.id;
-    h2.tabIndex = -1;
-    append(el, h("div", "sec-head", [h2, badge(s.status)]));
-    var body;
-    try {
-      body = (RENDERERS[s.id] || renderGeneric)(s);
-    } catch (e) {
+  renderHeader();
+  var mainEl = document.getElementById("main");
+  var renderers = [renderStatus, renderChecks, renderFindings, renderBackground, renderGlossary];
+  renderers.forEach(function (fn) {
+    try { mainEl.appendChild(fn()); } catch (e) {
       if (typeof console !== "undefined") console.error(e);
-      body = [h("div", "notice s-fail", [h("strong", null, "This section failed to render. "), String(e && e.message || e)])];
+      mainEl.appendChild(h("div", "notice s-fail", [h("strong", null, "A section failed to render. "), String(e && e.message || e)]));
     }
-    append(el, body.filter(Boolean));
-    content.appendChild(el);
-    sectionEls[s.id] = el;
   });
+  mainEl.appendChild(renderFooter());
 
   // -------------------------------------------------------------------------
-  // Routing: one section at a time, current section in location.hash.
+  // Navigation: grouped links with status icons
   // -------------------------------------------------------------------------
-  var crumb = document.getElementById("crumb");
-  var current = null, pendingCheck = null, focusHeading = false;
-  function show(id) {
-    if (!sectionEls[id]) id = sectionEls.summary ? "summary" : sectionIds[0];
-    if (current !== id) {
-      Object.keys(sectionEls).forEach(function (k) {
-        sectionEls[k].classList.toggle("active", k === id);
-        if (k === id) navLinks[k].setAttribute("aria-current", "page"); else navLinks[k].removeAttribute("aria-current");
-      });
-      current = id;
-      crumb.textContent = "";
-      append(crumb, ["PR #" + pr.number + " · ", h("strong", null, sectionById[id].title)]);
-      window.scrollTo(0, 0);
-    }
-    if (pendingCheck) {
-      var card = document.getElementById("check-" + pendingCheck);
-      pendingCheck = null;
-      if (card) {
-        card.scrollIntoView({ block: "start" });
-        card.classList.add("flash");
-        setTimeout(function () { card.classList.remove("flash"); }, 1600);
-      }
-    } else if (focusHeading) {
-      var hd = document.getElementById("h-" + id);
-      if (hd) hd.focus({ preventScroll: true });
-    }
-    focusHeading = false;
+  var NAV_COLORS = { fail: "#FF8A5C", should: "#F2C14E", note: "#8FB8EA", unknown: "#C9BDF2", pass: "#4FD1C0", na: "#8A9BB0" };
+  var navLinks = {};
+  var navOrder = [];
+  function navItem(id, label, href, kind, count) {
+    var a = h("a", "nav-link");
+    a.href = href;
+    var mark;
+    if (kind) {
+      mark = svg(kind, 14, 3.2, wordOfKind(kind));
+      mark.style.color = NAV_COLORS[kind];
+    } else mark = h("span", "nav-dot", h("i"));
+    append(a, [mark, h("span", "lbl", label), count ? h("span", "cnt", String(count)) : null]);
+    navLinks[id] = a;
+    navOrder.push({ id: id, el: null, href: href });
+    return a;
   }
-  function route() { show(decodeURIComponent((location.hash || "").replace(/^#/, ""))); }
-  window.addEventListener("hashchange", route);
+  var navBody = document.getElementById("nav-body");
+  function navGroup(label, items) {
+    navBody.appendChild(h("div", "nav-group", [h("div", "eyebrow", label)].concat(items)));
+  }
+  var todoMust = (V.todo && V.todo.must_count) || 0;
+  navGroup("Overview", [navItem("status", "Status", "#status"), navItem("next", "To do", "#next", null, todoMust || "")]);
+  navGroup("Checks", (V.groups || []).map(function (g) {
+    var n = g.is_review ? ((M.review || {}).issues || []).length : ((sectionById[g.id] || {}).checks || []).length;
+    return navItem("g-" + g.id, g.title, g.is_review ? "#findings" : "#sec-" + g.id, kindOfWord(g.word), g.is_review && (M.review || {}).status !== "ran" ? "" : n);
+  }));
+  navGroup("Background", [
+    navItem("bg-effort", "Review effort", "#bg-effort", null, (M.triage || {}).rating ? (M.triage.rating.charAt(0).toUpperCase() + M.triage.rating.slice(1)) : ""),
+    navItem("bg-people", "Who knows this code", "#bg-people"),
+    navItem("bg-history", "History", "#bg-history"),
+    navItem("changes", "Files changed", "#changes", null, (M.files || []).length),
+    navItem("labplan", "Lab plan", "#labplan")
+  ]);
+  navGroup("Help", [navItem("glossary", "Words used here", "#glossary")]);
+  var foot = h("div", "nav-foot", [h("span", null, "Made " + (M.generated_at || "")), h("span", null, ["Commit ", h("span", "mono", short(pr.head_sha, 7))])]);
+  navBody.appendChild(foot);
+  navOrder.forEach(function (n) { n.el = document.getElementById(n.href.slice(1)); });
+  navOrder = navOrder.filter(function (n) { return n.el; });
+
+  // Narrow screens: the nav is a top bar; the Sections button shows or hides its list.
+  var navEl = document.getElementById("nav");
+  var navToggle = document.getElementById("nav-toggle");
+  navToggle.addEventListener("click", function () {
+    var on = !navEl.classList.contains("open");
+    navEl.classList.toggle("open", on);
+    navToggle.setAttribute("aria-expanded", on ? "true" : "false");
+  });
+  function closeNav() {
+    navEl.classList.remove("open");
+    navToggle.setAttribute("aria-expanded", "false");
+  }
+
+  // -------------------------------------------------------------------------
+  // Deep links (D3). A hash opens its target and everything around it.
+  // -------------------------------------------------------------------------
+  var LEGACY = { summary: "status", review: "findings", triage: "bg-effort", context: "bg-people", about: "about",
+    ticket: "sec-ticket", ci: "sec-ci", testing: "sec-testing", build: "sec-build", commits: "sec-commits", static: "sec-static",
+    compatibility: "sec-compatibility", votes: "sec-votes", labplan: "labplan", changes: "changes" };
+  var spyLockUntil = 0;
+  function setActive(id) {
+    Object.keys(navLinks).forEach(function (k) {
+      if (k === id) navLinks[k].setAttribute("aria-current", "location"); else navLinks[k].removeAttribute("aria-current");
+    });
+  }
+  function keyForHref(href) {
+    var key = null;
+    Object.keys(navLinks).forEach(function (k) { if (navLinks[k].getAttribute("href") === href) key = k; });
+    return key;
+  }
+  function go(raw) {
+    var id = decodeURIComponent(String(raw || "").replace(/^#/, ""));
+    if (!id) return;
+    if (!document.getElementById(id) && LEGACY[id]) id = LEGACY[id];
+    var el = document.getElementById(id);
+    if (!el) return;
+    openAncestors(el);
+    if (el._ctl) el._ctl.set(true);
+    var own = el.matches(".group, .bg-card, #glossary, #next") ? el.querySelector(":scope > .cbody") : null; // a group, the lab plan, the glossary or the To do panel
+    if (own && own._ctl) own._ctl.set(true);
+    if (id === "changes") openDiff();
+    el.scrollIntoView({ block: "start" });
+    if (el.tagName === "LI") { el.classList.add("ck-flash"); setTimeout(function () { el.classList.remove("ck-flash"); }, 1600); }
+    var hit = null;
+    navOrder.forEach(function (n) { if (n.el === el || n.el.contains(el)) hit = n; });
+    var key = hit && keyForHref(hit.href);
+    if (key) { spyLockUntil = Date.now() + 800; setActive(key); }
+  }
   document.addEventListener("click", function (ev) {
     var a = ev.target.closest ? ev.target.closest('a[href^="#"]') : null;
-    if (!a) return;
-    pendingCheck = a.getAttribute("data-check");
-    focusHeading = true;
+    if (!a || a.getAttribute("href") === "#") return;
+    ev.preventDefault();
+    var href = a.getAttribute("href");
     closeNav();
-    if (a.getAttribute("href") === location.hash) { ev.preventDefault(); show(location.hash.slice(1)); }
+    try { if (location.hash !== href) history.pushState(null, "", href); } catch (e) { location.hash = href; return; }
+    go(href);
   });
-  if (!location.hash || !sectionEls[location.hash.slice(1)]) {
-    try { history.replaceState(null, "", "#summary"); } catch (e) { /* file:// in some browsers */ }
-  }
-  route();
+  window.addEventListener("hashchange", function () { go(location.hash); });
 
-  // -------------------------------------------------------------------------
-  // Narrow-screen nav
-  // -------------------------------------------------------------------------
-  var navToggle = document.getElementById("nav-toggle");
-  var scrim = null;
-  function openNav() {
-    document.body.classList.add("nav-open");
-    navToggle.setAttribute("aria-expanded", "true");
-    scrim = h("div");
-    scrim.id = "nav-scrim";
-    scrim.addEventListener("click", closeNav);
-    document.body.appendChild(scrim);
-    var cur = navLinks[current];
-    if (cur) cur.focus();
+  // Scroll-spy: highlight the last target whose top has passed 30% of the viewport.
+  function spy() {
+    if (Date.now() < spyLockUntil) return;
+    var line = window.innerHeight * 0.3, cur = navOrder.length ? navOrder[0] : null;
+    navOrder.forEach(function (n) { if (n.el.getBoundingClientRect().top <= line) cur = n; });
+    // At the very bottom the last items can never reach the line; the last one is current then.
+    if (navOrder.length && window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) cur = navOrder[navOrder.length - 1];
+    if (!cur) return;
+    var key = keyForHref(cur.href);
+    if (key) setActive(key);
   }
-  function closeNav() {
-    if (!document.body.classList.contains("nav-open")) return;
-    document.body.classList.remove("nav-open");
-    navToggle.setAttribute("aria-expanded", "false");
-    if (scrim) { scrim.remove(); scrim = null; }
+  if ("IntersectionObserver" in window) {
+    var io = new IntersectionObserver(function () { spy(); }, { rootMargin: "0px 0px -70% 0px", threshold: [0, 1] });
+    navOrder.forEach(function (n) { io.observe(n.el); });
   }
-  navToggle.addEventListener("click", function () {
-    if (document.body.classList.contains("nav-open")) { closeNav(); navToggle.focus(); } else openNav();
-  });
-  document.addEventListener("keydown", function (ev) {
-    if (ev.key === "Escape" && document.body.classList.contains("nav-open")) { closeNav(); navToggle.focus(); }
-  });
+  window.addEventListener("scroll", function () { if (Date.now() >= spyLockUntil) spy(); }, { passive: true });
+  setActive("status");
+  if (location.hash && location.hash.length > 1) go(location.hash); else spy();
 
-  // -------------------------------------------------------------------------
-  // Theme: system -> light -> dark, remembered per browser.
-  // -------------------------------------------------------------------------
-  var THEMES = ["system", "light", "dark"];
-  var themeBtn = document.getElementById("theme-toggle");
-  function applyTheme(t) {
-    if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
-    else document.documentElement.removeAttribute("data-theme");
-    themeBtn.textContent = "Theme: " + t;
-    themeBtn.setAttribute("aria-label", "Colour theme: " + t + ". Activate to change.");
-  }
-  var theme = "system";
-  try { theme = localStorage.getItem("cpr-theme") || "system"; } catch (e) { /* storage blocked */ }
-  if (THEMES.indexOf(theme) < 0) theme = "system";
-  applyTheme(theme);
-  themeBtn.addEventListener("click", function () {
-    theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
-    applyTheme(theme);
-    try { localStorage.setItem("cpr-theme", theme); } catch (e) { /* storage blocked */ }
-  });
-
-  // -------------------------------------------------------------------------
   // Print: open every <details> while printing, then restore.
-  // -------------------------------------------------------------------------
   var reopened = [];
   window.addEventListener("beforeprint", function () {
     reopened = Array.prototype.filter.call(document.querySelectorAll("details:not([open])"), function (d) { d.open = true; return true; });

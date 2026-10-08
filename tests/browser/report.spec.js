@@ -1,6 +1,8 @@
 // Browser tests for cpr/assets/report.html, run against reports rendered from the real 5201 model.
-// Every test runs with networking blocked and asserts that no network request was attempted.
+// Every test runs with networking blocked and asserts that no network request was attempted, except
+// the one Google Fonts stylesheet the design links (blocked too: the report must render without it).
 const fs = require("fs");
+const path = require("path");
 const { pathToFileURL } = require("url");
 const { test: base, expect } = require("./pw");
 
@@ -9,17 +11,17 @@ const model = () => JSON.parse(fs.readFileSync(process.env.CPR_MODEL, "utf8"));
 const fileUrl = (p, hash) => pathToFileURL(p).href + (hash || "");
 
 const LOCAL = /^(file:|data:|about:|blob:)/;
+const FONTS = /^https:\/\/fonts\.(googleapis|gstatic)\.com\//;
 
 const test = base.extend({
-  // Offline context: block everything that is not a local URL and record any attempt.
   context: async ({ browser }, use) => {
     const context = await browser.newContext({ offline: true });
     const attempts = [];
-    context.on("request", (r) => { if (!LOCAL.test(r.url())) attempts.push(r.url()); });
+    context.on("request", (r) => { if (!LOCAL.test(r.url()) && !FONTS.test(r.url())) attempts.push(r.url()); });
     await context.route("**/*", (route) => {
       const url = route.request().url();
       if (LOCAL.test(url)) return route.continue();
-      attempts.push(url);
+      if (!FONTS.test(url)) attempts.push(url);
       return route.abort("blockedbyclient");
     });
     context.networkAttempts = attempts;
@@ -30,304 +32,317 @@ const test = base.extend({
     const page = await context.newPage();
     const errors = [];
     page.on("pageerror", (e) => errors.push(String(e)));
-    page.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });
+    page.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
     await use(page);
     expect(errors, "page errors").toEqual([]);
     expect([...new Set(context.networkAttempts)], "network requests attempted").toEqual([]);
   },
 });
 
-const sectionLocator = (page, id) => page.locator(`#section-${id}`);
+const group = (page, id) => page.locator(`#sec-${id}`);
+const head = (page, id) => page.locator(`#sec-${id} > .group-head`);
 
-test("opens from file:// offline and every section renders", async ({ page }) => {
+test("verdict comes first: headline, must-fix count, steps to merge, then the contributor's must-fix items", async ({ page }) => {
+  await page.goto(fileUrl(fixtures().report));
+  const verdict = page.locator("#status");
+  await expect(verdict.locator("h2")).toHaveText("Not ready to merge");
+  await expect(verdict).toContainText("6 must-fix items. 3 people need to act.");
+  const steps = verdict.locator('ol[aria-label="Steps to merge"] li');
+  await expect(steps).toHaveCount(5);
+  await expect(steps.nth(0)).toContainText("Ticket");
+  await expect(steps.nth(4)).toContainText("+1 votes (0 of 2)");
+  // The verdict sits above the checks in document order.
+  const before = await page.evaluate(() => document.getElementById("status").compareDocumentPosition(document.getElementById("checks")) & Node.DOCUMENT_POSITION_FOLLOWING);
+  expect(before).toBeTruthy();
+  // To do: grouped by role, contributor first, must-fix first; optional items sit behind a toggle.
+  const roles = page.locator("#next .role");
+  await expect(roles.first().locator(".role-name")).toContainText("Contributor");
+  await expect(roles.first().locator("li:not(.opt)")).toHaveCount(4);
+  const optional = page.locator("#next li.opt").first();
+  await expect(optional).toBeHidden();
+  await page.locator("#opt-toggle").click();
+  await expect(page.locator("#opt-toggle")).toHaveAttribute("aria-expanded", "true");
+  await expect(optional).toBeVisible();
+  // An item opens to its how-to-fix detail.
+  const item = roles.first().locator("li").first().locator("button.todo-item");
+  await expect(item).toHaveAttribute("aria-expanded", "false");
+  await item.click();
+  await expect(item).toHaveAttribute("aria-expanded", "true");
+  await expect(roles.first().locator("li").first()).toContainText("How to fix:");
+  // Header facts.
+  await expect(page.locator("header.pr")).toContainText("first-time contributor");
+  await expect(page.locator("header.pr")).toContainText("CASSANDRA-21649");
+});
+
+test("checks: problems first, open a group to see each check with how to fix and owner", async ({ page }) => {
   const m = model();
   await page.goto(fileUrl(fixtures().report));
-  await expect(page).toHaveURL(/#summary$/);
-  const navLinks = page.locator("#nav-list a");
-  await expect(navLinks).toHaveCount(m.sections.length);
-  for (let i = 0; i < m.sections.length; i++) {
-    const s = m.sections[i];
-    await navLinks.nth(i).click();
-    await expect(page).toHaveURL(new RegExp(`#${s.id}$`));
-    const sec = sectionLocator(page, s.id);
-    await expect(sec).toBeVisible();
-    await expect(sec.locator("h2")).toHaveText(s.title);
-    await expect(sec.getByText("This section failed to render")).toHaveCount(0);
-    // Only one section is shown at a time.
-    await expect(page.locator(".report-section:visible")).toHaveCount(1);
-    for (const aspect of s.docs) {
-      await expect(sec.locator("details.howto > summary").filter({ hasText: "How this is judged" })).toHaveCount(s.docs.length);
-      void aspect;
-    }
-    for (const id of s.checks) await expect(sec.locator(`[id="check-${id}"]`)).toHaveCount(1);
-  }
-  // The 5201 fixture carries a real lens panel: every lens is listed with its status.
-  for (const lens of m.review.lenses) await expect(sectionLocator(page, "review")).toContainText(lens.name);
-  // Reviewer context: the Context section lists suggestions and the tickets behind the changed code.
-  await expect(sectionLocator(page, "context")).toContainText("Suggested reviewers");
-  for (const t of m.context.related_tickets.slice(0, 3)) await expect(sectionLocator(page, "context")).toContainText(t.key);
-  // Back to the summary through history.
-  await page.goBack();
-  await expect(sectionLocator(page, m.sections[m.sections.length - 2].id)).toBeVisible();
+  const groups = page.locator("#checks .group");
+  const ids = await groups.evaluateAll((els) => els.map((e) => e.id));
+  expect(ids[0]).toBe("sec-ci");
+  expect(ids[ids.length - 1]).toBe("sec-static");
+  for (const g of ["ticket", "ci", "testing", "commits", "static", "compatibility", "votes"]) expect(ids).toContain(`sec-${g}`);
+  await expect(head(page, "testing")).toHaveAttribute("aria-expanded", "false");
+  await expect(head(page, "testing")).toContainText("Must fix");
+  await expect(head(page, "ticket")).toContainText("Should fix");
+  await expect(head(page, "compatibility")).toContainText("Note");
+  await head(page, "ci").click(); // opened by default; close, then open again
+  await expect(head(page, "ci")).toHaveAttribute("aria-expanded", "false");
+  await head(page, "ci").click();
+  const ci = group(page, "ci");
+  const first = ci.locator('[id="check-ci.evidence"]');
+  await expect(first).toBeVisible();
+  await expect(first).toContainText("How to fix:");
+  await expect(first).toContainText("Committer");
+  await expect(first.locator('svg[aria-label="Must fix"]')).toHaveCount(1);
+  await expect(ci.locator('[id="check-ci.profile"] svg[aria-label="Not needed"]')).toHaveCount(1);
+  // Every check of every group exists in the DOM once, and the how-this-is-judged docs are inside the group.
+  for (const c of m.checks) await expect(page.locator(`[id="check-${c.id}"]`)).toHaveCount(1);
+  await expect(ci.locator("details.howto")).toHaveCount(2);
+  // Open all / Close all.
+  const all = page.locator("#toggle-all");
+  await all.click();
+  await expect(all).toHaveText("Close all");
+  for (const el of await page.locator("#checks .group-head").all()) await expect(el).toHaveAttribute("aria-expanded", "true");
+  await all.click();
+  await expect(all).toHaveText("Open all");
+  await expect(page.locator('#checks .group-head[aria-expanded="true"]')).toHaveCount(0);
+  // Extra detail the old report showed lives inside the groups.
+  await head(page, "ci").click();
+  await expect(ci).toContainText("Target branches");
+  await expect(ci.locator("tr.self")).toHaveCount(1);
+  await head(page, "ticket").click();
+  await expect(group(page, "ticket")).toContainText("Fix versions");
+  await head(page, "votes").click();
+  await expect(group(page, "votes")).toContainText("GitHub reviews");
+  await head(page, "compatibility").click();
+  await expect(group(page, "compatibility")).toContainText("Surfaces touched");
+  await head(page, "commits").click();
+  await expect(group(page, "commits")).toContainText("Commits");
+  await head(page, "testing").click();
+  await expect(group(page, "testing")).toContainText("Lines changed");
 });
 
-test("deep link #ci shows the CI section and highlights it in the nav", async ({ page }) => {
-  await page.goto(fileUrl(fixtures().report, "#ci"));
-  await expect(sectionLocator(page, "ci")).toBeVisible();
-  await expect(sectionLocator(page, "summary")).toBeHidden();
-  await expect(page.locator('#nav-list a[href="#ci"]')).toHaveAttribute("aria-current", "page");
-  await expect(page.locator("#nav-list a[aria-current]")).toHaveCount(1);
-  // The self row is highlighted in the branch table.
-  await expect(sectionLocator(page, "ci").locator("tr.self")).toHaveCount(1);
-  // hashchange switches sections.
-  await page.evaluate(() => { location.hash = "#votes"; });
-  await expect(sectionLocator(page, "votes")).toBeVisible();
-  await expect(page.locator('#nav-list a[href="#votes"]')).toHaveAttribute("aria-current", "page");
-});
-
-test("narrow screen collapses the nav behind a toggle and content is full width", async ({ page }) => {
-  await page.setViewportSize({ width: 700, height: 900 });
-  await page.goto(fileUrl(fixtures().report));
-  const nav = page.locator("#nav");
-  const toggle = page.locator("#nav-toggle");
-  await expect(nav).toBeHidden();
-  await expect(toggle).toBeVisible();
-  await expect(toggle).toHaveAttribute("aria-expanded", "false");
-  const main = await page.locator("main").boundingBox();
-  expect(main.x).toBeLessThanOrEqual(1);
-  expect(main.width).toBeGreaterThanOrEqual(695);
-  // Keyboard: open with Enter, pick a section, nav closes.
-  await toggle.focus();
-  await page.keyboard.press("Enter");
-  await expect(nav).toBeVisible();
-  await expect(toggle).toHaveAttribute("aria-expanded", "true");
-  await page.locator('#nav-list a[href="#testing"]').click();
-  await expect(sectionLocator(page, "testing")).toBeVisible();
-  await expect(nav).toBeHidden();
-  // Escape closes it too.
-  await toggle.click();
-  await expect(nav).toBeVisible();
-  await page.keyboard.press("Escape");
-  await expect(nav).toBeHidden();
-});
-
-test("print shows every section in order and hides the nav", async ({ page }) => {
+test("a finding card opens to problem, suggested fix and the lenses that raised it", async ({ page }) => {
   const m = model();
-  await page.goto(fileUrl(fixtures().report, "#ci"));
-  await page.emulateMedia({ media: "print" });
-  await expect(page.locator("#nav")).toBeHidden();
-  await expect(page.locator(".toolbar")).toBeHidden();
-  const ids = await page.locator(".report-section").evaluateAll((els) => els.map((e) => e.getAttribute("data-section")));
-  expect(ids).toEqual(m.sections.map((s) => s.id));
-  for (const s of m.sections) await expect(sectionLocator(page, s.id)).toBeVisible();
-  // The iframe is swapped for the file table.
-  await expect(page.locator("iframe.diff-frame")).toBeHidden();
-  await expect(page.locator("#changes-files table")).toBeVisible();
-  // Collapsed panels print expanded.
-  await expect(sectionLocator(page, "testing").locator("details.howto .d-body")).toBeVisible();
-});
-
-test("hostile content renders literally and runs nothing", async ({ page }) => {
-  const f = fixtures();
-  await page.goto(fileUrl(f.hostile));
-  await expect(page.locator(".pr-head h1")).toHaveText(f.hostile_title);
-  await page.locator('#nav-list a[href="#compatibility"]').click();
-  const sec = sectionLocator(page, "compatibility");
-  await expect(sec.getByText(f.hostile_evidence, { exact: true })).toHaveCount(1);
-  await expect(sec.locator('a[href^="javascript"]')).toHaveCount(0);
-  await expect(page.locator("img")).toHaveCount(0);
-  // Visit every section so every renderer has run over the hostile model.
-  for (const a of await page.locator("#nav-list a").all()) await a.click();
-  expect(await page.evaluate(() => typeof window.PWNED)).toBe("undefined");
-  await expect(page.locator('a[href^="javascript"]')).toHaveCount(0);
-});
-
-test("summary shows the recommendation and every check", async ({ page }) => {
-  const m = model();
-  await page.goto(fileUrl(fixtures().report));
-  const sum = sectionLocator(page, "summary");
-  await expect(sum.locator(".verdict .v-text")).toHaveText(m.recommendation.label);
-  const matrix = sum.locator(".matrix");
-  for (const c of m.checks) {
-    await expect(matrix.locator(`[data-check="${c.id}"]`)).toHaveCount(1);
-    await expect(matrix.locator(`[data-check="${c.id}"] .gt`)).toHaveText(c.title);
-  }
-  // Blocking failures come first, each with its action and owner.
-  const reasons = sum.locator(".reasons > li");
-  await expect(reasons).toHaveCount(m.recommendation.reasons.length);
-  await expect(reasons.first()).toContainText("Next step");
-  await expect(reasons.first()).toContainText("Who acts");
-  // A check tile links to the section that shows the check.
-  await matrix.locator('[data-check="tests.present"]').click();
-  await expect(page).toHaveURL(/#testing$/);
-  await expect(page.locator('[id="check-tests.present"]')).toBeInViewport();
-});
-
-test("Changes embeds the diff view in a scripts-only sandbox", async ({ page }) => {
-  await page.goto(fileUrl(fixtures().report, "#changes"));
-  const frame = page.locator("#section-changes iframe");
-  await expect(frame).toHaveCount(1);
-  await expect(frame).toHaveAttribute("sandbox", "allow-scripts");
-  const box = await frame.boundingBox();
-  expect(box.height).toBeGreaterThan(600);
-  // The embedded page loaded and has content.
-  const inner = page.frameLocator("#section-changes iframe");
-  await expect(inner.locator("body")).not.toBeEmpty();
-});
-
-test("theme toggle cycles system, light, dark", async ({ page }) => {
-  await page.goto(fileUrl(fixtures().report));
-  const btn = page.locator("#theme-toggle");
-  await expect(btn).toHaveText("Theme: system");
-  await btn.click();
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
-  await btn.click();
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-  expect(bg).toBe("rgb(13, 18, 23)");
-  await btn.click();
-  await expect(page.locator("html")).not.toHaveAttribute("data-theme", /.+/);
-});
-
-test("the bare template shows a no-data banner", async ({ page }) => {
-  // The template has only the marker comment, so window.REPORT_MODEL is undefined.
-  page.removeAllListeners("console"); // the template logs one console.error on purpose
-  await page.goto(fileUrl(process.env.CPR_TEMPLATE));
-  await expect(page.locator("#no-data")).toBeVisible();
-  await expect(page.locator("#no-data")).toContainText("No report data");
-});
-
-test("summary shows the suggested reviewers card", async ({ page }) => {
-  const m = model();
-  await page.goto(fileUrl(fixtures().report, "#summary"));
-  const card = page.locator(".reviewers-card");
-  await expect(card).toBeVisible();
-  for (const p of m.context.suggested_reviewers) await expect(card).toContainText(p.name);
-  await expect(card.getByRole("link", { name: "Context details" })).toHaveAttribute("href", "#context");
-});
-
-test("5201 summary headline counts issues, findings and reporting lenses", async ({ page }) => {
-  await page.goto(fileUrl(fixtures().report, "#summary"));
-  await expect(sectionLocator(page, "summary").locator(".review-headline")).toContainText("5 issues (11 findings from 4 lenses)");
-});
-
-test("5201 code review leads with merged issues and lens chips", async ({ page }) => {
-  const m = model();
-  await page.goto(fileUrl(fixtures().report, "#review"));
-  const sec = sectionLocator(page, "review");
-  const issues = sec.locator("article.issue");
-  await expect(issues).toHaveCount(m.review.issues.length);
-  await expect(issues).toHaveCount(5);
-  // The silent-delete issue is first and names the four lenses that reported it.
-  const first = issues.first();
-  await expect(first.locator(".lens-chip")).toHaveText(["cassandra-standards", "correctness", "test-rigor", "observability"]);
+  await page.goto(fileUrl(fixtures().report, "#findings"));
+  const cards = page.locator("#findings .finding");
+  await expect(cards).toHaveCount(m.review.issues.length);
+  await expect(page.locator("#findings .sevchip.blocker")).toHaveText("1 blocker");
+  const first = cards.first();
+  await expect(first.locator(".sev")).toHaveText("blocker");
   await expect(first).toContainText("SSTable.java:121");
-  await expect(first.locator(".badge").first()).toContainText("blocker");
-  // Issues come before the per-lens detail.
-  const order = await sec.evaluate((el) => {
-    const issue = el.querySelector("article.issue");
-    const detail = el.querySelector(".lens-detail-title");
-    return issue.compareDocumentPosition(detail) & Node.DOCUMENT_POSITION_FOLLOWING;
-  });
-  expect(order).toBeTruthy();
-  // Raw findings are still listed under each lens.
-  for (const lens of m.review.lenses) await expect(sec).toContainText(lens.name);
+  await expect(first.locator(".finding-body")).toBeHidden();
+  await first.locator(".finding-head").click();
+  await expect(first.locator(".finding-head")).toHaveAttribute("aria-expanded", "true");
+  await expect(first.locator(".finding-body")).toContainText("Problem");
+  await expect(first.locator(".finding-body")).toContainText("Suggested fix");
+  for (const lens of ["cassandra-standards", "correctness", "test-rigor", "observability"]) await expect(first.locator(".lenses")).toContainText(lens);
+  await expect(page.locator("#findings")).toContainText("5 issues (11 findings from 4 lenses)");
+  // Per-lens detail is collapsed below the cards and lists every lens.
+  await page.locator("#findings .lens-detail-toggle").click();
+  for (const lens of m.review.lenses) await expect(page.locator("#findings .lens-card").filter({ hasText: lens.name }).first()).toBeVisible();
 });
 
 test("code review shows lens status and the checklist version", async ({ page }) => {
-  await page.goto(fileUrl(fixtures().lens_status, "#review"));
-  const sec = sectionLocator(page, "review");
+  await page.goto(fileUrl(fixtures().lens_status, "#findings"));
+  const sec = page.locator("#findings");
   await expect(sec.locator(".checklists")).toHaveText("checklists: apache/cassandra trunk @ 0123456789");
-  const observability = sec.locator(".block").filter({ has: page.locator("h3", { hasText: /^observability/ }) });
-  await expect(observability).toContainText("missing");
-  const security = sec.locator(".block").filter({ has: page.locator("h3", { hasText: /^security/ }) });
+  await sec.locator(".lens-detail-toggle").click();
+  await expect(sec.locator(".lens-card").filter({ has: page.locator("h4", { hasText: /^observability/ }) })).toContainText("missing");
+  const security = sec.locator(".lens-card").filter({ has: page.locator("h4", { hasText: /^security/ }) });
   await expect(security).toContainText("approved");
   await expect(security).toContainText("No findings from this lens.");
+  await expect(sec).toContainText("incomplete");
 });
 
-test("Lab plan shows the Not run banner, the rendered plan, and Copy and Download", async ({ page }) => {
+test("Lab plan: Not run banner, rendered plan, Copy and Download", async ({ page }) => {
   const m = model();
   await page.goto(fileUrl(fixtures().report, "#labplan"));
-  const sec = sectionLocator(page, "labplan");
-  await expect(sec).toBeVisible();
-  await expect(sec.locator("h2")).toHaveText("Lab plan");
-  await expect(sec.locator(".sec-head .badge")).toContainText("Info");
-  await expect(sec).toContainText(m.sections.find((s) => s.id === "labplan").summary);
+  const sec = page.locator("#labplan");
+  await expect(sec.locator(".cc-head")).toHaveAttribute("aria-expanded", "true");
   const banner = sec.locator(".labplan-banner");
   await expect(banner).toContainText("Not run.");
   await expect(banner).toContainText("No cluster was created and no command was executed");
-  // The plan is rendered (headings, fenced commands), not shown as raw text.
   const plan = sec.locator(".labplan-plan");
   await expect(plan.getByRole("heading", { name: "Objective" })).toBeVisible();
-  await expect(plan.getByRole("heading", { name: "Cluster Name" })).toBeVisible();
   await expect(plan.locator("pre code").first()).toContainText("BUILDS=");
   await expect(plan).toContainText("pr5201-d1095cb");
-  await expect(sec.locator("details").filter({ hasText: "Show raw markdown" })).toHaveCount(1);
-  // Copy and Download exist and work on the model string, not on rendered HTML.
   const copy = sec.getByRole("button", { name: "Copy plan" });
   const download = sec.getByRole("button", { name: "Download plan-5201.md" });
   await expect(copy).toBeVisible();
-  await expect(download).toBeVisible();
   await copy.click();
   await expect(sec.locator("[role=status]")).toHaveText(/Copied\.|Copy failed/);
   const [dl] = await Promise.all([page.waitForEvent("download"), download.click()]);
   expect(dl.suggestedFilename()).toBe("plan-5201.md");
   const body = fs.readFileSync(await dl.path(), "utf8");
   expect(body).toBe(m.lab_plan.markdown);
-  expect(body).toContain("Not run.");
-  expect(body).toContain("## Cluster Name\npr5201-d1095cb\n");
-  // Buttons are not printed.
   await page.emulateMedia({ media: "print" });
-  await expect(sec.locator(".labplan-actions")).toBeHidden();
+  await expect(sec.locator(".actions")).toBeHidden();
 });
 
 test("Lab plan without a plan says why and offers no buttons", async ({ page }) => {
   await page.goto(fileUrl(fixtures().labplan_none, "#labplan"));
-  const sec = sectionLocator(page, "labplan");
+  const sec = page.locator("#labplan");
   await expect(sec).toContainText("No lab plan: documentation-only change.");
-  await expect(sec.locator(".sec-head .badge")).toContainText("N/A");
   await expect(sec.getByRole("button", { name: /Copy plan|Download/ })).toHaveCount(0);
   await expect(sec.locator(".labplan-banner")).toHaveCount(0);
 });
 
+test("the diff view stays in a scripts-only sandboxed iframe, behind a button", async ({ page }) => {
+  await page.goto(fileUrl(fixtures().report));
+  await expect(page.locator("#changes iframe")).toHaveCount(0);
+  await page.locator("#diff-toggle").click();
+  const frame = page.locator("#changes iframe");
+  await expect(frame).toHaveCount(1);
+  await expect(frame).toHaveAttribute("sandbox", "allow-scripts");
+  await expect(frame).toHaveAttribute("referrerpolicy", "no-referrer");
+  const inner = page.frameLocator("#changes iframe");
+  await expect(inner.locator("body")).not.toBeEmpty();
+  // The file list is always shown.
+  await expect(page.locator("#changes")).toContainText("SSTable.java");
+  // Deep link opens the diff view on load.
+  await page.goto(fileUrl(fixtures().report, "#changes"));
+  await page.reload();
+  await expect(page.locator("#changes iframe")).toHaveCount(1);
+});
+
+test("deep links open their target: group, check, findings, background, lab plan, legacy ids", async ({ page }) => {
+  await page.goto(fileUrl(fixtures().report, "#sec-votes"));
+  await expect(head(page, "votes")).toHaveAttribute("aria-expanded", "true");
+  await expect(group(page, "votes")).toBeInViewport();
+  await page.goto(fileUrl(fixtures().report, "#check-tests.present"));
+  await expect(head(page, "testing")).toHaveAttribute("aria-expanded", "true");
+  await expect(page.locator('[id="check-tests.present"]')).toBeInViewport();
+  await page.goto(fileUrl(fixtures().report, "#findings"));
+  await expect(page.locator("#findings")).toBeInViewport();
+  await page.goto(fileUrl(fixtures().report, "#background"));
+  await expect(page.locator("#background")).toBeInViewport();
+  // Old section ids still land somewhere sensible.
+  await page.goto(fileUrl(fixtures().report, "#commits"));
+  await expect(head(page, "commits")).toHaveAttribute("aria-expanded", "true");
+  // hashchange opens too.
+  await page.evaluate(() => { location.hash = "#sec-compatibility"; });
+  await expect(head(page, "compatibility")).toHaveAttribute("aria-expanded", "true");
+});
+
+test("nav links scroll and open their target; scroll-spy follows the page", async ({ page }) => {
+  await page.goto(fileUrl(fixtures().report));
+  await expect(page.locator('#nav a[aria-current="location"]')).toHaveCount(1);
+  await page.locator('#nav a[href="#sec-testing"]').click();
+  await expect(head(page, "testing")).toHaveAttribute("aria-expanded", "true");
+  await expect(page.locator('#nav a[href="#sec-testing"]')).toHaveAttribute("aria-current", "location");
+  await page.locator('#nav a[href="#findings"]').click();
+  await expect(page.locator('#nav a[href="#findings"]')).toHaveAttribute("aria-current", "location");
+  // Scrolling by hand moves the highlight.
+  await page.waitForTimeout(900);
+  await page.evaluate(() => document.getElementById("glossary").scrollIntoView());
+  await expect(page.locator('#nav a[href="#glossary"]')).toHaveAttribute("aria-current", "location");
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect(page.locator('#nav a[href="#status"]')).toHaveAttribute("aria-current", "location");
+});
+
+test("Background shows effort, who knows the code, history and the glossary and About live below", async ({ page }) => {
+  const m = model();
+  await page.goto(fileUrl(fixtures().report, "#background"));
+  const effort = page.locator("#bg-effort");
+  await expect(effort).toContainText("Review effort");
+  await expect(effort.locator(".rating")).toHaveText("moderate");
+  await expect(effort.locator(".bar i.on")).toHaveCount(2);
+  await effort.locator(".linkbtn").click();
+  await expect(effort).toContainText("compatibility surfaces");
+  const people = page.locator("#bg-people");
+  for (const p of m.context.suggested_reviewers) await expect(people).toContainText(p.name);
+  await expect(people).toContainText("Already involved");
+  for (const t of m.context.related_tickets.slice(0, 3)) await expect(page.locator("#bg-history")).toContainText(t.key);
+  await page.locator("#glossary .cc-head").click();
+  await expect(page.locator("#glossary")).toContainText("Committer");
+  await page.locator("#about-toggle").click();
+  await expect(page.locator("#about")).toContainText("Not checked by this tool");
+  await expect(page.locator("footer.ft")).toContainText("This tool only reads");
+});
+
+test("hostile content renders literally and runs nothing", async ({ page }) => {
+  const f = fixtures();
+  await page.goto(fileUrl(f.hostile));
+  await expect(page.locator("h1.title")).toHaveText(f.hostile_title);
+  await page.goto(fileUrl(f.hostile, "#sec-compatibility"));
+  const sec = group(page, "compatibility");
+  await expect(sec.getByText(f.hostile_evidence, { exact: true })).toHaveCount(1);
+  await expect(page.locator('a[href^="javascript"]')).toHaveCount(0);
+  await expect(page.locator("img")).toHaveCount(0);
+  await page.locator("#toggle-all").click();
+  await page.locator("#about-toggle").click();
+  await page.locator("#glossary .cc-head").click();
+  expect(await page.evaluate(() => typeof window.PWNED)).toBe("undefined");
+  await expect(page.locator('a[href^="javascript"]')).toHaveCount(0);
+});
+
+test("phone width: no horizontal scroll, nav is a top bar behind a Sections button", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const hash of ["", "#sec-ci", "#background", "#findings"]) {
+    await page.goto(fileUrl(fixtures().report, hash));
+    await page.locator("#toggle-all").click();
+    const over = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(over, `horizontal overflow at ${hash || "top"}`).toBeLessThanOrEqual(0);
+  }
+  await page.goto(fileUrl(fixtures().report));
+  const toggle = page.locator("#nav-toggle");
+  await expect(toggle).toBeVisible();
+  await expect(page.locator("#nav-body")).toBeHidden();
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await page.locator('#nav a[href="#sec-testing"]').click();
+  await expect(head(page, "testing")).toHaveAttribute("aria-expanded", "true");
+  await expect(page.locator("#nav-body")).toBeHidden();
+});
+
+test("print expands everything and hides the nav", async ({ page }) => {
+  await page.goto(fileUrl(fixtures().report));
+  await page.emulateMedia({ media: "print" });
+  await expect(page.locator(".navcol")).toBeHidden();
+  await expect(page.locator("#sec-static .group-body")).toBeVisible();
+  await expect(page.locator("#sec-ci details.howto .d-body").first()).toBeVisible();
+  await expect(page.locator("#next li.opt").first()).toBeVisible();
+  await expect(page.locator("#labplan .cc-body")).toBeVisible();
+  await expect(page.locator("#changes .filelist")).toBeVisible();
+});
+
+test("the bare template shows a no-data banner", async ({ page }) => {
+  page.removeAllListeners("console"); // the template logs one console.error on purpose
+  await page.goto(fileUrl(process.env.CPR_TEMPLATE));
+  await expect(page.locator("#no-data")).toBeVisible();
+  await expect(page.locator("#no-data")).toContainText("No report data");
+});
+
 const BUILD_NOTE = "Line coverage shows which changed lines ran under the selected tests; it does not show that the fix's behaviour is tested. Read with the test regime lens.";
 
-test("Build & coverage renders the saved 5201 run", async ({ page }) => {
-  const run = JSON.parse(fs.readFileSync(require("path").resolve(__dirname, "..", "fixtures", "build", "5201-status.json"), "utf8"));
-  await page.goto(fileUrl(fixtures().build, "#build"));
-  const sec = sectionLocator(page, "build");
-  await expect(sec).toBeVisible();
-  await expect(sec.locator("h2")).toHaveText("Build & coverage");
+test("Build & coverage renders the saved 5201 run inside its group", async ({ page }) => {
+  const run = JSON.parse(fs.readFileSync(path.resolve(__dirname, "..", "fixtures", "build", "5201-status.json"), "utf8"));
+  await page.goto(fileUrl(fixtures().build, "#sec-build"));
+  const sec = group(page, "build");
+  await expect(head(page, "build")).toContainText("Unknown");
   await expect(sec.locator(".build-banner")).toContainText("Inconclusive.");
-  await expect(sec.locator(".build-banner")).toContainText("cassandra-4.0");
   const tests = sec.locator(".build-tests");
   await expect(tests.locator("th")).toHaveText(["Classes", "Run", "Failed", "Errors", "Skipped"]);
   await expect(tests.locator("td")).toHaveText(["25", "328", "0", "1", "2"]);
   await expect(sec).toContainText("StreamingTransferTest.testTransferRangeTombstones");
-  const cov = sec.locator(".build-cov");
-  await expect(cov).toContainText("src/java/org/apache/cassandra/io/sstable/SSTable.java");
-  await expect(cov).toContainText("7/7");
-  await expect(sec).toContainText("7 of 7 added executable lines ran");
+  await expect(sec.locator(".build-cov")).toContainText("7/7");
   const sel = sec.locator("details.build-selected");
-  await expect(sel).toHaveCount(1);
-  await expect(sel.locator("li").first()).toBeHidden();
   await sel.locator("summary").click();
   await expect(sel.locator("li")).toHaveCount(run.selected.length);
-  await expect(sel).toContainText("LogTransactionTest");
-  await expect(sel).toContainText("calls changed method(s)");
   await expect(sec.locator(".build-note")).toHaveText(BUILD_NOTE);
-  await expect(sec.locator("article.check")).toHaveCount(3);
-  await expect(sec.locator("article.check").filter({ hasText: "The PR branch compiled" })).toHaveCount(1);
+  await expect(sec.locator(".checklist > li")).toHaveCount(3);
+  // Unknown gets its own neutral purple chip, not a pass or fail colour.
+  await expect(head(page, "build").locator(".chip")).toHaveClass(/s-unknown/);
 });
 
 test("Build & coverage without a result says not built for this head", async ({ page }) => {
-  await page.goto(fileUrl(fixtures().build_none, "#build"));
-  const sec = sectionLocator(page, "build");
-  await expect(sec.locator(".sec-head .badge")).toContainText("N/A");
+  await page.goto(fileUrl(fixtures().build_none, "#sec-build"));
+  const sec = group(page, "build");
+  await expect(head(page, "build")).toContainText("Not needed");
   await expect(sec.locator(".build-banner")).toContainText("Not built for this head.");
-  await expect(sec.locator(".build-banner")).toContainText("committers");
   await expect(sec.locator(".build-banner code")).toContainText("cpr build 5201 --approve");
   await expect(sec.locator(".build-tests")).toHaveCount(0);
-  await expect(sec.locator(".build-cov")).toHaveCount(0);
   await expect(sec.locator(".build-note")).toHaveText(BUILD_NOTE);
 });

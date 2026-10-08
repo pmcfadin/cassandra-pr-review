@@ -18,3 +18,4 @@ tests/browser/node_modules/
 .claude/worktrees/
 bench/runs/*/*/*/refdir/
 bench/prompts/
+.work-shots/

@@ -36,15 +36,21 @@ class TemplateStaticTest(unittest.TestCase):
         # `@import` as text, which is harmless) and the embedded diff view inside it is base64.
         start = self.html.index('<script id="report-model">')
         end = self.html.index("</script>", start)
-        lowered = (self.html[:start] + self.html[end:]).lower()
+        markup = self.html[:start] + self.html[end:]
+        # The one allowed exception: the design's Google Fonts stylesheet (system fonts are the fallback).
+        fonts = [l for l in markup.splitlines() if "<link" in l and "fonts.googleapis.com" in l]
+        self.assertEqual(len(fonts), 2)  # preconnect + stylesheet
+        for l in fonts:
+            markup = markup.replace(l, "")
+        lowered = markup.lower()
         for ref in NETWORK_REFS:
             self.assertNotIn(ref, lowered, ref)
 
     def test_code_review_leads_with_issues_then_lens_detail(self):
         with open(render.TEMPLATE) as f:
             tpl = f.read()
-        body = tpl[tpl.index("function renderReview()"):]
-        self.assertLess(body.index('block("Issues"'), body.index("Per-lens detail"))
+        body = tpl[tpl.index("function renderFindings()"):]
+        self.assertLess(body.index("issues.map(issueCard)"), body.index("Per-lens detail"))
         # Data-driven: lenses, chips and statuses come from the model, not from names in the template.
         for name in ("cassandra-standards", "cass-logic-boundary", "cass-test-regime"):
             self.assertNotIn(name, tpl)
