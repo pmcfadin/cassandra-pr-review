@@ -7,11 +7,19 @@ from cpr.model import ASPECTS, derive_view, validate
 
 TEMPLATE = os.path.join(os.path.dirname(__file__), "assets", "report.html")
 MARKER = "<!--REPORT_MODEL-->"
+TOKENS_MARKER = "<!--TOKENS-->"
+TOKENS = os.path.join(os.path.dirname(__file__), "assets", "tokens.css")
 DOCS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "docs", "report")
 
 
 class RenderError(Exception):
     pass
+
+
+def tokens_style():
+    """The shared design tokens as a <style> element, inlined into the report and the site index."""
+    with open(TOKENS) as f:
+        return "<style>\n" + f.read() + "</style>"
 
 
 def load_docs(directory=DOCS_DIR, aspects=ASPECTS):
@@ -40,7 +48,9 @@ def render_html(model, template_path=TEMPLATE):
         template = f.read()
     if template.count(MARKER) != 1:
         raise RenderError(f"template must contain exactly one {MARKER}")
-    return template.replace(MARKER, script_tag(model))
+    if template.count(TOKENS_MARKER) != 1:
+        raise RenderError(f"template must contain exactly one {TOKENS_MARKER}")
+    return template.replace(TOKENS_MARKER, tokens_style()).replace(MARKER, script_tag(model))
 
 
 def write(model, out_path, template_path=TEMPLATE):

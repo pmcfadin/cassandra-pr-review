@@ -1,0 +1,75 @@
+/* ---------------------------------------------------------------------------
+   Design tokens and shared components. One source for the report and the site index: render.py
+   inlines this file into both. Colours come from the owner's design (docs/design/report-v2.dc.html).
+   No other hex value appears anywhere else in either page. Light theme only. Fonts load from Google
+   Fonts when online; the system fallbacks keep both pages readable offline.
+   --------------------------------------------------------------------------- */
+:root {
+  /* Surfaces and ink */
+  --bg: #F3F5F8; --panel: #FFFFFF; --soft: #F8FAFC; --soft-2: #F4F6FA; --code-bg: #F0F3F7;
+  --ink: #0F2236; --ink-2: #34445A; --ink-3: #56657A;
+  --rule: #D9DEE5; --rule-2: #E4E8EE; --rule-3: #EEF1F5; --chip-line: #C9D1DC; --bar-off: #DDE1E7;
+  --link: #0B5CAD; --link-hover: #083F78; --hover: #F3F6FA; --flash: rgba(11, 92, 173, .35);
+
+  /* Navigation (dark column) */
+  --navy: #0F2236; --navy-active: #1F3A5C; --navy-hover: #172C45; --navy-line: #3A5373;
+  --navy-ink: #D3DDEA; --navy-mute: #9DB0C7; --navy-dot: #7E94AF; --on-navy: #FFFFFF;
+  --nav-fail: #FF8A5C; --nav-should: #F2C14E; --nav-note: #8FB8EA; --nav-unknown: #C9BDF2; --nav-pass: #4FD1C0; --nav-na: #8A9BB0;
+
+  /* Status chips: text on tint is at least 4.5:1. icon is the stroke colour on light backgrounds. */
+  --fail-fg: #8A2606; --fail-bg: #FDEDE6; --fail-icon: #C0360C;
+  --should-fg: #5E4300; --should-bg: #FBF3DC; --should-icon: #8C6400;
+  --note-fg: #083F78; --note-bg: #E6EEF8; --note-icon: #0B5CAD;
+  --pass-fg: #005A52; --pass-bg: #E3F4F1; --pass-icon: #00766C;
+  --unknown-fg: #4B3A8C; --unknown-bg: #ECE8F6; --unknown-icon: #5B49A8;
+  --na-fg: #56657A; --na-bg: #EEF1F5; --na-icon: #6B7684;
+
+  /* Type scale */
+  --sans: 'Red Hat Text', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: 'Red Hat Mono', ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --fs-xs: 12px; --fs-sm: 13px; --fs-md: 14px; --fs-base: 16px; --fs-lg: 17px; --fs-h2: 22px; --fs-h1: 24px; --fs-verdict: 26px;
+
+  /* Spacing and radii (chips 3px, cards 6px, buttons 8px) */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px; --sp-6: 24px;
+  --r-chip: 3px; --r-card: 6px; --r-btn: 8px;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--fs-base)/1.55 var(--sans); }
+a { color: var(--link); text-underline-offset: 2px; }
+a:hover { color: var(--link-hover); }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; cursor: pointer; text-align: left; }
+button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; border-radius: var(--r-card); }
+code, .mono { font-family: var(--mono); font-size: 0.9em; overflow-wrap: anywhere; }
+code { background: var(--code-bg); border: 1px solid var(--rule-2); border-radius: 4px; padding: 0 4px; overflow-wrap: anywhere; }
+h1, h2, h3, h4 { margin: 0; line-height: 1.3; }
+p { margin: 6px 0; }
+.muted { color: var(--ink-3); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+svg { flex: none; }
+[hidden] { display: none !important; }
+
+/* Cards, status chips, counts, tags, buttons: the pieces both pages share */
+.card { background: var(--panel); border: 1px solid var(--rule); border-radius: var(--r-card); overflow: hidden; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-sm); font-weight: 600; padding: 3px 10px; border-radius: var(--r-chip); white-space: nowrap; color: var(--c-fg); background: var(--c-bg); }
+.chip.wide { width: 104px; flex: none; }
+.s-fail { --c-fg: var(--fail-fg); --c-bg: var(--fail-bg); --c-icon: var(--fail-icon); }
+.s-should { --c-fg: var(--should-fg); --c-bg: var(--should-bg); --c-icon: var(--should-icon); }
+.s-note { --c-fg: var(--note-fg); --c-bg: var(--note-bg); --c-icon: var(--note-icon); }
+.s-pass { --c-fg: var(--pass-fg); --c-bg: var(--pass-bg); --c-icon: var(--pass-icon); }
+.s-unknown { --c-fg: var(--unknown-fg); --c-bg: var(--unknown-bg); --c-icon: var(--unknown-icon); }
+.s-na { --c-fg: var(--na-fg); --c-bg: var(--na-bg); --c-icon: var(--na-icon); }
+.tag { display: inline-block; font-size: var(--fs-xs); color: var(--ink-3); border: 1px solid var(--rule); border-radius: var(--r-chip); padding: 1px 8px; white-space: nowrap; height: fit-content; }
+.tag.strong { color: var(--ink); border-color: var(--ink-3); }
+.count { min-width: 22px; text-align: center; font-size: var(--fs-sm); font-weight: 600; padding: 1px 6px; border-radius: var(--r-chip); color: var(--na-fg); background: var(--na-bg); }
+.count.must { color: var(--fail-fg); background: var(--fail-bg); }
+.outline-btn { display: inline-flex; align-items: center; gap: 8px; font-size: var(--fs-md); font-weight: 500; color: var(--link); padding: 10px 14px; min-height: 44px; border: 1px solid var(--chip-line); border-radius: var(--r-btn); background: var(--panel); text-decoration: none; }
+.outline-btn:hover { background: var(--hover); color: var(--link); }
+.linkbtn { font-size: var(--fs-md); font-weight: 500; color: var(--link); min-height: 44px; display: inline-flex; align-items: center; gap: 6px; }
+.linkbtn:hover { color: var(--link-hover); text-decoration: underline; }
+.notice { border: 1px solid var(--rule); border-left-width: 4px; border-radius: var(--r-card); padding: 10px 14px; background: var(--panel); margin: 6px 0; font-size: 15px; overflow-wrap: anywhere; }
+.notice.s-fail { border-left-color: var(--fail-icon); } .notice.s-should { border-left-color: var(--should-icon); }
+.notice.s-unknown { border-left-color: var(--unknown-icon); } .notice.s-note { border-left-color: var(--note-icon); }
+.notice.s-pass { border-left-color: var(--pass-icon); } .notice.s-na { border-left-color: var(--na-icon); }
+.notice .why { display: block; color: var(--ink-3); font-size: var(--fs-md); margin-top: 2px; }
+.empty { color: var(--ink-3); font-style: italic; }
