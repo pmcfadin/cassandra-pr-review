@@ -108,13 +108,15 @@ def _branch_rows(bundle):
 
 
 COMPLEXITY_YELLOW = 10  # cognitive complexity bands for the Code style table; red starts at the PMD threshold
+COMPLEXITY_DARK = 30  # top ~1% of trunk methods
 
 
 def complexity_table(bundle):
     """Changed methods with a cognitive complexity score after the patch, most complex first.
 
-    Each row: score, base (None for a new method), method, class, file, test, band (red/yellow/green).
-    Red is at or above the PMD threshold (15), yellow from COMPLEXITY_YELLOW, green below.
+    Each row: score, base (None for a new method), change (new/worse/same/better), method, class, file, test,
+    band (darkred/red/yellow/green). Dark red from COMPLEXITY_DARK, red at or above the PMD threshold (15),
+    yellow from COMPLEXITY_YELLOW, green below. Methods the PR added or made more complex come first.
     """
     sa = bundle.get("static_analysis") or {}
     if sa.get("status") != "ran" or ((sa.get("tools") or {}).get("pmd") or {}).get("status") != "ran":
@@ -126,12 +128,15 @@ def complexity_table(bundle):
         if m.get("head") is None:
             removed += 1
             continue
-        h = m["head"]
-        rows.append({"score": h, "base": m.get("base"), "method": m.get("method_sig"), "class": m.get("class"),
+        h, b = m["head"], m.get("base")
+        change = "new" if b is None else "worse" if h > b else "same" if h == b else "better"
+        rows.append({"score": h, "base": b, "change": change, "method": m.get("method_sig"), "class": m.get("class"),
                      "file": m.get("file"), "test": str(m.get("file") or "").startswith("test/"),
-                     "band": "red" if h >= thr else "yellow" if h >= COMPLEXITY_YELLOW else "green"})
-    rows.sort(key=lambda r: (-r["score"], r["test"], str(r["file"]), str(r["method"])))
-    return {"status": "ran", "threshold": thr, "yellow": COMPLEXITY_YELLOW, "rows": rows, "removed": removed}
+                     "band": ("darkred" if h >= COMPLEXITY_DARK else "red" if h >= thr
+                              else "yellow" if h >= COMPLEXITY_YELLOW else "green")})
+    rows.sort(key=lambda r: (r["change"] not in ("new", "worse"), -r["score"], r["test"], str(r["file"]), str(r["method"])))
+    return {"status": "ran", "threshold": thr, "yellow": COMPLEXITY_YELLOW, "dark": COMPLEXITY_DARK, "rows": rows,
+            "removed": removed}
 
 
 def build(bundle, checks, triage, docs, diffview, review=None, context=None):

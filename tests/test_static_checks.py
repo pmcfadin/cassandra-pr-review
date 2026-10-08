@@ -256,9 +256,18 @@ class ComplexityTable(unittest.TestCase):
               for b, h in ((None, 4), (12, 12), (3, 22), (9, None), (None, 15), (14, 9))]
         t = model.complexity_table({"static_analysis": with_sa(
             complexity={"threshold": 15, "methods": ms, "findings": []})["static_analysis"]})
-        self.assertEqual([r["score"] for r in t["rows"]], [22, 15, 12, 9, 4])
-        self.assertEqual([r["band"] for r in t["rows"]], ["red", "red", "yellow", "green", "green"])
+        # new or made worse first (22 from 3, 15 new, 4 new), then unchanged or simpler (12 same, 9 from 14)
+        self.assertEqual([r["score"] for r in t["rows"]], [22, 15, 4, 12, 9])
+        self.assertEqual([r["change"] for r in t["rows"]], ["worse", "new", "new", "same", "better"])
+        self.assertEqual([r["band"] for r in t["rows"]], ["red", "red", "green", "yellow", "green"])
         self.assertEqual(t["removed"], 1)
+
+    def test_very_high_band_from_30(self):
+        from cpr import model
+        ms = [{"file": "src/java/A.java", "class": "A", "method_sig": "m()", "base": 199, "head": 200}]
+        t = model.complexity_table({"static_analysis": with_sa(
+            complexity={"threshold": 15, "methods": ms, "findings": []})["static_analysis"]})
+        self.assertEqual((t["rows"][0]["band"], t["rows"][0]["change"]), ("darkred", "worse"))
 
     def test_unavailable_when_pmd_did_not_run(self):
         from cpr import model
