@@ -199,6 +199,33 @@ def cmd_review(args):
     return 0
 
 
+def cmd_poll(args):
+    from cpr import poll, site
+    log = lambda m: print(f"  {m}", file=sys.stderr)  # noqa: E731
+    work_dir = os.path.abspath(args.work_dir)
+    if args.run and not args.site:
+        print("error: --run needs --site DIR (a checkout of the gh-pages branch)", file=sys.stderr)
+        return 2
+    try:
+        open_prs = poll.fetch_open()
+    except NetError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+    heads = site.published_heads(args.site) if args.site else poll.heads_from_git(ROOT)
+    picked, skipped = poll.select(open_prs, heads, limit=args.limit)
+    print(poll.format_picks(picked, skipped))
+    if not args.run:
+        return 0
+
+    def review(number, out):
+        return main(["review", str(number), "--out", out, "--work-dir", work_dir, "--quiet"])
+
+    outcomes = poll.refresh(picked, args.site, review, log=log)
+    failed = [n for n, o in outcomes.items() if o.startswith("failed")]
+    print(f"refreshed {len(outcomes) - len(failed)} of {len(outcomes)}; index rebuilt in {args.site}")
+    return 0
+
+
 def cmd_comment(args):
     from cpr import comment, site
     work_dir = os.path.abspath(args.work_dir)
@@ -331,6 +358,13 @@ def main(argv=None):
     bd.add_argument("--offline", action="store_true", help="skip the networked dependency resolve at the merge-base")
     bd.add_argument("--work-dir", default=default_work)
     bd.set_defaults(func=cmd_build)
+
+    pl = sub.add_parser("poll", help="list open PRs whose published report is missing or stale; --run refreshes them")
+    pl.add_argument("--run", action="store_true", help="run the cheap review (no lenses, no build) and update --site")
+    pl.add_argument("--site", help="gh-pages checkout holding the published site (default: read origin/gh-pages)")
+    pl.add_argument("--limit", type=int, default=25, help="most PRs to refresh in one run")
+    pl.add_argument("--work-dir", default=default_work)
+    pl.set_defaults(func=cmd_poll)
 
     cm = sub.add_parser("comment", help="build the report-link comment for a PR; --post posts or edits it")
     cm.add_argument("pr", type=int)

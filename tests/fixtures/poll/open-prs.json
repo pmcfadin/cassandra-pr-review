@@ -1,0 +1,74 @@
+[
+ {
+  "number": 5238,
+  "title": "CEP-36 draft",
+  "draft": true,
+  "updated_at": "2026-10-07T14:36:14Z",
+  "head": {
+   "sha": "b7091371d478a4729c32a7f8c03c12c1af22a3f2"
+  }
+ },
+ {
+  "number": 5237,
+  "title": "Send TLS SNI from cqlsh and add ssl_mode",
+  "draft": false,
+  "updated_at": "2026-10-07T10:46:58Z",
+  "head": {
+   "sha": "795e0a1a5137d3e9f0d77ebf0f310c18ec20c364"
+  }
+ },
+ {
+  "number": 5236,
+  "title": "CASSANDRA-21724: Fix system_views latency tables reporting values 1000x too small",
+  "draft": false,
+  "updated_at": "2026-10-07T03:26:43Z",
+  "head": {
+   "sha": "4651deccf55a28137c0562b2dbb16361cde49b5c"
+  }
+ },
+ {
+  "number": 5234,
+  "title": "CASSANDRA-21731: Fix IndexedEntry skipping during key cache deserialization",
+  "draft": false,
+  "updated_at": "2026-10-07T18:13:12Z",
+  "head": {
+   "sha": "0f43fdde860b8757ad7945d7f9b518e83e0cb92f"
+  }
+ },
+ {
+  "number": 5233,
+  "title": "Reject incremental repair with excessive L0 SSTables",
+  "draft": true,
+  "updated_at": "2026-10-07T02:06:49Z",
+  "head": {
+   "sha": "a72e9ee1c85e8698b3f1a164e3c81af4b424f9ff"
+  }
+ },
+ {
+  "number": 5232,
+  "title": "Optionally save the key cache during drain",
+  "draft": true,
+  "updated_at": "2026-10-06T17:27:14Z",
+  "head": {
+   "sha": "da2cd8fb511ea509711832aab1e4400cca45c95a"
+  }
+ },
+ {
+  "number": 5231,
+  "title": "[CASSANDRA-21723]CEP-45: Fix wrap-around shard skipped during tracked SSTable import",
+  "draft": false,
+  "updated_at": "2026-10-05T01:19:43Z",
+  "head": {
+   "sha": "ae7168beb65cdd4aadcb18c3dc21739911940749"
+  }
+ },
+ {
+  "number": 5223,
+  "title": "CASSANDRA-21618: Add node to mixed cdc_enabled cluster can cause sche\u2026",
+  "draft": false,
+  "updated_at": "2026-09-29T14:16:11Z",
+  "head": {
+   "sha": "1af3844bf74974705c91590256a088f59bd4ef24"
+  }
+ }
+]

@@ -2,7 +2,7 @@
 
 Layout of the output directory:
 
-    index.html            list of reports, newest first
+    index.html            list of reports, newest first (rebuilt from pr/*/index.html)
     pr/<N>/index.html     each report, copied unchanged
     .nojekyll             serve files as-is
 """
@@ -33,6 +33,92 @@ def read_model(report_path):
     return json.loads(m.group(1))
 
 
+def _build_label(build):
+    st = (build or {}).get("status")
+    return "not built" if st in (None, "not-built") else st
+
+
+def has_results(model):
+    """True when the report carries AI code review or build results (the richer kind of report)."""
+    if (model.get("review") or {}).get("status") == "ran":
+        return True
+    return (model.get("build") or {}).get("status") not in (None, "not-built")
+
+
+def replaces(published, local):
+    """Keep-richer rule: should the local report model replace the published one for the same PR?
+
+    A different head always replaces. For the same head, local replaces published when it has review or
+    build results, or when the published one has neither (so a plain refresh still lands).
+    """
+    if published is None:
+        return True
+    if published["pr"].get("head_sha") != local["pr"].get("head_sha"):
+        return True
+    return has_results(local) or not has_results(published)
+
+
+def published_reports(site_dir):
+    """{PR number: report model} for every readable pr/<N>/index.html under site_dir."""
+    out = {}
+    for path in glob.glob(os.path.join(site_dir, "pr", "*", "index.html")):
+        try:
+            model = read_model(path)
+        except (OSError, ValueError):
+            continue
+        if model:
+            out[model["pr"]["number"]] = model
+    return out
+
+
+def published_heads(site_dir):
+    return {n: m["pr"].get("head_sha") for n, m in published_reports(site_dir).items()}
+
+
+def merge_report(site_dir, report_path):
+    """Apply one local report to the site. Returns (number, action): added, replaced, kept, or skipped."""
+    local = read_model(report_path)
+    if not local:
+        return None, "skipped"
+    number = local["pr"]["number"]
+    dest = os.path.join(site_dir, "pr", str(number), "index.html")
+    published = None
+    if os.path.exists(dest):
+        try:
+            published = read_model(dest)
+        except (OSError, ValueError):
+            published = None
+    if published is not None and not replaces(published, local):
+        return number, "kept"
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    shutil.copyfile(report_path, dest)
+    return number, "added" if published is None else "replaced"
+
+
+def rebuild_index(site_dir):
+    """Write index.html from every pr/<N>/index.html in the site. Returns the rows."""
+    rows = [summarize(m) for m in published_reports(site_dir).values()]
+    rows.sort(key=lambda r: r["number"], reverse=True)
+    os.makedirs(site_dir, exist_ok=True)
+    with open(os.path.join(site_dir, "index.html"), "w") as f:
+        f.write(index_html(rows))
+    open(os.path.join(site_dir, ".nojekyll"), "w").close()
+    return rows
+
+
+def merge(reports_dir, site_dir):
+    """Merge local reports into an existing site without deleting anything, then rebuild the index.
+
+    Returns (rows, actions) where actions maps PR number to added/replaced/kept.
+    """
+    actions = {}
+    for path in sorted(glob.glob(os.path.join(reports_dir, "*", "index.html"))):
+        number, action = merge_report(site_dir, path)
+        if number is not None:
+            actions[number] = action
+    return rebuild_index(site_dir), actions
+
+
 def summarize(model):
     pr, rec, review = model["pr"], model["recommendation"], model.get("review") or {}
     counts = review.get("issue_counts") or review.get("counts") or {}
@@ -42,6 +128,8 @@ def summarize(model):
         "url": pr["url"], "jira": (model.get("jira_key") or {}).get("key"),
         "verdict": rec["verdict"], "label": rec["label"], "triage": model["triage"]["rating"],
         "generated_at": model["generated_at"],
+        "head": pr.get("head_sha"),
+        "build": _build_label(model.get("build")),
         "review": "not run" if review.get("status") != "ran" else
         f"{counts.get('blocker', 0)} blocker · {counts.get('major', 0)} major · "
         f"{counts.get('minor', 0)} minor · {counts.get('nit', 0)} nit {noun}",
@@ -66,6 +154,7 @@ def index_html(rows):
           <span class="badge s-{st}">{e(r['label'])}</span>
           <span class="tag">triage: {e(r['triage'])}</span>
           <span class="tag">code review: {e(r['review'])}</span>
+          <span class="tag">build: {e(r['build'])}</span>
         </div>
         <div class="sub">{e(r['author'])} → <code>{e(r['base'])}</code> · {jira} ·
           <a href="{e(r['url'])}">GitHub PR</a> · generated {e(r['generated_at'])}</div>
@@ -132,19 +221,6 @@ footer {{ margin-top: 28px; font-size: 13px; color: var(--ink-2); }}
 
 
 def build(reports_dir, out_dir):
-    """Copy every reports/<N>/index.html into out_dir/pr/<N>/ and write the index. Returns the rows."""
-    rows = []
-    for path in glob.glob(os.path.join(reports_dir, "*", "index.html")):
-        model = read_model(path)
-        if not model:
-            continue
-        row = summarize(model)
-        dest = os.path.join(out_dir, "pr", str(row["number"]))
-        os.makedirs(dest, exist_ok=True)
-        shutil.copyfile(path, os.path.join(dest, "index.html"))
-        rows.append(row)
-    rows.sort(key=lambda r: r["number"], reverse=True)
-    with open(os.path.join(out_dir, "index.html"), "w") as f:
-        f.write(index_html(rows))
-    open(os.path.join(out_dir, ".nojekyll"), "w").close()
-    return rows
+    """Write a site into out_dir from reports/<N>/index.html alone. Returns the rows."""
+    os.makedirs(out_dir, exist_ok=True)
+    return merge(reports_dir, out_dir)[0]

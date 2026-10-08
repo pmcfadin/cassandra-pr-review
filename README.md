@@ -27,10 +27,28 @@ Reports are published at <https://pmcfadin.github.io/cassandra-pr-review/>, with
 reviewed PR. To publish after reviewing:
 
 ```
-bin/publish-pages    # builds the site from reports/ and pushes the gh-pages branch
+bin/publish-pages    # merges reports/ into the published site and pushes the gh-pages branch
 ```
 
-`main` never contains reports; the `gh-pages` branch holds only the generated site.
+`bin/publish-pages` starts from the current `gh-pages` contents, so it never removes reports it does
+not have locally. For a PR in both places, a local report replaces the published one when the head
+differs, or when the head is the same and the local report is at least as rich (it has code review or
+build results, or the published one has neither). `main` never contains reports; the `gh-pages` branch
+holds only the generated site.
+
+### Automatic refresh
+
+`.github/workflows/poll.yml` runs every six hours (and on manual dispatch, with a `limit` input). It
+lists open apache/cassandra PRs, picks those with no published report or a new head (newest first;
+drafts untouched for 30 days are skipped; 25 per run), runs the cheap pipeline for each (requirement
+checks, triage, static analysis, context, lab plan), and pushes the result to `gh-pages` with the
+default `GITHUB_TOKEN`. It runs no AI code review and no builds and posts no comments, so those
+sections read "not run" for a PR until you run `/review-pr` and `cpr build` and publish. A published
+report with code review or build results for the current head is never replaced by a plainer one; a
+new head replaces it. The index shows when each report was generated and whether code review ran.
+
+Locally, `cpr poll` prints what a run would pick (reading `origin/gh-pages`); `cpr poll --run --site DIR`
+refreshes a checkout of `gh-pages` the same way the workflow does.
 
 ## What the report checks
 
