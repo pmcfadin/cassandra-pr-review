@@ -244,3 +244,48 @@ test("code review shows lens status and the checklist version", async ({ page })
   await expect(security).toContainText("approved");
   await expect(security).toContainText("No findings from this lens.");
 });
+
+test("Lab plan shows the Not run banner, the rendered plan, and Copy and Download", async ({ page }) => {
+  const m = model();
+  await page.goto(fileUrl(fixtures().report, "#labplan"));
+  const sec = sectionLocator(page, "labplan");
+  await expect(sec).toBeVisible();
+  await expect(sec.locator("h2")).toHaveText("Lab plan");
+  await expect(sec.locator(".sec-head .badge")).toContainText("Info");
+  await expect(sec).toContainText(m.sections.find((s) => s.id === "labplan").summary);
+  const banner = sec.locator(".labplan-banner");
+  await expect(banner).toContainText("Not run.");
+  await expect(banner).toContainText("No cluster was created and no command was executed");
+  // The plan is rendered (headings, fenced commands), not shown as raw text.
+  const plan = sec.locator(".labplan-plan");
+  await expect(plan.getByRole("heading", { name: "Objective" })).toBeVisible();
+  await expect(plan.getByRole("heading", { name: "Cluster Name" })).toBeVisible();
+  await expect(plan.locator("pre code").first()).toContainText("BUILDS=");
+  await expect(plan).toContainText("pr5201-d1095cb");
+  await expect(sec.locator("details").filter({ hasText: "Show raw markdown" })).toHaveCount(1);
+  // Copy and Download exist and work on the model string, not on rendered HTML.
+  const copy = sec.getByRole("button", { name: "Copy plan" });
+  const download = sec.getByRole("button", { name: "Download plan-5201.md" });
+  await expect(copy).toBeVisible();
+  await expect(download).toBeVisible();
+  await copy.click();
+  await expect(sec.locator("[role=status]")).toHaveText(/Copied\.|Copy failed/);
+  const [dl] = await Promise.all([page.waitForEvent("download"), download.click()]);
+  expect(dl.suggestedFilename()).toBe("plan-5201.md");
+  const body = fs.readFileSync(await dl.path(), "utf8");
+  expect(body).toBe(m.lab_plan.markdown);
+  expect(body).toContain("Not run.");
+  expect(body).toContain("## Cluster Name\npr5201-d1095cb\n");
+  // Buttons are not printed.
+  await page.emulateMedia({ media: "print" });
+  await expect(sec.locator(".labplan-actions")).toBeHidden();
+});
+
+test("Lab plan without a plan says why and offers no buttons", async ({ page }) => {
+  await page.goto(fileUrl(fixtures().labplan_none, "#labplan"));
+  const sec = sectionLocator(page, "labplan");
+  await expect(sec).toContainText("No lab plan: documentation-only change.");
+  await expect(sec.locator(".sec-head .badge")).toContainText("N/A");
+  await expect(sec.getByRole("button", { name: /Copy plan|Download/ })).toHaveCount(0);
+  await expect(sec.locator(".labplan-banner")).toHaveCount(0);
+});

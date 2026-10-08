@@ -2,7 +2,7 @@
 
 import time
 
-from cpr import VERSION, paths
+from cpr import VERSION, labplan, paths
 from cpr.checks import STATUSES
 from cpr.checks.compat import touched_surfaces
 from cpr.merge import issues_of
@@ -18,6 +18,7 @@ SECTIONS = [
     ("ticket", "JIRA ticket", ["jira"], ["jira"]),
     ("ci", "Branches & CI", ["ci", "branches"], ["ci", "branches"]),
     ("testing", "Testing", ["testing"], ["testing"]),
+    ("labplan", "Lab plan", ["labplan"], []),
     ("commits", "Commits & changelog", ["commits"], ["commits"]),
     ("static", "Code style", ["static"], ["static"]),
     ("compatibility", "Compatibility", ["compatibility"], ["compatibility"]),
@@ -109,6 +110,7 @@ def build(bundle, checks, triage, docs, diffview, review=None, context=None):
     ticket = (bundle.get("jira") or {}).get("ticket")
     rec = recommend(pr, checks, review)
     branches, unmapped = _branch_rows(bundle)
+    lab_plan = labplan.build_plan(bundle)
 
     sections = []
     for sid, title, doc_aspects, check_aspects in SECTIONS:
@@ -131,8 +133,12 @@ def build(bundle, checks, triage, docs, diffview, review=None, context=None):
             status = "info" if context and context.get("status") == "ok" else "unknown"
         elif sid == "changes":
             status = "info" if diffview.get("status") == "ok" else "unknown"
-        sections.append({"id": sid, "title": title, "status": status, "docs": doc_aspects,
-                         "checks": [c["id"] for c in sec_checks]})
+        elif sid == "labplan":
+            status = "info" if lab_plan["status"] == "plan" else "not-applicable"
+        sec = {"id": sid, "title": title, "status": status, "docs": doc_aspects, "checks": [c["id"] for c in sec_checks]}
+        if sid == "labplan":
+            sec["summary"] = labplan.section_summary(lab_plan)
+        sections.append(sec)
 
     model = {
         "schema": MODEL_SCHEMA,
@@ -170,6 +176,7 @@ def build(bundle, checks, triage, docs, diffview, review=None, context=None):
         "context": context or {"status": "unavailable", "reason": "Reviewer context was not computed."},
         "github_reviews": [{k: r.get(k) for k in ("user", "state", "association", "submitted_at", "url")}
                            for r in bundle.get("reviews", [])],
+        "lab_plan": lab_plan,
         "sections": sections,
         "docs": docs,
         "diffview": diffview,
@@ -233,6 +240,13 @@ def validate(model):
     for s in model.get("sections", []):
         for a in s["docs"]:
             need(isinstance(model["docs"].get(a), str), f"docs.{a}")
+    lp = model.get("lab_plan") or {}
+    need(lp.get("status") in ("plan", "none"), "lab_plan.status")
+    need(isinstance(lp.get("markdown"), str), "lab_plan.markdown")
+    need(isinstance(lp.get("scenarios"), list), "lab_plan.scenarios")
+    need(lp["status"] == "none" or (lp["markdown"] and lp["scenarios"] and isinstance(lp.get("filename"), str)),
+         "lab_plan.markdown")
+    need(lp["status"] == "plan" or isinstance(lp.get("reason"), str), "lab_plan.reason")
     need(model.get("diffview", {}).get("status") in ("ok", "unavailable"), "diffview.status")
     ctx = model.get("context") or {}
     need(ctx.get("status") in ("ok", "unavailable"), "context.status")
