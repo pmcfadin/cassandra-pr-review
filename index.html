@@ -123,7 +123,7 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     <h1>Pull request reviews</h1>
     <p class="lede">Reports on <a href="https://github.com/apache/cassandra/pulls">apache/cassandra</a> pull requests, grouped by who acts next.
       Each report is advisory; committers decide.</p>
-    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">2</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">114</span> Waiting on the contributor</a><a class="stat" href="#g-draft"><span class="count">10</span> Drafts</a></nav>
+    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">2</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">138</span> Waiting on the contributor</a><a class="stat" href="#g-draft"><span class="count">11</span> Drafts</a></nav>
   </header>
   <section class="card group" id="g-ready" aria-labelledby="h-ready">
     <div class="group-head"><h2 id="h-ready">Ready for a committer</h2><span class="count">2</span><p class="hint">A committer can act now: merge it, or run CI or vote.</p></div>
@@ -143,8 +143,152 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     </ul>
   </section>
   <section class="card group" id="g-contributor" aria-labelledby="h-contributor">
-    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">114</span><p class="hint">The contributor has fixes to make first.</p></div>
+    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">138</span><p class="hint">The contributor has fixes to make first.</p></div>
     <ul>
+      <li class="item" data-pr="1360">
+        <a class="main" href="pr/1360/"><span class="num">#1360</span><span class="title">CASSANDRA-17175 WIP</span></a>
+        <div class="meta"><span class="chip s-fail">Not ready to merge</span><span class="count must">1 must fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 114 lines in 7 files</span></div>
+        <div class="sub">smiklosovic into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-17175">CASSANDRA-17175</a> ·
+          <a href="https://github.com/apache/cassandra/pull/1360">GitHub PR</a> · Updated 2026-10-10</div>
+      </li>
+      <li class="item" data-pr="1300">
+        <a class="main" href="pr/1300/"><span class="num">#1300</span><span class="title">CASSANDRA-17073: Implement a test to verify state change events notifications</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 142 lines in 2 files</span></div>
+        <div class="sub">jacek-lewandowski into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-17073">CASSANDRA-17073</a> ·
+          <a href="https://github.com/apache/cassandra/pull/1300">GitHub PR</a> · Updated 2026-10-10</div>
+      </li>
+      <li class="item" data-pr="1373">
+        <a class="main" href="pr/1373/"><span class="num">#1373</span><span class="title">[17198] Removed LIKE restriction in StatementRestrictions</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">3 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 110 lines in 3 files</span></div>
+        <div class="sub">subkanthi into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-17198">CASSANDRA-17198</a> ·
+          <a href="https://github.com/apache/cassandra/pull/1373">GitHub PR</a> · Updated 2026-10-10</div>
+      </li>
+      <li class="item" data-pr="1369">
+        <a class="main" href="pr/1369/"><span class="num">#1369</span><span class="title">Cassandra 14879 - Log DDL Statements</span></a>
+        <div class="meta"><span class="chip s-fail">Not ready to merge</span><span class="count must">1 must fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 17 lines in 2 files</span></div>
+        <div class="sub">patrickclee0207 into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-14879">CASSANDRA-14879</a> ·
+          <a href="https://github.com/apache/cassandra/pull/1369">GitHub PR</a> · Updated 2026-10-10</div>
+      </li>
+      <li class="item" data-pr="1406">
+        <a class="main" href="pr/1406/"><span class="num">#1406</span><span class="title">CASSANDRA-17148 trunk: Adapt track_warnings to Guardrails</span></a>
+        <div class="meta"><span class="chip s-fail">Not ready to merge</span><span class="count must">1 must fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 1002 lines in 29 files</span></div>
+        <div class="sub">adelapena into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-17148">CASSANDRA-17148</a> ·
+          <a href="https://github.com/apache/cassandra/pull/1406">GitHub PR</a> · Updated 2026-10-10</div>
+      </li>
+      <li class="item" data-pr="1375">
+        <a class="main" href="pr/1375/"><span class="num">#1375</span><span class="title">CASSANDRA-17235 Add diagnostic events for unavailable errors</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">3 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 853 lines in 7 files</span></div>
+        <div class="sub">spodkowinski into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-17235">CASSANDRA-17235</a> ·
+          <a href="https://github.com/apache/cassandra/pull/1375">GitHub PR</a> · Updated 2026-10-10</div>
+      </li>
+      <li class="item" data-pr="1607">
+        <a class="main" href="pr/1607/"><span class="num">#1607</span><span class="title">CASSANDRA-17580: Clients using JMX are unable to handle non-standard java types but we leak this into our Exceptions</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 5450 lines in 10 files</span></div>
+        <div class="sub">dcapwell into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-17580">CASSANDRA-17580</a> ·
+          <a href="https://github.com/apache/cassandra/pull/1607">GitHub PR</a> · Updated 2026-10-10</div>
+      </li>
+      <li class="item" data-pr="1578">
+        <a class="main" href="pr/1578/"><span class="num">#1578</span><span class="title">CASSANDRA-17564 - Add synchronization to wait for outstanding tasks in the compaction executor and nonPeriodicTasks during CassandraDaemon setup</span></a>
+        <div class="meta"><span class="chip s-fail">Not ready to merge</span><span class="count must">1 must fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 18 lines in 2 files</span></div>
+        <div class="sub">functioner into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-17564">CASSANDRA-17564</a> ·
+          <a href="https://github.com/apache/cassandra/pull/1578">GitHub PR</a> · Updated 2026-10-10</div>
+      </li>
+      <li class="item" data-pr="1950">
+        <a class="main" href="pr/1950/"><span class="num">#1950</span><span class="title">WIP:  Initial implementation of cassandra-conf with nodetool example - CASSANDRA-17773</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 221 lines in 3 files</span></div>
+        <div class="sub">Claudenw into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-17773">CASSANDRA-17773</a> ·
+          <a href="https://github.com/apache/cassandra/pull/1950">GitHub PR</a> · Updated 2026-10-10</div>
+      </li>
+      <li class="item" data-pr="1759">
+        <a class="main" href="pr/1759/"><span class="num">#1759</span><span class="title">17737 trunk sstable preemptive open interval in mb</span></a>
+        <div class="meta"><span class="chip s-fail">Not ready to merge</span><span class="count must">1 must fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 130 lines in 9 files</span></div>
+        <div class="sub">ekaterinadimitrova2 into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-17737">CASSANDRA-17737</a> ·
+          <a href="https://github.com/apache/cassandra/pull/1759">GitHub PR</a> · Updated 2026-10-10</div>
+      </li>
+      <li class="item" data-pr="2037">
+        <a class="main" href="pr/2037/"><span class="num">#2037</span><span class="title">CASSANDRA-18085 trunk: Add support for singletons on CQL collection functions</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 805 lines in 5 files</span></div>
+        <div class="sub">adelapena into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-18085">CASSANDRA-18085</a> ·
+          <a href="https://github.com/apache/cassandra/pull/2037">GitHub PR</a> · Updated 2026-10-10</div>
+      </li>
+      <li class="item" data-pr="2031">
+        <a class="main" href="pr/2031/"><span class="num">#2031</span><span class="title">CASSANDRA-18077: Add SpotBugs to the build</span></a>
+        <div class="meta"><span class="chip s-fail">Not ready to merge</span><span class="count must">1 must fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 403 lines in 57 files</span></div>
+        <div class="sub">dcapwell into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-18077">CASSANDRA-18077</a> ·
+          <a href="https://github.com/apache/cassandra/pull/2031">GitHub PR</a> · Updated 2026-10-10</div>
+      </li>
+      <li class="item" data-pr="1996">
+        <a class="main" href="pr/1996/"><span class="num">#1996</span><span class="title">CASSANDRA-18035: Add quick start development guide and ant targets for local docker development</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 669 lines in 8 files</span></div>
+        <div class="sub">pauloricardomg into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-18035">CASSANDRA-18035</a> ·
+          <a href="https://github.com/apache/cassandra/pull/1996">GitHub PR</a> · Updated 2026-10-10</div>
+      </li>
+      <li class="item" data-pr="2133">
+        <a class="main" href="pr/2133/"><span class="num">#2133</span><span class="title">CASSANDRA-15254 Support update statements over the SettingsTable virtual table</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 2316 lines in 25 files</span></div>
+        <div class="sub">Mmuzaf into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-15254">CASSANDRA-15254</a> ·
+          <a href="https://github.com/apache/cassandra/pull/2133">GitHub PR</a> · Updated 2026-10-10</div>
+      </li>
+      <li class="item" data-pr="2045">
+        <a class="main" href="pr/2045/"><span class="num">#2045</span><span class="title">Cassandra 8928 -- added sstable downgrader</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">3 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 2103 lines in 14 files</span></div>
+        <div class="sub">Claudenw into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-8928">CASSANDRA-8928</a> ·
+          <a href="https://github.com/apache/cassandra/pull/2045">GitHub PR</a> · Updated 2026-10-10</div>
+      </li>
+      <li class="item" data-pr="2226">
+        <a class="main" href="pr/2226/"><span class="num">#2226</span><span class="title">Mck/18049/trunk</span></a>
+        <div class="meta"><span class="chip s-fail">Not ready to merge</span><span class="count must">1 must fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 763 lines in 6 files</span></div>
+        <div class="sub">michaelsembwever into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-18049">CASSANDRA-18049</a> ·
+          <a href="https://github.com/apache/cassandra/pull/2226">GitHub PR</a> · Updated 2026-10-10</div>
+      </li>
+      <li class="item" data-pr="2334">
+        <a class="main" href="pr/2334/"><span class="num">#2334</span><span class="title">CASSANDRA-15254 Support updates on the virtuabl table SettingsTable (use annotations for property updates validation)</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 2221 lines in 27 files</span></div>
+        <div class="sub">Mmuzaf into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-15254">CASSANDRA-15254</a> ·
+          <a href="https://github.com/apache/cassandra/pull/2334">GitHub PR</a> · Updated 2026-10-10</div>
+      </li>
+      <li class="item" data-pr="2300">
+        <a class="main" href="pr/2300/"><span class="num">#2300</span><span class="title">CASSANDRA-15254 Support updates over SettingsTable (prorperty validation with DatabaseDescriptor)</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 2173 lines in 30 files</span></div>
+        <div class="sub">Mmuzaf into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-15254">CASSANDRA-15254</a> ·
+          <a href="https://github.com/apache/cassandra/pull/2300">GitHub PR</a> · Updated 2026-10-10</div>
+      </li>
+      <li class="item" data-pr="203">
+        <a class="main" href="pr/203/"><span class="num">#203</span><span class="title">CASSANDRA-13016 Added ByteConverter function and added unit tests for it</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">3 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 85 lines in 5 files</span></div>
+        <div class="sub">sumantsahney into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-13016">CASSANDRA-13016</a> ·
+          <a href="https://github.com/apache/cassandra/pull/203">GitHub PR</a> · Updated 2026-10-10</div>
+      </li>
+      <li class="item" data-pr="329">
+        <a class="main" href="pr/329/"><span class="num">#329</span><span class="title">Adds Direct IO support for reads.</span></a>
+        <div class="meta"><span class="chip s-fail">Not ready to merge</span><span class="count must">3 must fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 336 lines in 13 files</span></div>
+        <div class="sub">mulugetam into <code>trunk</code> · no ticket ·
+          <a href="https://github.com/apache/cassandra/pull/329">GitHub PR</a> · Updated 2026-10-10</div>
+      </li>
+      <li class="item" data-pr="283">
+        <a class="main" href="pr/283/"><span class="num">#283</span><span class="title">CASSANDRA-14459: DynamicEndpointSnitch should never prefer latent replicas</span></a>
+        <div class="meta"><span class="chip s-fail">Not ready to merge</span><span class="count must">1 must fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 2614 lines in 42 files</span></div>
+        <div class="sub">jolynch into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-14459">CASSANDRA-14459</a> ·
+          <a href="https://github.com/apache/cassandra/pull/283">GitHub PR</a> · Updated 2026-10-10</div>
+      </li>
+      <li class="item" data-pr="1168">
+        <a class="main" href="pr/1168/"><span class="num">#1168</span><span class="title">CASSANDRA-16878 trunk: Race in commit log replay can cause rejected mutations</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 1062 lines in 7 files</span></div>
+        <div class="sub">adelapena into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-16878">CASSANDRA-16878</a> ·
+          <a href="https://github.com/apache/cassandra/pull/1168">GitHub PR</a> · Updated 2026-10-10</div>
+      </li>
+      <li class="item" data-pr="616">
+        <a class="main" href="pr/616/"><span class="num">#616</span><span class="title">Avoid hinted handoff per-host throttle being arounded to 0 in large cluster</span></a>
+        <div class="meta"><span class="chip s-fail">Not ready to merge</span><span class="count must">2 must fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 4 lines in 1 file</span></div>
+        <div class="sub">jasonstack into <code>trunk</code> · no ticket ·
+          <a href="https://github.com/apache/cassandra/pull/616">GitHub PR</a> · Updated 2026-10-10</div>
+      </li>
+      <li class="item" data-pr="5248">
+        <a class="main" href="pr/5248/"><span class="num">#5248</span><span class="title">[CASSANDRA-21722]CEP-45: Fix incorrect SSTable version threshold for Mutation Tracking metadata</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 9 lines in 3 files</span></div>
+        <div class="sub">ykisana into <code>cep-45-mutation-tracking</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21722">CASSANDRA-21722</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5248">GitHub PR</a> · Updated 2026-10-10</div>
+      </li>
       <li class="item" data-pr="4471">
         <a class="main" href="pr/4471/"><span class="num">#4471</span><span class="title">CASSANDRA-20984-5.0: Fix java.lang.ClassCastException: Joining failure upon streaming incompatible versions (StreamingTest is work in progress)</span></a>
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 417 lines in 8 files</span></div>
@@ -832,8 +976,14 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     </ul>
   </section>
   <section class="card group" id="g-draft" aria-labelledby="h-draft">
-    <div class="group-head"><h2 id="h-draft">Drafts</h2><span class="count">10</span><p class="hint">Early feedback only. Not a merge decision.</p></div>
+    <div class="group-head"><h2 id="h-draft">Drafts</h2><span class="count">11</span><p class="hint">Early feedback only. Not a merge decision.</p></div>
     <ul>
+      <li class="item" data-pr="1337">
+        <a class="main" href="pr/1337/"><span class="num">#1337</span><span class="title">CASSANDRA-16630. Migrate to JUnit5</span></a>
+        <div class="meta"><span class="chip s-na">Draft</span><span class="acts">Next: <b>Committer</b></span><span class="effort">Review effort: Medium · 2259 lines in 7 files</span></div>
+        <div class="sub">azotcsit into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-16630">CASSANDRA-16630</a> ·
+          <a href="https://github.com/apache/cassandra/pull/1337">GitHub PR</a> · Updated 2026-10-10</div>
+      </li>
       <li class="item" data-pr="3290">
         <a class="main" href="pr/3290/"><span class="num">#3290</span><span class="title">CASSANDRA-19593 trunk transactional guardrails wip</span></a>
         <div class="meta"><span class="chip s-na">Draft</span><span class="count must">1 must fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 5565 lines in 57 files</span></div>
