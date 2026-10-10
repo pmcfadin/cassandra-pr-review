@@ -221,6 +221,14 @@ def pmd_rules_block(bundle):
             "categories": cats, "rows": rows, "house": house, "usual": usual}
 
 
+def _panel_summary():
+    from cpr.review import panel_summary  # cpr.review is not needed for anything else here
+    try:
+        return panel_summary()
+    except (OSError, ValueError, KeyError):
+        return []
+
+
 def build(bundle, checks, triage, docs, diffview, review=None, context=None):
     """Assemble the report model. `review` is None until review lenses exist."""
     pr = bundle["pr"]
@@ -301,7 +309,7 @@ def build(bundle, checks, triage, docs, diffview, review=None, context=None):
         "checks": checks,
         "recommendation": rec,
         "triage": triage,
-        "review": review or {"status": "not-run", "lenses": []},
+        "review": review or {"status": "not-run", "lenses": [], "panel": _panel_summary()},
         "context": context or {"status": "unavailable", "reason": "Reviewer context was not computed."},
         "github_reviews": [{k: r.get(k) for k in ("user", "state", "association", "submitted_at", "url")}
                            for r in bundle.get("reviews", [])],
@@ -347,8 +355,20 @@ def validate(model):
     rec = model.get("recommendation") or {}
     need(rec.get("verdict") in VERDICTS, "recommendation.verdict")
     need((model.get("triage") or {}).get("rating") in ("easy", "moderate", "hard"), "triage.rating")
+    # How the review ran (optional: reports made before it was recorded have none).
+    ab = model["review"].get("about")
+    need(ab is None or isinstance(ab, dict), "review.about")
+    if ab is not None:
+        need(isinstance(ab.get("models", []), list) and all(isinstance(x, str) for x in ab.get("models", [])), "review.about.models")
+        for k in ("ran_at", "tier"):
+            need(ab.get(k) is None or isinstance(ab[k], str), f"review.about.{k}")
+        need(ab.get("lines") is None or (isinstance(ab["lines"], int) and not isinstance(ab["lines"], bool)), "review.about.lines")
+    for i, p in enumerate(model["review"].get("panel") or []):
+        need(isinstance(p.get("name"), str), f"review.panel[{i}].name")
+        need(p.get("focus") is None or isinstance(p["focus"], str), f"review.panel[{i}].focus")
     for i, lens in enumerate(model["review"].get("lenses", [])):
         need(isinstance(lens.get("name"), str), f"review.lenses[{i}].name")
+        need(lens.get("focus") is None or isinstance(lens["focus"], str), f"review.lenses[{i}].focus")
         need(lens.get("status") in ("ran", "missing", "invalid"), f"review.lenses[{i}].status")
         for j, f in enumerate(lens.get("findings", [])):
             for k in ("id", "severity", "location", "rule", "problem", "fix"):

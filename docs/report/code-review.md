@@ -30,6 +30,8 @@ Each lens summary states which checklists were applied and what was not reviewed
 
 The panel runs only through `/review-pr <N>` in Claude Code. A report made with `cpr review <N>` alone says "Not run".
 
+**About this review.** The top of the Code review section says, in plain words, that the findings come from AI reviewers, that they can be wrong, and that committers decide. It then lists the model the lens agents pin (the `model:` line in `.claude/agents/<agent>.md`, for example Sonnet), when the lenses wrote their output, the patch-size tier, the checklist commit, and each lens with what it looks for (the `focus` in `cpr/config/panel.json`). These are recorded when `/review-pr` merges the lens outputs. A review saved before they were recorded shows "not recorded". On a PR with no review, the box lists the lenses that would run and how to run them.
+
 ## Why
 
 - Reviewers judge correctness, error handling, testing, logging, and compatibility. Source: [How to review](https://cassandra.apache.org/_/development/how_to_review.html).

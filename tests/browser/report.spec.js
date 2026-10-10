@@ -168,6 +168,44 @@ test("a finding card opens to problem, suggested fix and the lenses that raised 
   for (const lens of m.review.lenses) await expect(page.locator("#findings .lens-card").filter({ hasText: lens.name }).first()).toBeVisible();
 });
 
+test("About this review says what the review is, which model ran it, and when", async ({ page }) => {
+  const m = model();
+  await page.goto(fileUrl(fixtures().about, "#findings"));
+  const box = page.locator("#findings #about-review");
+  await expect(box.locator("h3")).toHaveText("About this review");
+  const n = m.review.lenses.length;
+  await expect(box).toContainText(`${["", "One", "Two", "Three", "Four", "Five", "Six"][n]} AI reviewers (Claude Sonnet) read this patch.`);
+  await expect(box).toContainText("The reviewers are AI. They can be wrong");
+  await expect(box.locator("dt")).toHaveText(["Model", "Ran", "Patch size", "Checklists"]);
+  await expect(box.locator("dd").nth(0)).toHaveText("Claude Sonnet");
+  await expect(box.locator("dd").nth(1)).toHaveText("2026-10-07 21:08 UTC");
+  await expect(box.locator("dd").nth(2)).toHaveText("small (19 changed lines, tests not counted)");
+  await expect(box.getByRole("link", { name: "apache/cassandra trunk @ 0123456789" }))
+    .toHaveAttribute("href", "https://github.com/apache/cassandra/tree/0123456789abcdef0123456789abcdef01234567/.claude/skills");
+  await expect(box.locator("li")).toHaveCount(n);
+  await expect(box.locator("li").first()).toContainText(`${m.review.lenses[0].name} — what the ${m.review.lenses[0].name} lens looks for`);
+});
+
+test("About this review on an older review says the model and time were not recorded", async ({ page }) => {
+  await page.goto(fileUrl(fixtures().report, "#findings"));
+  const box = page.locator("#findings #about-review");
+  await expect(box).toContainText("AI reviewers (Claude) read this patch.");
+  await expect(box.locator("dd").nth(0)).toHaveText("not recorded");
+  await expect(box.locator("dd").nth(1)).toHaveText("not recorded");
+});
+
+test("About this review on an unreviewed PR names the reviewers that would run and how", async ({ page }) => {
+  const panel = JSON.parse(fs.readFileSync(require("path").resolve(__dirname, "..", "..", "cpr", "config", "panel.json"), "utf8")).lenses;
+  await page.goto(fileUrl(fixtures().unreviewed, "#findings"));
+  const box = page.locator("#findings #about-review");
+  await expect(box).toContainText("Code review has not run for this PR.");
+  await expect(box).toContainText("six AI reviewers (Claude)");
+  await expect(box.locator("dt")).toHaveText(["How to run"]);
+  await expect(box.locator("dd code")).toHaveText("/review-pr 5201");
+  await expect(box.locator("li")).toHaveCount(panel.length);
+  for (const l of panel) await expect(box).toContainText(`${l.name} — ${l.focus}`);
+});
+
 test("code review shows lens status and the checklist version", async ({ page }) => {
   await page.goto(fileUrl(fixtures().lens_status, "#findings"));
   const sec = page.locator("#findings");

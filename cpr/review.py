@@ -11,10 +11,12 @@
 
 import json
 import os
+import time
 
 from cpr import merge as merge_mod
 
 PANEL = os.path.join(os.path.dirname(__file__), "config", "panel.json")
+AGENTS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".claude", "agents")
 SEVERITIES = ("blocker", "major", "minor", "nit")
 MUST_FIX = ("blocker", "major")
 IMPACTS = ("data-loss", "crash", "hang", "mixed-version-break", "silent-wrong-result", "performance", "cosmetic")
@@ -106,6 +108,48 @@ def derive_severity(f):
     return dict(f, severity=to, severity_corrected={"from": f["severity"], "to": to})
 
 
+def panel_summary(panel=None):
+    """[{name, focus}] for every lens in the panel: what a review would run, for reports where none ran."""
+    return [{"name": s["name"], "focus": s.get("focus")} for s in (panel or load_panel())]
+
+
+def agent_model(agent, directory=AGENTS_DIR):
+    """The `model:` an agent file pins in its front matter (for example "sonnet"), or None."""
+    try:
+        with open(os.path.join(directory, f"{agent}.md")) as f:
+            lines = f.read().splitlines()
+    except OSError:
+        return None
+    if not lines or lines[0].strip() != "---":
+        return None
+    for line in lines[1:]:
+        if line.strip() == "---":
+            break
+        key, _, value = line.partition(":")
+        if key.strip() == "model" and value.strip():
+            return value.strip()
+    return None
+
+
+def ran_at(lens_dir):
+    """When the lenses wrote their output (the newest lens file), as "YYYY-MM-DD HH:MM UTC", or None."""
+    try:
+        times = [os.path.getmtime(os.path.join(lens_dir, n)) for n in os.listdir(lens_dir) if n.endswith(".json")]
+    except OSError:
+        return None
+    return time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime(max(times))) if times else None
+
+
+def about(lens_dir, panel, agents_dir=AGENTS_DIR):
+    """How the review ran: the models the lens agents pin, when, and the size tier the plan chose."""
+    plan = read_plan(lens_dir)
+    models = sorted({m for m in (agent_model(s["agent"], agents_dir) for s in panel) if m})
+    lines = plan.get("lines")
+    return {"models": models, "ran_at": ran_at(lens_dir),
+            "tier": plan.get("tier") if isinstance(plan.get("tier"), str) else None,
+            "lines": lines if isinstance(lines, int) and not isinstance(lines, bool) else None}
+
+
 def read_plan(lens_dir):
     """`<lens_dir>/../lens-plan.json` (written by `cpr prepare`), or {}."""
     try:
@@ -122,14 +166,14 @@ def read_checklists(lens_dir):
     return {"sha": sha} if isinstance(sha, str) and sha else None
 
 
-def merge(lens_dir, panel=None):
+def merge(lens_dir, panel=None, agents_dir=AGENTS_DIR):
     """Read `<lens_dir>/<name>.json` for every lens in the panel and merge them."""
     panel = panel or load_panel()
     planned = read_plan(lens_dir).get("lenses") or {}
     lenses = []
     for spec in panel:
         name, agent = spec["name"], spec["agent"]
-        entry = {"name": name, "agent": agent, "status": "missing", "approve": False, "summary": "",
+        entry = {"name": name, "agent": agent, "focus": spec.get("focus"), "status": "missing", "approve": False, "summary": "",
                  "spec_conformance": None, "tests_ran": None, "tests_detail": None, "findings": [], "error": None}
         path = os.path.join(lens_dir, f"{name}.json")
         if not os.path.exists(path):
@@ -171,7 +215,7 @@ def merge(lens_dir, panel=None):
     return {"status": "ran", "complete": complete, "approved": approved, "counts": counts,
             "issues": issues, "issue_counts": issue_counts,
             "must_fix": sum(1 for i in issues if i["severity"] in MUST_FIX),
-            "checklists": read_checklists(lens_dir), "lenses": lenses}
+            "checklists": read_checklists(lens_dir), "about": about(lens_dir, panel, agents_dir), "lenses": lenses}
 
 
 def explain_notes(review):

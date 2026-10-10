@@ -220,6 +220,16 @@ details.howto > .d-body { background: var(--panel); border-radius: 0 0 var(--r-c
 .finding-body .lab { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-3); }
 .finding-body p { margin: 6px 0 0; font-size: 15px; color: var(--ink-2); overflow-wrap: anywhere; }
 .finding-body .full { grid-column: 1 / -1; font-size: 13px; color: var(--ink-3); overflow-wrap: anywhere; }
+.about-review { background: var(--soft); border: 1px solid var(--rule-2); border-radius: 6px; padding: 14px 18px; display: flex; flex-direction: column; gap: 8px; overflow-wrap: anywhere; min-width: 0; }
+.about-review h3 { font-size: 16px; font-weight: 600; margin: 0; }
+.about-review p { margin: 0; }
+.about-review .about-caveat { color: var(--ink-2); }
+.about-review dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 16px; margin: 4px 0 0; font-size: 14px; }
+.about-review dt { color: var(--ink-3); }
+.about-review dd { margin: 0; }
+.about-review ul { margin: 2px 0 0; padding-left: 18px; font-size: 14px; }
+.about-review li { margin: 3px 0; }
+.lens-card .focus { color: var(--ink-3); font-size: 14px; }
 .lens-card { background: var(--panel); border: 1px solid var(--rule-2); border-radius: 6px; padding: 12px 16px; margin: 8px 0; }
 .lens-card { overflow-wrap: anywhere; min-width: 0; }
 .lens-card h4 { font-size: 16px; font-weight: 600; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
@@ -1410,6 +1420,56 @@ body.no-data #no-data { display: block; }
         h("span", "mono muted", f.location)]),
       mdInline("p", f.problem), h("p", null, [h("strong", null, "Fix: "), mdInline("span", f.fix)])]);
   }
+  // "About this review": what the code review is, who (which model) ran it, and when.
+  var NUMBER_WORDS = ["No", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten"];
+  var MODEL_NAMES = { sonnet: "Claude Sonnet", opus: "Claude Opus", haiku: "Claude Haiku" };
+  var TIER_WORDS = { none: "docs only, so no reviewer runs", "docs-only": "docs only, so no reviewer runs",
+    small: "small", medium: "medium", large: "large" };
+  function andList(words) {
+    return words.length < 2 ? words.join("") : words.slice(0, -1).join(", ") + " and " + words[words.length - 1];
+  }
+  function modelName(m) { return MODEL_NAMES[String(m).toLowerCase()] || String(m); }
+  function aboutReview(rv) {
+    var ran = rv.status === "ran";
+    var lenses = ran ? (rv.lenses || []) : (rv.panel || []);
+    var ab = rv.about || {};
+    var n = lenses.length;
+    var count = n ? (NUMBER_WORDS[n] || String(n)) + " AI " + (n === 1 ? "reviewer" : "reviewers") : "AI reviewers";
+    var models = (ab.models || []).map(modelName);
+    var box = h("div", "about-review");
+    box.id = "about-review";
+    append(box, h("h3", null, "About this review"));
+    if (ran) {
+      append(box, h("p", null, count + " (" + (models.length ? andList(models) : "Claude") + ") read this patch. Each one looks for one kind of problem. " +
+        "The tool then lists a problem once when several reviewers found it, and sets its severity from how bad the problem would be."));
+    } else {
+      append(box, h("p", null, "Code review has not run for this PR. When it runs, " + count.charAt(0).toLowerCase() + count.slice(1) +
+        " (Claude) read the patch, each looking for one kind of problem."));
+    }
+    append(box, h("p", "about-caveat", "The reviewers are AI. They can be wrong, and they can miss problems. Committers decide, and two committer +1 votes are still needed."));
+    var facts = h("dl");
+    function fact(k, v) { append(facts, [h("dt", null, k), h("dd", null, v)]); }
+    if (ran) {
+      fact("Model", models.length ? andList(models) : h("span", "muted", "not recorded"));
+      fact("Ran", ab.ran_at ? ab.ran_at : h("span", "muted", "not recorded"));
+      if (ab.tier) fact("Patch size", (TIER_WORDS[ab.tier] || ab.tier) + (typeof ab.lines === "number" ? " (" + plural(ab.lines, "changed line") + ", tests not counted)" : ""));
+      if (rv.checklists && rv.checklists.sha)
+        fact("Checklists", ["From Cassandra's own review checklists, ",
+          link("https://github.com/apache/cassandra/tree/" + encodeURIComponent(rv.checklists.sha) + "/.claude/skills", "apache/cassandra trunk @ " + short(rv.checklists.sha, 10))]);
+    } else {
+      fact("How to run", [h("code", null, "/review-pr " + (pr.number || "<N>")), " in Claude Code, then publish the report."]);
+    }
+    append(box, facts);
+    var named = lenses.filter(function (l) { return l && l.name; });
+    if (named.length) {
+      append(box, h("p", "about-caveat", ran ? "The reviewers and what each looks for:" : "The reviewers that would run:"));
+      append(box, h("ul", null, named.map(function (l) {
+        return h("li", null, [h("strong", "mono", l.name), l.focus ? " — " + l.focus : null]);
+      })));
+    }
+    return box;
+  }
+
   function renderFindings() {
     var rv = M.review || {};
     var sec = h("section", "stack");
@@ -1418,14 +1478,14 @@ body.no-data #no-data { display: block; }
     var h2 = h("h2", "sec", "Code review findings");
     h2.id = "findings-h";
     var lenses = rv.lenses || [];
-    var sub = lenses.length ? "Found by " + plural(lenses.length, "automated review lens").replace(/lenss/, "lenses") + ". A finding several lenses agree on is listed once."
-      : "Found by automated review lenses. A finding several lenses agree on is listed once.";
+    var sub = lenses.length ? "Found by " + plural(lenses.length, "AI review lens").replace(/lenss/, "lenses") + ". A finding several lenses agree on is listed once."
+      : "Found by AI review lenses. A finding several lenses agree on is listed once.";
     append(sec, h("div", "sec-head", h("div", null, [h2, h("p", "sub", sub), reviewHeadline() ? h("p", "sub review-headline", reviewHeadline()) : null])));
     try {
+      append(sec, aboutReview(rv));
       if (rv.status === "not-run" || !rv.status) {
         append(sec, h("div", "notice s-unknown", [h("strong", null, "Not run in this version. "),
-          "No code review lens has read this patch. The recommendation cannot go past “requirements met, not reviewed” until one does.",
-          h("span", "why", ["Run ", h("code", null, "/review-pr " + (pr.number || "<N>")), " and publish to fill this section."])]));
+          "No code review lens has read this patch. The recommendation cannot go past “requirements met, not reviewed” until one does."]));
       } else {
         var ic = rv.issue_counts || {};
         var chips = h("div", "chips");
@@ -1451,6 +1511,7 @@ body.no-data #no-data { display: block; }
           var lk = lens.status !== "ran" ? "unknown" : (lens.approve ? "pass" : "fail");
           var lword = lens.status !== "ran" ? lens.status : (lens.approve ? "approved" : "declined");
           var card = h("div", "lens-card", [h("h4", null, [lens.name, chip(lk, lword), h("span", "mono muted", lens.agent || "")])]);
+          if (lens.focus) append(card, h("p", "focus", "Looks for: " + lens.focus));
           if (lens.error) append(card, h("p", null, "Error: " + lens.error));
           if (lens.summary) append(card, mdInline("p", lens.summary));
           if (lens.status === "ran" && lens.tests_detail) append(card, h("p", "muted", "Tests: " + (lens.tests_ran || "") + " — " + lens.tests_detail));

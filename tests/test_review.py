@@ -234,3 +234,68 @@ class PlanMissing(unittest.TestCase):
         self.assertIn("x/logic.md", sec["error"])
         self.assertFalse(r["approved"])
         self.assertEqual(r["checklists"], {"sha": "abc123"})
+
+
+class About(unittest.TestCase):
+    """How a review ran: the model each lens agent pins, when the lenses wrote, and the size tier."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        root = self.tmp.name
+        self.agents = os.path.join(root, "agents")
+        self.lens_dir = os.path.join(root, "pr", "lenses")
+        os.makedirs(self.agents)
+        os.makedirs(self.lens_dir)
+        for agent, model in (("a-agent", "sonnet"), ("b-agent", "sonnet")):
+            with open(os.path.join(self.agents, f"{agent}.md"), "w") as f:
+                f.write(f"---\nname: {agent}\ndescription: x\nmodel: {model}\n---\nbody model: opus\n")
+        with open(os.path.join(root, "pr", "lens-plan.json"), "w") as f:
+            json.dump({"tier": "small", "lines": 19, "lenses": {}}, f)
+        self.panel = [{"name": "a", "agent": "a-agent", "focus": "conditions"}, {"name": "b", "agent": "b-agent"}]
+        for name in ("a", "b"):
+            with open(os.path.join(self.lens_dir, f"{name}.json"), "w") as f:
+                json.dump(lens_out(), f)
+        os.utime(os.path.join(self.lens_dir, "a.json"), (1791400000, 1791400000))
+        os.utime(os.path.join(self.lens_dir, "b.json"), (1791403600, 1791403600))
+
+    def test_merge_records_model_time_tier_and_focus(self):
+        r = review.merge(self.lens_dir, self.panel, agents_dir=self.agents)
+        self.assertEqual(r["about"], {"models": ["sonnet"], "ran_at": "2026-10-07 20:06 UTC", "tier": "small", "lines": 19})
+        self.assertEqual([l["focus"] for l in r["lenses"]], ["conditions", None])
+
+    def test_agent_model_reads_only_the_front_matter(self):
+        self.assertEqual(review.agent_model("a-agent", self.agents), "sonnet")
+        self.assertIsNone(review.agent_model("no-such-agent", self.agents))
+        with open(os.path.join(self.agents, "bare.md"), "w") as f:
+            f.write("model: opus\n")
+        self.assertIsNone(review.agent_model("bare", self.agents))
+
+    def test_unknown_model_time_and_tier_are_none(self):
+        empty = os.path.join(self.tmp.name, "other", "lenses")
+        os.makedirs(empty)
+        self.assertEqual(review.about(empty, [{"name": "x", "agent": "none"}], self.agents),
+                         {"models": [], "ran_at": None, "tier": None, "lines": None})
+
+    def test_real_panel_agents_pin_a_model_and_every_lens_has_a_focus(self):
+        panel = review.load_panel()
+        for spec in panel:
+            self.assertTrue(review.agent_model(spec["agent"]), spec["agent"])
+        self.assertTrue(all(p["focus"] for p in review.panel_summary(panel)))
+
+    def test_model_validation_accepts_about_and_rejects_bad_values(self):
+        from cpr import model as model_mod
+        with open(os.path.join(os.path.dirname(__file__), "fixtures", "models", "5201.json")) as f:
+            m = json.load(f)
+        m["review"]["about"] = {"models": ["sonnet"], "ran_at": "2026-10-07 21:08 UTC", "tier": "small", "lines": 19}
+        m["review"]["lenses"][0]["focus"] = "conditions"
+        model_mod.validate(m)
+        for bad in ({"models": "sonnet"}, {"lines": "19"}, {"lines": True}, {"ran_at": 5}):
+            m2 = json.loads(json.dumps(m))
+            m2["review"]["about"].update(bad)
+            with self.assertRaises(model_mod.ModelError):
+                model_mod.validate(m2)
+        m3 = json.loads(json.dumps(m))
+        m3["review"] = {"status": "not-run", "lenses": [], "panel": [{"name": "a", "focus": 3}]}
+        with self.assertRaises(model_mod.ModelError):
+            model_mod.validate(m3)

@@ -51,6 +51,25 @@ def lens_status(model):
     return m
 
 
+def with_about(model):
+    """5201 as a review made after the run is recorded: model, time, size tier, and each lens's focus."""
+    m = copy.deepcopy(model)
+    rv = m["review"]
+    rv["checklists"] = {"sha": "0123456789abcdef0123456789abcdef01234567"}
+    rv["about"] = {"models": ["sonnet"], "ran_at": "2026-10-07 21:08 UTC", "tier": "small", "lines": 19}
+    for lens in rv["lenses"]:
+        lens["focus"] = f"what the {lens['name']} lens looks for"
+    return m
+
+
+def unreviewed(model):
+    """5201 as the scheduled job publishes it: code review not run, the panel that would run listed."""
+    from cpr import review
+    m = copy.deepcopy(model)
+    m["review"] = {"status": "not-run", "lenses": [], "panel": review.panel_summary()}
+    return m
+
+
 def no_plan(model):
     """5201 as if it were a docs-only PR: the Lab plan section explains why there is no plan."""
     m = copy.deepcopy(model)
@@ -155,6 +174,8 @@ def main(out_dir):
     render.write(with_build(model, load_build_run()), os.path.join(out_dir, "build.html"))
     render.write(with_build(model, None), os.path.join(out_dir, "build-none.html"))
     render.write(with_pmd_rules(model), os.path.join(out_dir, "pmd-rules.html"))
+    render.write(with_about(model), os.path.join(out_dir, "about.html"))
+    render.write(unreviewed(model), os.path.join(out_dir, "unreviewed.html"))
     huge = bundle_model("4967-huge.json.gz")
     render.write(huge, os.path.join(out_dir, "huge.html"))
     index, rows = build_site(out_dir, model)
@@ -163,6 +184,7 @@ def main(out_dir):
                       "lens_status": os.path.join(out_dir, "lens-status.html"),
                       "labplan_none": os.path.join(out_dir, "labplan-none.html"),
                       "pmd_rules": os.path.join(out_dir, "pmd-rules.html"),
+                      "about": os.path.join(out_dir, "about.html"), "unreviewed": os.path.join(out_dir, "unreviewed.html"),
                       "huge": os.path.join(out_dir, "huge.html"), "index": index,
                       "index_groups": {r["group"]: sum(1 for x in rows if x["group"] == r["group"]) for r in rows},
                       "hostile_title": HOSTILE_TITLE, "hostile_evidence": HOSTILE_EVIDENCE}))
