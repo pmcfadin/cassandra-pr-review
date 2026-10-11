@@ -136,15 +136,21 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
       </li>
       <li class="item" data-pr="5125">
         <a class="main" href="pr/5125/"><span class="num">#5125</span><span class="title">CASSANDRA-21663 Failed force repair should clear force repair flag</span></a>
-        <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Committer</b></span><span class="effort">Review effort: Large · 1054 lines in 5 files</span></div>
+        <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Committer</b></span><span class="effort">Review effort: Large · 1037 lines in 5 files</span></div>
         <div class="sub">tommystendahl into <code>cassandra-5.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21663">CASSANDRA-21663</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5125">GitHub PR</a> · Updated 2026-10-09</div>
+          <a href="https://github.com/apache/cassandra/pull/5125">GitHub PR</a> · Updated 2026-10-08</div>
       </li>
     </ul>
   </section>
   <section class="card group" id="g-contributor" aria-labelledby="h-contributor">
     <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">138</span><p class="hint">The contributor has fixes to make first.</p></div>
     <ul>
+      <li class="item" data-pr="4970">
+        <a class="main" href="pr/4970/"><span class="num">#4970</span><span class="title">CASSANDRA-21537: Serialise local metadata proposals so concurrent DDL keeps its retry budget</span></a>
+        <div class="meta"><span class="chip s-fail">Not ready to merge</span><span class="count must">4 must fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 1858 lines in 4 files</span><span class="chip s-fail">Code review: 4 major, 4 minor</span><span class="chip s-pass">Built, tests passed</span></div>
+        <div class="sub">pmcfadin into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21537">CASSANDRA-21537</a> ·
+          <a href="https://github.com/apache/cassandra/pull/4970">GitHub PR</a> · Updated 2026-10-10</div>
+      </li>
       <li class="item" data-pr="1360">
         <a class="main" href="pr/1360/"><span class="num">#1360</span><span class="title">CASSANDRA-17175 WIP</span></a>
         <div class="meta"><span class="chip s-fail">Not ready to merge</span><span class="count must">1 must fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 114 lines in 7 files</span></div>
@@ -745,12 +751,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="sub">JeremiahDJordan into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21670">CASSANDRA-21670</a> ·
           <a href="https://github.com/apache/cassandra/pull/5139">GitHub PR</a> · Updated 2026-10-09</div>
       </li>
-      <li class="item" data-pr="4970">
-        <a class="main" href="pr/4970/"><span class="num">#4970</span><span class="title">CASSANDRA-21537: Serialise local metadata proposals so concurrent DDL keeps its retry budget</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">3 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 1858 lines in 4 files</span></div>
-        <div class="sub">pmcfadin into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21537">CASSANDRA-21537</a> ·
-          <a href="https://github.com/apache/cassandra/pull/4970">GitHub PR</a> · Updated 2026-10-09</div>
-      </li>
       <li class="item" data-pr="5231">
         <a class="main" href="pr/5231/"><span class="num">#5231</span><span class="title">[CASSANDRA-21723]CEP-45: Fix wrap-around shard skipped during tracked SSTable import</span></a>
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 48 lines in 3 files</span></div>
@@ -937,6 +937,12 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="sub">bdeggleston into <code>cep-45-mutation-tracking</code> · no ticket ·
           <a href="https://github.com/apache/cassandra/pull/5017">GitHub PR</a> · Updated 2026-10-09</div>
       </li>
+      <li class="item" data-pr="5201">
+        <a class="main" href="pr/5201/"><span class="num">#5201</span><span class="title">CASSANDRA-21649: Ensure SSTable files are deleted in order of last-updated timestamp (4.0)</span></a>
+        <div class="meta"><span class="chip s-fail">Not ready to merge</span><span class="count must">3 must fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 19 lines in 1 file</span><span class="chip s-fail">Code review: 3 major, 1 minor, 1 nit</span><span class="chip s-unknown">Build inconclusive</span></div>
+        <div class="sub">nivykani into <code>cassandra-4.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21649">CASSANDRA-21649</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5201">GitHub PR</a> · Updated 2026-10-08</div>
+      </li>
       <li class="item" data-pr="5128">
         <a class="main" href="pr/5128/"><span class="num">#5128</span><span class="title">CASSANDRA-21664: Make schema changes cost O(1) in the number of tables and fail loudly at schema limits</span></a>
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">3 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 2749 lines in 29 files</span></div>
@@ -948,12 +954,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 2086 lines in 19 files</span></div>
         <div class="sub">maedhroz into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21520">CASSANDRA-21520</a> ·
           <a href="https://github.com/apache/cassandra/pull/5228">GitHub PR</a> · Updated 2026-10-08</div>
-      </li>
-      <li class="item" data-pr="5201">
-        <a class="main" href="pr/5201/"><span class="num">#5201</span><span class="title">CASSANDRA-21649: Ensure SSTable files are deleted in order of last-updated timestamp (4.0)</span></a>
-        <div class="meta"><span class="chip s-fail">Not ready to merge</span><span class="count must">4 must fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 19 lines in 1 file</span><span class="chip s-fail">Code review: 4 major, 1 nit</span><span class="chip s-unknown">Build inconclusive</span></div>
-        <div class="sub">nivykani into <code>cassandra-4.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21649">CASSANDRA-21649</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5201">GitHub PR</a> · Updated 2026-10-08</div>
       </li>
       <li class="item" data-pr="4921">
         <a class="main" href="pr/4921/"><span class="num">#4921</span><span class="title">CASSANDRA-21484 - Support IF, ELSE IF, and ELSE for transaction statements</span></a>
