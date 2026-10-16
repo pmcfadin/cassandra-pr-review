@@ -123,7 +123,7 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     <h1>Pull request reviews</h1>
     <p class="lede">Reports on <a href="https://github.com/apache/cassandra/pulls">apache/cassandra</a> pull requests, grouped by who acts next.
       Each report is advisory; committers decide.</p>
-    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">3</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">536</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">22</span> Drafts</a></nav>
+    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">3</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">538</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">22</span> Drafts</a></nav>
   </header>
   <section class="card group" id="g-ready" aria-labelledby="h-ready">
     <div class="group-head"><h2 id="h-ready">Ready for a committer</h2><span class="count">3</span><p class="hint">A committer can act now: merge it, or run CI or vote.</p></div>
@@ -149,8 +149,32 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     </ul>
   </section>
   <section class="card group" id="g-contributor" aria-labelledby="h-contributor">
-    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">536</span><p class="hint">The contributor has fixes to make first.</p></div>
+    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">538</span><p class="hint">The contributor has fixes to make first.</p></div>
     <ul>
+      <li class="item" data-pr="5264">
+        <a class="main" href="pr/5264/"><span class="num">#5264</span><span class="title">Fix global MemtableOffHeapDataSize metric reporting on-heap memtable usage</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 66 lines in 3 files</span></div>
+        <div class="sub">Mmuzaf into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21762">CASSANDRA-21762</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5264">GitHub PR</a> · Updated 2026-10-16</div>
+      </li>
+      <li class="item" data-pr="5261">
+        <a class="main" href="pr/5261/"><span class="num">#5261</span><span class="title">CASSANDRA-21756: Add configurable authentication timeout for native transport connections</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 436 lines in 11 files</span></div>
+        <div class="sub">AshenScribe into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21756">CASSANDRA-21756</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5261">GitHub PR</a> · Updated 2026-10-16</div>
+      </li>
+      <li class="item" data-pr="5154">
+        <a class="main" href="pr/5154/"><span class="num">#5154</span><span class="title">21460 cursor bti</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 12903 lines in 88 files</span></div>
+        <div class="sub">rustyrazorblade into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21460">CASSANDRA-21460</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5154">GitHub PR</a> · Updated 2026-10-16</div>
+      </li>
+      <li class="item" data-pr="5265">
+        <a class="main" href="pr/5265/"><span class="num">#5265</span><span class="title">Improve Jenkins job defaults and run-ci build monitoring</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 2330 lines in 11 files</span></div>
+        <div class="sub">michaelsembwever into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21764">CASSANDRA-21764</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5265">GitHub PR</a> · Updated 2026-10-16</div>
+      </li>
       <li class="item" data-pr="2864">
         <a class="main" href="pr/2864/"><span class="num">#2864</span><span class="title">Allow unhandled operators on SAI indexed columns</span></a>
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 674 lines in 4 files</span></div>
@@ -264,12 +288,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-fail">Not ready to merge</span><span class="count must">1 must fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 288 lines in 9 files</span></div>
         <div class="sub">sachinAtMS into <code>cassandra-4.1</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-18031">CASSANDRA-18031</a> ·
           <a href="https://github.com/apache/cassandra/pull/4648">GitHub PR</a> · Updated 2026-10-16</div>
-      </li>
-      <li class="item" data-pr="5261">
-        <a class="main" href="pr/5261/"><span class="num">#5261</span><span class="title">CASSANDRA-21756: Add configurable authentication timeout for native transport connections</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 434 lines in 11 files</span></div>
-        <div class="sub">AshenScribe into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21756">CASSANDRA-21756</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5261">GitHub PR</a> · Updated 2026-10-16</div>
       </li>
       <li class="item" data-pr="5260">
         <a class="main" href="pr/5260/"><span class="num">#5260</span><span class="title">CASSANDRA-21755: Sanitize and bound client STARTUP options and escape formatting in ConnectedClient</span></a>
@@ -390,12 +408,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 752 lines in 6 files</span></div>
         <div class="sub">yukim into <code>cassandra-5.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-19733">CASSANDRA-19733</a> ·
           <a href="https://github.com/apache/cassandra/pull/3399">GitHub PR</a> · Updated 2026-10-16</div>
-      </li>
-      <li class="item" data-pr="5154">
-        <a class="main" href="pr/5154/"><span class="num">#5154</span><span class="title">21460 cursor bti</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 12903 lines in 88 files</span></div>
-        <div class="sub">rustyrazorblade into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21460">CASSANDRA-21460</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5154">GitHub PR</a> · Updated 2026-10-16</div>
       </li>
       <li class="item" data-pr="3398">
         <a class="main" href="pr/3398/"><span class="num">#3398</span><span class="title">[CASSANDRA-19733] Add bootstrap options to control sources of streaming (4.1)</span></a>
