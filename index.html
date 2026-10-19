@@ -123,7 +123,7 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     <h1>Pull request reviews</h1>
     <p class="lede">Reports on <a href="https://github.com/apache/cassandra/pulls">apache/cassandra</a> pull requests, grouped by who acts next.
       Each report is advisory; committers decide.</p>
-    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">3</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">543</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">22</span> Drafts</a></nav>
+    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">3</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">545</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">22</span> Drafts</a></nav>
   </header>
   <section class="card group" id="g-ready" aria-labelledby="h-ready">
     <div class="group-head"><h2 id="h-ready">Ready for a committer</h2><span class="count">3</span><p class="hint">A committer can act now: merge it, or run CI or vote.</p></div>
@@ -149,8 +149,50 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     </ul>
   </section>
   <section class="card group" id="g-contributor" aria-labelledby="h-contributor">
-    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">543</span><p class="hint">The contributor has fixes to make first.</p></div>
+    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">545</span><p class="hint">The contributor has fixes to make first.</p></div>
     <ul>
+      <li class="item" data-pr="5271">
+        <a class="main" href="pr/5271/"><span class="num">#5271</span><span class="title">Add node-centric interface for identifying replica peers</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 2928 lines in 16 files</span></div>
+        <div class="sub">nvharikrishna into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21770">CASSANDRA-21770</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5271">GitHub PR</a> · Updated 2026-10-19</div>
+      </li>
+      <li class="item" data-pr="5272">
+        <a class="main" href="pr/5272/"><span class="num">#5272</span><span class="title">CASSANDRA-21780 Write an sstable with the compression its components were chosen for when ALTER TABLE changes it</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 1594 lines in 6 files</span></div>
+        <div class="sub">smiklosovic into <code>cassandra-5.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21780">CASSANDRA-21780</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5272">GitHub PR</a> · Updated 2026-10-19</div>
+      </li>
+      <li class="item" data-pr="5261">
+        <a class="main" href="pr/5261/"><span class="num">#5261</span><span class="title">CASSANDRA-21756: Add configurable authentication timeout for native transport connections</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 471 lines in 12 files</span></div>
+        <div class="sub">AshenScribe into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21756">CASSANDRA-21756</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5261">GitHub PR</a> · Updated 2026-10-19</div>
+      </li>
+      <li class="item" data-pr="5270">
+        <a class="main" href="pr/5270/"><span class="num">#5270</span><span class="title">CASSANDRA-21771 to 21775 - various fixes for dicts</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 4428 lines in 36 files</span></div>
+        <div class="sub">smiklosovic into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21771">CASSANDRA-21771</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5270">GitHub PR</a> · Updated 2026-10-19</div>
+      </li>
+      <li class="item" data-pr="5260">
+        <a class="main" href="pr/5260/"><span class="num">#5260</span><span class="title">CASSANDRA-21755: Sanitize and bound client STARTUP options and escape formatting in ConnectedClient</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 247 lines in 4 files</span></div>
+        <div class="sub">AshenScribe into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21755">CASSANDRA-21755</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5260">GitHub PR</a> · Updated 2026-10-19</div>
+      </li>
+      <li class="item" data-pr="5266">
+        <a class="main" href="pr/5266/"><span class="num">#5266</span><span class="title">CASSANDRA-21766: PreV5HandlersTest</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">3 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 128 lines in 2 files</span></div>
+        <div class="sub">Yukei7 into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21766">CASSANDRA-21766</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5266">GitHub PR</a> · Updated 2026-10-19</div>
+      </li>
+      <li class="item" data-pr="4917">
+        <a class="main" href="pr/4917/"><span class="num">#4917</span><span class="title">CASSANDRA-21119 Preview Repair Support for Tracked Keyspaces</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">3 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 3294 lines in 28 files</span></div>
+        <div class="sub">maedhroz into <code>cep-45-mutation-tracking</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21119">CASSANDRA-21119</a> ·
+          <a href="https://github.com/apache/cassandra/pull/4917">GitHub PR</a> · Updated 2026-10-19</div>
+      </li>
       <li class="item" data-pr="5269">
         <a class="main" href="pr/5269/"><span class="num">#5269</span><span class="title">[CASSANDRA-21769][trunk] Fix flaky UnifiedCompactionStrategyTest.testDropExpiredSSTables</span></a>
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 2 lines in 1 file</span></div>
@@ -162,12 +204,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 1186 lines in 7 files</span></div>
         <div class="sub">arvindKandpal-ksolves into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-19985">CASSANDRA-19985</a> ·
           <a href="https://github.com/apache/cassandra/pull/4750">GitHub PR</a> · Updated 2026-10-19</div>
-      </li>
-      <li class="item" data-pr="5270">
-        <a class="main" href="pr/5270/"><span class="num">#5270</span><span class="title">CASSANDRA-21771 to 21775 - various fixes for dicts</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 1448 lines in 26 files</span></div>
-        <div class="sub">smiklosovic into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21771">CASSANDRA-21771</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5270">GitHub PR</a> · Updated 2026-10-19</div>
       </li>
       <li class="item" data-pr="5268">
         <a class="main" href="pr/5268/"><span class="num">#5268</span><span class="title">CASSANDRA-21763: Allow native protocol strings up to 65535 bytes</span></a>
@@ -205,12 +241,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="sub">liuisaac into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-19831">CASSANDRA-19831</a> ·
           <a href="https://github.com/apache/cassandra/pull/4916">GitHub PR</a> · Updated 2026-10-17</div>
       </li>
-      <li class="item" data-pr="5266">
-        <a class="main" href="pr/5266/"><span class="num">#5266</span><span class="title">CASSANDRA-21766: PreV5HandlersTest</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 122 lines in 1 file</span></div>
-        <div class="sub">Yukei7 into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21766">CASSANDRA-21766</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5266">GitHub PR</a> · Updated 2026-10-17</div>
-      </li>
       <li class="item" data-pr="5181">
         <a class="main" href="pr/5181/"><span class="num">#5181</span><span class="title">CASSANDRA-21683 Reuse scratch key bytes in PartitionIndexBuilder</span></a>
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 593 lines in 3 files</span></div>
@@ -222,12 +252,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 66 lines in 3 files</span></div>
         <div class="sub">Mmuzaf into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21762">CASSANDRA-21762</a> ·
           <a href="https://github.com/apache/cassandra/pull/5264">GitHub PR</a> · Updated 2026-10-16</div>
-      </li>
-      <li class="item" data-pr="5261">
-        <a class="main" href="pr/5261/"><span class="num">#5261</span><span class="title">CASSANDRA-21756: Add configurable authentication timeout for native transport connections</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 436 lines in 11 files</span></div>
-        <div class="sub">AshenScribe into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21756">CASSANDRA-21756</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5261">GitHub PR</a> · Updated 2026-10-16</div>
       </li>
       <li class="item" data-pr="5154">
         <a class="main" href="pr/5154/"><span class="num">#5154</span><span class="title">21460 cursor bti</span></a>
@@ -354,12 +378,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-fail">Not ready to merge</span><span class="count must">1 must fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 288 lines in 9 files</span></div>
         <div class="sub">sachinAtMS into <code>cassandra-4.1</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-18031">CASSANDRA-18031</a> ·
           <a href="https://github.com/apache/cassandra/pull/4648">GitHub PR</a> · Updated 2026-10-16</div>
-      </li>
-      <li class="item" data-pr="5260">
-        <a class="main" href="pr/5260/"><span class="num">#5260</span><span class="title">CASSANDRA-21755: Sanitize and bound client STARTUP options and escape formatting in ConnectedClient</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 210 lines in 3 files</span></div>
-        <div class="sub">AshenScribe into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21755">CASSANDRA-21755</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5260">GitHub PR</a> · Updated 2026-10-16</div>
       </li>
       <li class="item" data-pr="4712">
         <a class="main" href="pr/4712/"><span class="num">#4712</span><span class="title">Add replica slot grouping to maintain write availability during topol…</span></a>
@@ -606,12 +624,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 2120 lines in 49 files</span></div>
         <div class="sub">jacek-lewandowski into <code>cassandra-4.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-19026">CASSANDRA-19026</a> ·
           <a href="https://github.com/apache/cassandra/pull/2901">GitHub PR</a> · Updated 2026-10-16</div>
-      </li>
-      <li class="item" data-pr="4917">
-        <a class="main" href="pr/4917/"><span class="num">#4917</span><span class="title">CASSANDRA-21119 Preview Repair Support for Tracked Keyspaces</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">3 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 3192 lines in 28 files</span></div>
-        <div class="sub">maedhroz into <code>cep-45-mutation-tracking</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21119">CASSANDRA-21119</a> ·
-          <a href="https://github.com/apache/cassandra/pull/4917">GitHub PR</a> · Updated 2026-10-16</div>
       </li>
       <li class="item" data-pr="2900">
         <a class="main" href="pr/2900/"><span class="num">#2900</span><span class="title">Fix DiskSpaceMetricsTest.testFlushSize</span></a>
