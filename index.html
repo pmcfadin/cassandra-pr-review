@@ -123,7 +123,7 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     <h1>Pull request reviews</h1>
     <p class="lede">Reports on <a href="https://github.com/apache/cassandra/pulls">apache/cassandra</a> pull requests, grouped by who acts next.
       Each report is advisory; committers decide.</p>
-    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">4</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">554</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">23</span> Drafts</a></nav>
+    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">4</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">555</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">23</span> Drafts</a></nav>
   </header>
   <section class="card group" id="g-ready" aria-labelledby="h-ready">
     <div class="group-head"><h2 id="h-ready">Ready for a committer</h2><span class="count">4</span><p class="hint">A committer can act now: merge it, or run CI or vote.</p></div>
@@ -155,8 +155,32 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     </ul>
   </section>
   <section class="card group" id="g-contributor" aria-labelledby="h-contributor">
-    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">554</span><p class="hint">The contributor has fixes to make first.</p></div>
+    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">555</span><p class="hint">The contributor has fixes to make first.</p></div>
     <ul>
+      <li class="item" data-pr="5270">
+        <a class="main" href="pr/5270/"><span class="num">#5270</span><span class="title">CASSANDRA-21771 to 21775 - various fixes for dicts</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 4316 lines in 30 files</span></div>
+        <div class="sub">smiklosovic into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21771">CASSANDRA-21771</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5270">GitHub PR</a> · Updated 2026-10-21</div>
+      </li>
+      <li class="item" data-pr="5064">
+        <a class="main" href="pr/5064/"><span class="num">#5064</span><span class="title">CASSANDRA-17559: FQLTool Replay should support full set of login options</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 627 lines in 4 files</span></div>
+        <div class="sub">arvindKandpal-ksolves into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-17559">CASSANDRA-17559</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5064">GitHub PR</a> · Updated 2026-10-21</div>
+      </li>
+      <li class="item" data-pr="5285">
+        <a class="main" href="pr/5285/"><span class="num">#5285</span><span class="title">Fix CREATE_INDEX regex to support quoted names and strip quotes (CASSANDRA-21784)</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 20 lines in 2 files</span></div>
+        <div class="sub">PreetiToppo into <code>cassandra-5.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21784">CASSANDRA-21784</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5285">GitHub PR</a> · Updated 2026-10-21</div>
+      </li>
+      <li class="item" data-pr="5239">
+        <a class="main" href="pr/5239/"><span class="num">#5239</span><span class="title">CASSANDRA-21732: Add usage examples to nodetool help and fix help output regressions after the picocli migration</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 736 lines in 44 files</span></div>
+        <div class="sub">arvindKandpal-ksolves into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21732">CASSANDRA-21732</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5239">GitHub PR</a> · Updated 2026-10-21</div>
+      </li>
       <li class="item" data-pr="5260">
         <a class="main" href="pr/5260/"><span class="num">#5260</span><span class="title">CASSANDRA-21755: Sanitize and bound client STARTUP options and escape formatting in ConnectedClient</span></a>
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 282 lines in 4 files</span></div>
@@ -198,12 +222,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 414 lines in 4 files</span></div>
         <div class="sub">michaelsembwever into <code>cassandra-5.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21781">CASSANDRA-21781</a> ·
           <a href="https://github.com/apache/cassandra/pull/5276">GitHub PR</a> · Updated 2026-10-20</div>
-      </li>
-      <li class="item" data-pr="5270">
-        <a class="main" href="pr/5270/"><span class="num">#5270</span><span class="title">CASSANDRA-21771 to 21775 - various fixes for dicts</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 4488 lines in 36 files</span></div>
-        <div class="sub">smiklosovic into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21771">CASSANDRA-21771</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5270">GitHub PR</a> · Updated 2026-10-20</div>
       </li>
       <li class="item" data-pr="5183">
         <a class="main" href="pr/5183/"><span class="num">#5183</span><span class="title">CASSANDRA-11745 Support query paging by bytes </span></a>
@@ -1645,12 +1663,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="sub">klammrock into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21540">CASSANDRA-21540</a> ·
           <a href="https://github.com/apache/cassandra/pull/4973">GitHub PR</a> · Updated 2026-10-14</div>
       </li>
-      <li class="item" data-pr="5064">
-        <a class="main" href="pr/5064/"><span class="num">#5064</span><span class="title">CASSANDRA-17559: FQLTool Replay should support full set of login options</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 500 lines in 5 files</span></div>
-        <div class="sub">arvindKandpal-ksolves into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-17559">CASSANDRA-17559</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5064">GitHub PR</a> · Updated 2026-10-14</div>
-      </li>
       <li class="item" data-pr="4261">
         <a class="main" href="pr/4261/"><span class="num">#4261</span><span class="title">CASSANDRA-20776: getendpoints support to query by token</span></a>
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">3 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 100 lines in 5 files</span></div>
@@ -1902,12 +1914,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 545 lines in 7 files</span></div>
         <div class="sub">alanwang67 into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-19433">CASSANDRA-19433</a> ·
           <a href="https://github.com/apache/cassandra/pull/4692">GitHub PR</a> · Updated 2026-10-13</div>
-      </li>
-      <li class="item" data-pr="5239">
-        <a class="main" href="pr/5239/"><span class="num">#5239</span><span class="title">CASSANDRA-21732: Add usage examples to nodetool help and fix help output regressions after the picocli migration</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 586 lines in 39 files</span></div>
-        <div class="sub">arvindKandpal-ksolves into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21732">CASSANDRA-21732</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5239">GitHub PR</a> · Updated 2026-10-13</div>
       </li>
       <li class="item" data-pr="4714">
         <a class="main" href="pr/4714/"><span class="num">#4714</span><span class="title">CASSANDRA-21276: fix s390x unit tests</span></a>
