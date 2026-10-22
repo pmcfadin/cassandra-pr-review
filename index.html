@@ -123,17 +123,11 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     <h1>Pull request reviews</h1>
     <p class="lede">Reports on <a href="https://github.com/apache/cassandra/pulls">apache/cassandra</a> pull requests, grouped by who acts next.
       Each report is advisory; committers decide.</p>
-    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">5</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">559</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">23</span> Drafts</a></nav>
+    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">4</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">560</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">23</span> Drafts</a></nav>
   </header>
   <section class="card group" id="g-ready" aria-labelledby="h-ready">
-    <div class="group-head"><h2 id="h-ready">Ready for a committer</h2><span class="count">5</span><p class="hint">A committer can act now: merge it, or run CI or vote.</p></div>
+    <div class="group-head"><h2 id="h-ready">Ready for a committer</h2><span class="count">4</span><p class="hint">A committer can act now: merge it, or run CI or vote.</p></div>
     <ul>
-      <li class="item" data-pr="5290">
-        <a class="main" href="pr/5290/"><span class="num">#5290</span><span class="title">CASSANDRA-21537 (6.0): Serialise local metadata proposals so concurrent DDL keeps its retry budget</span></a>
-        <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Committer</b></span><span class="effort">Review effort: Large · 1859 lines in 5 files</span></div>
-        <div class="sub">pmcfadin into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21537">CASSANDRA-21537</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5290">GitHub PR</a> · Updated 2026-10-21</div>
-      </li>
       <li class="item" data-pr="5273">
         <a class="main" href="pr/5273/"><span class="num">#5273</span><span class="title">CASSANDRA-21787: Do the parseint at the validation step</span></a>
         <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Committer</b></span><span class="effort">Review effort: Medium · 169 lines in 9 files</span></div>
@@ -161,13 +155,31 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     </ul>
   </section>
   <section class="card group" id="g-contributor" aria-labelledby="h-contributor">
-    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">559</span><p class="hint">The contributor has fixes to make first.</p></div>
+    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">560</span><p class="hint">The contributor has fixes to make first.</p></div>
     <ul>
       <li class="item" data-pr="5286">
         <a class="main" href="pr/5286/"><span class="num">#5286</span><span class="title">CASSANDRA-21793: CEP-45 - Fix mutation tracking read/write metrics</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 397 lines in 3 files</span></div>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 409 lines in 4 files</span></div>
         <div class="sub">bdeggleston into <code>cep-45-mutation-tracking</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21793">CASSANDRA-21793</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5286">GitHub PR</a> · Updated 2026-10-21</div>
+          <a href="https://github.com/apache/cassandra/pull/5286">GitHub PR</a> · Updated 2026-10-22</div>
+      </li>
+      <li class="item" data-pr="4970">
+        <a class="main" href="pr/4970/"><span class="num">#4970</span><span class="title">CASSANDRA-21537: Serialise local metadata proposals so concurrent DDL keeps its retry budget</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 1859 lines in 5 files</span></div>
+        <div class="sub">pmcfadin into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21537">CASSANDRA-21537</a> ·
+          <a href="https://github.com/apache/cassandra/pull/4970">GitHub PR</a> · Updated 2026-10-22</div>
+      </li>
+      <li class="item" data-pr="5290">
+        <a class="main" href="pr/5290/"><span class="num">#5290</span><span class="title">CASSANDRA-21537 (6.0): Serialise local metadata proposals so concurrent DDL keeps its retry budget</span></a>
+        <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 1859 lines in 5 files</span></div>
+        <div class="sub">pmcfadin into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21537">CASSANDRA-21537</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5290">GitHub PR</a> · Updated 2026-10-22</div>
+      </li>
+      <li class="item" data-pr="5211">
+        <a class="main" href="pr/5211/"><span class="num">#5211</span><span class="title">CASSANDRA-21716 Accord can drop read results when using the IN clause</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 919 lines in 29 files</span></div>
+        <div class="sub">alanwang67 into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21716">CASSANDRA-21716</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5211">GitHub PR</a> · Updated 2026-10-22</div>
       </li>
       <li class="item" data-pr="5287">
         <a class="main" href="pr/5287/"><span class="num">#5287</span><span class="title">(trunk) CASSANDRA-21766: PreV5Handlers.toFlushItem may leak memory on disconnected channel</span></a>
@@ -198,12 +210,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 2758 lines in 31 files</span></div>
         <div class="sub">pmcfadin into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21664">CASSANDRA-21664</a> ·
           <a href="https://github.com/apache/cassandra/pull/5128">GitHub PR</a> · Updated 2026-10-21</div>
-      </li>
-      <li class="item" data-pr="4970">
-        <a class="main" href="pr/4970/"><span class="num">#4970</span><span class="title">CASSANDRA-21537: Serialise local metadata proposals so concurrent DDL keeps its retry budget</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 1859 lines in 5 files</span></div>
-        <div class="sub">pmcfadin into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21537">CASSANDRA-21537</a> ·
-          <a href="https://github.com/apache/cassandra/pull/4970">GitHub PR</a> · Updated 2026-10-21</div>
       </li>
       <li class="item" data-pr="4714">
         <a class="main" href="pr/4714/"><span class="num">#4714</span><span class="title">CASSANDRA-21276: fix s390x unit tests</span></a>
@@ -2220,12 +2226,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">4 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 210 lines in 6 files</span></div>
         <div class="sub">maoling into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-20604">CASSANDRA-20604</a> ·
           <a href="https://github.com/apache/cassandra/pull/4124">GitHub PR</a> · Updated 2026-10-12</div>
-      </li>
-      <li class="item" data-pr="5211">
-        <a class="main" href="pr/5211/"><span class="num">#5211</span><span class="title">CASSANDRA-21716 Accord can drop read results when using the IN clause</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 941 lines in 29 files</span></div>
-        <div class="sub">alanwang67 into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21716">CASSANDRA-21716</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5211">GitHub PR</a> · Updated 2026-10-12</div>
       </li>
       <li class="item" data-pr="5145">
         <a class="main" href="pr/5145/"><span class="num">#5145</span><span class="title">CASSANDRA-21663 Failed force repair should clear force repair flag</span></a>
