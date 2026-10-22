@@ -123,7 +123,7 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     <h1>Pull request reviews</h1>
     <p class="lede">Reports on <a href="https://github.com/apache/cassandra/pulls">apache/cassandra</a> pull requests, grouped by who acts next.
       Each report is advisory; committers decide.</p>
-    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">4</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">561</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">23</span> Drafts</a></nav>
+    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">4</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">563</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">23</span> Drafts</a></nav>
   </header>
   <section class="card group" id="g-ready" aria-labelledby="h-ready">
     <div class="group-head"><h2 id="h-ready">Ready for a committer</h2><span class="count">4</span><p class="hint">A committer can act now: merge it, or run CI or vote.</p></div>
@@ -155,8 +155,26 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     </ul>
   </section>
   <section class="card group" id="g-contributor" aria-labelledby="h-contributor">
-    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">561</span><p class="hint">The contributor has fixes to make first.</p></div>
+    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">563</span><p class="hint">The contributor has fixes to make first.</p></div>
     <ul>
+      <li class="item" data-pr="5293">
+        <a class="main" href="pr/5293/"><span class="num">#5293</span><span class="title">Change OpOrder group unlinking to clear the next pointer</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 693 lines in 4 files</span></div>
+        <div class="sub">blambov into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21799">CASSANDRA-21799</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5293">GitHub PR</a> · Updated 2026-10-22</div>
+      </li>
+      <li class="item" data-pr="5292">
+        <a class="main" href="pr/5292/"><span class="num">#5292</span><span class="title">[CASSANDRA-21798][trunk] Fix distributed.test.accord.MixedReadAccordCQLTest::testMultipleShard…</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 4 lines in 1 file</span></div>
+        <div class="sub">netudima into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21798">CASSANDRA-21798</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5292">GitHub PR</a> · Updated 2026-10-22</div>
+      </li>
+      <li class="item" data-pr="5128">
+        <a class="main" href="pr/5128/"><span class="num">#5128</span><span class="title">CASSANDRA-21664: Make schema changes cost O(1) in the number of tables and fail loudly at schema limits</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 2888 lines in 32 files</span></div>
+        <div class="sub">pmcfadin into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21664">CASSANDRA-21664</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5128">GitHub PR</a> · Updated 2026-10-22</div>
+      </li>
       <li class="item" data-pr="5213">
         <a class="main" href="pr/5213/"><span class="num">#5213</span><span class="title">CASSANDRA-21615 UCS never compacts tiny high-density SSTables streamed by repair (5.0 branch)</span></a>
         <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 1705 lines in 24 files</span></div>
@@ -216,12 +234,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 157 lines in 2 files</span></div>
         <div class="sub">Yukei7 into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21766">CASSANDRA-21766</a> ·
           <a href="https://github.com/apache/cassandra/pull/5288">GitHub PR</a> · Updated 2026-10-21</div>
-      </li>
-      <li class="item" data-pr="5128">
-        <a class="main" href="pr/5128/"><span class="num">#5128</span><span class="title">CASSANDRA-21664: Make schema changes cost O(1) in the number of tables and fail loudly at schema limits</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 2758 lines in 31 files</span></div>
-        <div class="sub">pmcfadin into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21664">CASSANDRA-21664</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5128">GitHub PR</a> · Updated 2026-10-21</div>
       </li>
       <li class="item" data-pr="4714">
         <a class="main" href="pr/4714/"><span class="num">#4714</span><span class="title">CASSANDRA-21276: fix s390x unit tests</span></a>
