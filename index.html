@@ -123,16 +123,16 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     <h1>Pull request reviews</h1>
     <p class="lede">Reports on <a href="https://github.com/apache/cassandra/pulls">apache/cassandra</a> pull requests, grouped by who acts next.
       Each report is advisory; committers decide.</p>
-    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">4</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">560</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">23</span> Drafts</a></nav>
+    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">4</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">561</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">23</span> Drafts</a></nav>
   </header>
   <section class="card group" id="g-ready" aria-labelledby="h-ready">
     <div class="group-head"><h2 id="h-ready">Ready for a committer</h2><span class="count">4</span><p class="hint">A committer can act now: merge it, or run CI or vote.</p></div>
     <ul>
       <li class="item" data-pr="5273">
         <a class="main" href="pr/5273/"><span class="num">#5273</span><span class="title">CASSANDRA-21787: Do the parseint at the validation step</span></a>
-        <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Committer</b></span><span class="effort">Review effort: Medium · 169 lines in 9 files</span></div>
+        <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Committer</b></span><span class="effort">Review effort: Medium · 394 lines in 12 files</span></div>
         <div class="sub">bbotella into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21787">CASSANDRA-21787</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5273">GitHub PR</a> · Updated 2026-10-21</div>
+          <a href="https://github.com/apache/cassandra/pull/5273">GitHub PR</a> · Updated 2026-10-22</div>
       </li>
       <li class="item" data-pr="5125">
         <a class="main" href="pr/5125/"><span class="num">#5125</span><span class="title">CASSANDRA-21663 Failed force repair should clear force repair flag</span></a>
@@ -155,8 +155,20 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     </ul>
   </section>
   <section class="card group" id="g-contributor" aria-labelledby="h-contributor">
-    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">560</span><p class="hint">The contributor has fixes to make first.</p></div>
+    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">561</span><p class="hint">The contributor has fixes to make first.</p></div>
     <ul>
+      <li class="item" data-pr="5213">
+        <a class="main" href="pr/5213/"><span class="num">#5213</span><span class="title">CASSANDRA-21615 UCS never compacts tiny high-density SSTables streamed by repair (5.0 branch)</span></a>
+        <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 1705 lines in 24 files</span></div>
+        <div class="sub">millerjp into <code>cassandra-5.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21615">CASSANDRA-21615</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5213">GitHub PR</a> · Updated 2026-10-22</div>
+      </li>
+      <li class="item" data-pr="5291">
+        <a class="main" href="pr/5291/"><span class="num">#5291</span><span class="title">CASSANDRA-21797: Update CircleCI config version</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 32 lines in 4 files</span></div>
+        <div class="sub">bbotella into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21797">CASSANDRA-21797</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5291">GitHub PR</a> · Updated 2026-10-22</div>
+      </li>
       <li class="item" data-pr="5286">
         <a class="main" href="pr/5286/"><span class="num">#5286</span><span class="title">CASSANDRA-21793: CEP-45 - Fix mutation tracking read/write metrics</span></a>
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 409 lines in 4 files</span></div>
@@ -324,12 +336,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 3546 lines in 30 files</span></div>
         <div class="sub">maedhroz into <code>cep-45-mutation-tracking</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21119">CASSANDRA-21119</a> ·
           <a href="https://github.com/apache/cassandra/pull/4917">GitHub PR</a> · Updated 2026-10-20</div>
-      </li>
-      <li class="item" data-pr="5213">
-        <a class="main" href="pr/5213/"><span class="num">#5213</span><span class="title">CASSANDRA-21615 UCS never compacts tiny high-density SSTables streamed by repair (5.0 branch)</span></a>
-        <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 1455 lines in 24 files</span></div>
-        <div class="sub">millerjp into <code>cassandra-5.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21615">CASSANDRA-21615</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5213">GitHub PR</a> · Updated 2026-10-20</div>
       </li>
       <li class="item" data-pr="5271">
         <a class="main" href="pr/5271/"><span class="num">#5271</span><span class="title">Add node-centric interface for identifying replica peers</span></a>
