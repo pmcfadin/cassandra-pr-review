@@ -123,7 +123,7 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     <h1>Pull request reviews</h1>
     <p class="lede">Reports on <a href="https://github.com/apache/cassandra/pulls">apache/cassandra</a> pull requests, grouped by who acts next.
       Each report is advisory; committers decide.</p>
-    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">4</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">563</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">23</span> Drafts</a></nav>
+    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">4</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">566</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">23</span> Drafts</a></nav>
   </header>
   <section class="card group" id="g-ready" aria-labelledby="h-ready">
     <div class="group-head"><h2 id="h-ready">Ready for a committer</h2><span class="count">4</span><p class="hint">A committer can act now: merge it, or run CI or vote.</p></div>
@@ -155,8 +155,26 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     </ul>
   </section>
   <section class="card group" id="g-contributor" aria-labelledby="h-contributor">
-    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">563</span><p class="hint">The contributor has fixes to make first.</p></div>
+    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">566</span><p class="hint">The contributor has fixes to make first.</p></div>
     <ul>
+      <li class="item" data-pr="5294">
+        <a class="main" href="pr/5294/"><span class="num">#5294</span><span class="title">[CASSANDRA-21317][trunk] Fix cql3.ast.ExpressionTest::simple StackOverflowError</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 36 lines in 1 file</span></div>
+        <div class="sub">netudima into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21317">CASSANDRA-21317</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5294">GitHub PR</a> · Updated 2026-10-22</div>
+      </li>
+      <li class="item" data-pr="5296">
+        <a class="main" href="pr/5296/"><span class="num">#5296</span><span class="title">[CASSANDRA-21800][trunk] Respect cassandra.skip_sync in FileOutputStreamPlus.sync and Checksum…</span></a>
+        <div class="meta"><span class="chip s-fail">Not ready to merge</span><span class="count must">1 must fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 6 lines in 2 files</span></div>
+        <div class="sub">netudima into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21800">CASSANDRA-21800</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5296">GitHub PR</a> · Updated 2026-10-22</div>
+      </li>
+      <li class="item" data-pr="5295">
+        <a class="main" href="pr/5295/"><span class="num">#5295</span><span class="title">[CASSANDRA-20933][trunk] Fix flaky AuthMessageSizeLimitTest.sendTooBigAuthMultiFrameMessage</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 42 lines in 3 files</span></div>
+        <div class="sub">netudima into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-20933">CASSANDRA-20933</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5295">GitHub PR</a> · Updated 2026-10-22</div>
+      </li>
       <li class="item" data-pr="5293">
         <a class="main" href="pr/5293/"><span class="num">#5293</span><span class="title">Change OpOrder group unlinking to clear the next pointer</span></a>
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 693 lines in 4 files</span></div>
