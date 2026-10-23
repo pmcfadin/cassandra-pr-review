@@ -123,7 +123,7 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     <h1>Pull request reviews</h1>
     <p class="lede">Reports on <a href="https://github.com/apache/cassandra/pulls">apache/cassandra</a> pull requests, grouped by who acts next.
       Each report is advisory; committers decide.</p>
-    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">4</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">566</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">23</span> Drafts</a></nav>
+    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">4</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">568</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">23</span> Drafts</a></nav>
   </header>
   <section class="card group" id="g-ready" aria-labelledby="h-ready">
     <div class="group-head"><h2 id="h-ready">Ready for a committer</h2><span class="count">4</span><p class="hint">A committer can act now: merge it, or run CI or vote.</p></div>
@@ -155,13 +155,55 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     </ul>
   </section>
   <section class="card group" id="g-contributor" aria-labelledby="h-contributor">
-    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">566</span><p class="hint">The contributor has fixes to make first.</p></div>
+    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">568</span><p class="hint">The contributor has fixes to make first.</p></div>
     <ul>
+      <li class="item" data-pr="5297">
+        <a class="main" href="pr/5297/"><span class="num">#5297</span><span class="title">CASSANDRA-21330; Avoid unnecessarily failing reads/writes when epoch is bumped during the operation</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 346 lines in 16 files</span></div>
+        <div class="sub">krummas into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21330">CASSANDRA-21330</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5297">GitHub PR</a> · Updated 2026-10-23</div>
+      </li>
       <li class="item" data-pr="5261">
         <a class="main" href="pr/5261/"><span class="num">#5261</span><span class="title">CASSANDRA-21756: Add configurable authentication timeout for native transport connections</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 470 lines in 12 files</span></div>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 462 lines in 12 files</span></div>
         <div class="sub">AshenScribe into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21756">CASSANDRA-21756</a> ·
           <a href="https://github.com/apache/cassandra/pull/5261">GitHub PR</a> · Updated 2026-10-23</div>
+      </li>
+      <li class="item" data-pr="5189">
+        <a class="main" href="pr/5189/"><span class="num">#5189</span><span class="title">[CASSANDRA-21645][trunk] Use MpscUnboundedArrayQueue in native transport flusher</span></a>
+        <div class="meta"><span class="chip s-fail">Not ready to merge</span><span class="count must">1 must fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 50 lines in 2 files</span></div>
+        <div class="sub">netudima into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21645">CASSANDRA-21645</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5189">GitHub PR</a> · Updated 2026-10-23</div>
+      </li>
+      <li class="item" data-pr="5213">
+        <a class="main" href="pr/5213/"><span class="num">#5213</span><span class="title">CASSANDRA-21615 UCS never compacts tiny high-density SSTables streamed by repair (5.0 branch)</span></a>
+        <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 1703 lines in 24 files</span></div>
+        <div class="sub">millerjp into <code>cassandra-5.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21615">CASSANDRA-21615</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5213">GitHub PR</a> · Updated 2026-10-23</div>
+      </li>
+      <li class="item" data-pr="5298">
+        <a class="main" href="pr/5298/"><span class="num">#5298</span><span class="title">CASSANDRA-21750: Send TLS SNI from cqlsh</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 76 lines in 3 files</span></div>
+        <div class="sub">aradyaron into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21750">CASSANDRA-21750</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5298">GitHub PR</a> · Updated 2026-10-23</div>
+      </li>
+      <li class="item" data-pr="5283">
+        <a class="main" href="pr/5283/"><span class="num">#5283</span><span class="title">CASSANDRA-21723 Wrap-around shard silently skipped during coordinated SSTable import for tracked tables</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 62 lines in 2 files</span></div>
+        <div class="sub">sarankk into <code>cep-45-mutation-tracking</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21723">CASSANDRA-21723</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5283">GitHub PR</a> · Updated 2026-10-23</div>
+      </li>
+      <li class="item" data-pr="5268">
+        <a class="main" href="pr/5268/"><span class="num">#5268</span><span class="title">CASSANDRA-21763: Allow native protocol strings up to 65535 bytes</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 184 lines in 5 files</span></div>
+        <div class="sub">rezataroosheh into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21763">CASSANDRA-21763</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5268">GitHub PR</a> · Updated 2026-10-23</div>
+      </li>
+      <li class="item" data-pr="5237">
+        <a class="main" href="pr/5237/"><span class="num">#5237</span><span class="title">CASSANDRA-21750: Send TLS SNI from cqlsh and add ssl_mode</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 198 lines in 6 files</span></div>
+        <div class="sub">aradyaron into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21750">CASSANDRA-21750</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5237">GitHub PR</a> · Updated 2026-10-23</div>
       </li>
       <li class="item" data-pr="5211">
         <a class="main" href="pr/5211/"><span class="num">#5211</span><span class="title">CASSANDRA-21716 Accord can drop read results when using the IN clause</span></a>
@@ -210,12 +252,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 4 lines in 1 file</span></div>
         <div class="sub">netudima into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21798">CASSANDRA-21798</a> ·
           <a href="https://github.com/apache/cassandra/pull/5292">GitHub PR</a> · Updated 2026-10-22</div>
-      </li>
-      <li class="item" data-pr="5213">
-        <a class="main" href="pr/5213/"><span class="num">#5213</span><span class="title">CASSANDRA-21615 UCS never compacts tiny high-density SSTables streamed by repair (5.0 branch)</span></a>
-        <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 1705 lines in 24 files</span></div>
-        <div class="sub">millerjp into <code>cassandra-5.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21615">CASSANDRA-21615</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5213">GitHub PR</a> · Updated 2026-10-22</div>
       </li>
       <li class="item" data-pr="5286">
         <a class="main" href="pr/5286/"><span class="num">#5286</span><span class="title">CASSANDRA-21793: CEP-45 - Fix mutation tracking read/write metrics</span></a>
@@ -301,12 +337,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="sub">AshenScribe into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21755">CASSANDRA-21755</a> ·
           <a href="https://github.com/apache/cassandra/pull/5260">GitHub PR</a> · Updated 2026-10-21</div>
       </li>
-      <li class="item" data-pr="5283">
-        <a class="main" href="pr/5283/"><span class="num">#5283</span><span class="title">CASSANDRA-21723 Wrap-around shard silently skipped during coordinated SSTable import for tracked tables</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 62 lines in 2 files</span></div>
-        <div class="sub">sarankk into <code>cep-45-mutation-tracking</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21723">CASSANDRA-21723</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5283">GitHub PR</a> · Updated 2026-10-20</div>
-      </li>
       <li class="item" data-pr="5282">
         <a class="main" href="pr/5282/"><span class="num">#5282</span><span class="title">CASSANDRA-21791: CEP-45 - improve tracked read coordination</span></a>
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 2363 lines in 13 files</span></div>
@@ -355,12 +385,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="sub">sankalpsthakur into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21751">CASSANDRA-21751</a> ·
           <a href="https://github.com/apache/cassandra/pull/5280">GitHub PR</a> · Updated 2026-10-20</div>
       </li>
-      <li class="item" data-pr="5189">
-        <a class="main" href="pr/5189/"><span class="num">#5189</span><span class="title">[CASSANDRA-21645][trunk] Use MpscUnboundedArrayQueue in native transport flusher</span></a>
-        <div class="meta"><span class="chip s-fail">Not ready to merge</span><span class="count must">1 must fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 33 lines in 1 file</span></div>
-        <div class="sub">netudima into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21645">CASSANDRA-21645</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5189">GitHub PR</a> · Updated 2026-10-20</div>
-      </li>
       <li class="item" data-pr="4917">
         <a class="main" href="pr/4917/"><span class="num">#4917</span><span class="title">CASSANDRA-21119 Preview Repair Support for Tracked Keyspaces</span></a>
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 3546 lines in 30 files</span></div>
@@ -390,12 +414,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 1186 lines in 7 files</span></div>
         <div class="sub">arvindKandpal-ksolves into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-19985">CASSANDRA-19985</a> ·
           <a href="https://github.com/apache/cassandra/pull/4750">GitHub PR</a> · Updated 2026-10-19</div>
-      </li>
-      <li class="item" data-pr="5268">
-        <a class="main" href="pr/5268/"><span class="num">#5268</span><span class="title">CASSANDRA-21763: Allow native protocol strings up to 65535 bytes</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 184 lines in 5 files</span></div>
-        <div class="sub">rezataroosheh into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21763">CASSANDRA-21763</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5268">GitHub PR</a> · Updated 2026-10-19</div>
       </li>
       <li class="item" data-pr="5262">
         <a class="main" href="pr/5262/"><span class="num">#5262</span><span class="title">zdict more fixes</span></a>
@@ -1878,12 +1896,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-fail">Not ready to merge</span><span class="count must">1 must fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 12193 lines in 193 files</span></div>
         <div class="sub">belliottsmith into <code>trunk</code> · no ticket ·
           <a href="https://github.com/apache/cassandra/pull/4563">GitHub PR</a> · Updated 2026-10-13</div>
-      </li>
-      <li class="item" data-pr="5237">
-        <a class="main" href="pr/5237/"><span class="num">#5237</span><span class="title">CASSANDRA-21750: Send TLS SNI from cqlsh and add ssl_mode</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 198 lines in 6 files</span></div>
-        <div class="sub">aradyaron into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21750">CASSANDRA-21750</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5237">GitHub PR</a> · Updated 2026-10-13</div>
       </li>
       <li class="item" data-pr="5197">
         <a class="main" href="pr/5197/"><span class="num">#5197</span><span class="title">CASSANDRA-21649: Ensure SSTable files are deleted in order of last-updated timestamp (6.0)</span></a>
