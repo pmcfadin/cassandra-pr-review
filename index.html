@@ -123,7 +123,7 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     <h1>Pull request reviews</h1>
     <p class="lede">Reports on <a href="https://github.com/apache/cassandra/pulls">apache/cassandra</a> pull requests, grouped by who acts next.
       Each report is advisory; committers decide.</p>
-    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">4</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">568</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">23</span> Drafts</a></nav>
+    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">4</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">572</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">23</span> Drafts</a></nav>
   </header>
   <section class="card group" id="g-ready" aria-labelledby="h-ready">
     <div class="group-head"><h2 id="h-ready">Ready for a committer</h2><span class="count">4</span><p class="hint">A committer can act now: merge it, or run CI or vote.</p></div>
@@ -155,13 +155,43 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     </ul>
   </section>
   <section class="card group" id="g-contributor" aria-labelledby="h-contributor">
-    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">568</span><p class="hint">The contributor has fixes to make first.</p></div>
+    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">572</span><p class="hint">The contributor has fixes to make first.</p></div>
     <ul>
+      <li class="item" data-pr="5299">
+        <a class="main" href="pr/5299/"><span class="num">#5299</span><span class="title">CASSANDRA-20969 Add distributed tests for counters in witness keyspaces</span></a>
+        <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 303 lines in 1 file</span></div>
+        <div class="sub">aparna0522 into <code>cep-45-mutation-tracking</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-20969">CASSANDRA-20969</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5299">GitHub PR</a> · Updated 2026-10-24</div>
+      </li>
+      <li class="item" data-pr="5301">
+        <a class="main" href="pr/5301/"><span class="num">#5301</span><span class="title">[CASSANDRA-21742][6.0] Fix CONTAINS and CONTAINS KEY restrictions on frozen collection clustering columns with descending order</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 67 lines in 4 files</span></div>
+        <div class="sub">oPeras1 into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21742">CASSANDRA-21742</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5301">GitHub PR</a> · Updated 2026-10-24</div>
+      </li>
+      <li class="item" data-pr="5211">
+        <a class="main" href="pr/5211/"><span class="num">#5211</span><span class="title">CASSANDRA-21716 Accord can drop read results when using the IN clause</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 1010 lines in 31 files</span></div>
+        <div class="sub">alanwang67 into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21716">CASSANDRA-21716</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5211">GitHub PR</a> · Updated 2026-10-24</div>
+      </li>
+      <li class="item" data-pr="5302">
+        <a class="main" href="pr/5302/"><span class="num">#5302</span><span class="title">[CASSANDRA-21742][trunk] Fix CONTAINS and CONTAINS KEY restrictions on frozen collection clustering columns with descending order</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 67 lines in 4 files</span></div>
+        <div class="sub">oPeras1 into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21742">CASSANDRA-21742</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5302">GitHub PR</a> · Updated 2026-10-24</div>
+      </li>
+      <li class="item" data-pr="5303">
+        <a class="main" href="pr/5303/"><span class="num">#5303</span><span class="title">[CASSANDRA-21742][5.0] Fix CONTAINS and CONTAINS KEY restrictions on frozen collection clustering columns with descending order</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 66 lines in 4 files</span></div>
+        <div class="sub">oPeras1 into <code>cassandra-5.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21742">CASSANDRA-21742</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5303">GitHub PR</a> · Updated 2026-10-24</div>
+      </li>
       <li class="item" data-pr="5213">
         <a class="main" href="pr/5213/"><span class="num">#5213</span><span class="title">CASSANDRA-21615 UCS never compacts tiny high-density SSTables streamed by repair (5.0 branch)</span></a>
         <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 1947 lines in 25 files</span></div>
         <div class="sub">millerjp into <code>cassandra-5.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21615">CASSANDRA-21615</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5213">GitHub PR</a> · Updated 2026-10-23</div>
+          <a href="https://github.com/apache/cassandra/pull/5213">GitHub PR</a> · Updated 2026-10-24</div>
       </li>
       <li class="item" data-pr="5186">
         <a class="main" href="pr/5186/"><span class="num">#5186</span><span class="title">CASSANDRA-21693 Avoid failing concurrent node decommissions due to starting several `reconfigurecms` at the same time</span></a>
@@ -210,12 +240,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 198 lines in 6 files</span></div>
         <div class="sub">aradyaron into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21750">CASSANDRA-21750</a> ·
           <a href="https://github.com/apache/cassandra/pull/5237">GitHub PR</a> · Updated 2026-10-23</div>
-      </li>
-      <li class="item" data-pr="5211">
-        <a class="main" href="pr/5211/"><span class="num">#5211</span><span class="title">CASSANDRA-21716 Accord can drop read results when using the IN clause</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 972 lines in 30 files</span></div>
-        <div class="sub">alanwang67 into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21716">CASSANDRA-21716</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5211">GitHub PR</a> · Updated 2026-10-23</div>
       </li>
       <li class="item" data-pr="5291">
         <a class="main" href="pr/5291/"><span class="num">#5291</span><span class="title">CASSANDRA-21797: Update CircleCI config version</span></a>
