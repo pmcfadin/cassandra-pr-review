@@ -123,7 +123,7 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     <h1>Pull request reviews</h1>
     <p class="lede">Reports on <a href="https://github.com/apache/cassandra/pulls">apache/cassandra</a> pull requests, grouped by who acts next.
       Each report is advisory; committers decide.</p>
-    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">4</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">580</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">23</span> Drafts</a></nav>
+    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">4</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">584</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">23</span> Drafts</a></nav>
   </header>
   <section class="card group" id="g-ready" aria-labelledby="h-ready">
     <div class="group-head"><h2 id="h-ready">Ready for a committer</h2><span class="count">4</span><p class="hint">A committer can act now: merge it, or run CI or vote.</p></div>
@@ -155,8 +155,32 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     </ul>
   </section>
   <section class="card group" id="g-contributor" aria-labelledby="h-contributor">
-    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">580</span><p class="hint">The contributor has fixes to make first.</p></div>
+    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">584</span><p class="hint">The contributor has fixes to make first.</p></div>
     <ul>
+      <li class="item" data-pr="5312">
+        <a class="main" href="pr/5312/"><span class="num">#5312</span><span class="title">[CASSANDRA-21815-4.1] Prevent negative BufferPool overflow memory accounting</span></a>
+        <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 9 lines in 3 files</span></div>
+        <div class="sub">Yukei7 into <code>cassandra-4.1</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21815">CASSANDRA-21815</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5312">GitHub PR</a> · Updated 2026-10-27</div>
+      </li>
+      <li class="item" data-pr="5313">
+        <a class="main" href="pr/5313/"><span class="num">#5313</span><span class="title">[CASSANDRA-21815-5.0] Prevent negative BufferPool overflow accounting</span></a>
+        <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 9 lines in 3 files</span></div>
+        <div class="sub">Yukei7 into <code>cassandra-5.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21815">CASSANDRA-21815</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5313">GitHub PR</a> · Updated 2026-10-27</div>
+      </li>
+      <li class="item" data-pr="5314">
+        <a class="main" href="pr/5314/"><span class="num">#5314</span><span class="title">[CASSANDRA-21815-6.0] Prevent negative BufferPool overflow accounting</span></a>
+        <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 9 lines in 3 files</span></div>
+        <div class="sub">Yukei7 into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21815">CASSANDRA-21815</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5314">GitHub PR</a> · Updated 2026-10-27</div>
+      </li>
+      <li class="item" data-pr="5315">
+        <a class="main" href="pr/5315/"><span class="num">#5315</span><span class="title">[CASSANDRA-21815-trunk] Prevent negative BufferPool overflow accounting</span></a>
+        <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 9 lines in 3 files</span></div>
+        <div class="sub">Yukei7 into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21815">CASSANDRA-21815</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5315">GitHub PR</a> · Updated 2026-10-27</div>
+      </li>
       <li class="item" data-pr="4970">
         <a class="main" href="pr/4970/"><span class="num">#4970</span><span class="title">CASSANDRA-21537: Serialise local metadata proposals so concurrent DDL keeps its retry budget</span></a>
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 1631 lines in 6 files</span></div>
