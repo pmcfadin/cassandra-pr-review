@@ -123,7 +123,7 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     <h1>Pull request reviews</h1>
     <p class="lede">Reports on <a href="https://github.com/apache/cassandra/pulls">apache/cassandra</a> pull requests, grouped by who acts next.
       Each report is advisory; committers decide.</p>
-    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">7</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">592</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">23</span> Drafts</a></nav>
+    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">7</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">593</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">23</span> Drafts</a></nav>
   </header>
   <section class="card group" id="g-ready" aria-labelledby="h-ready">
     <div class="group-head"><h2 id="h-ready">Ready for a committer</h2><span class="count">7</span><p class="hint">A committer can act now: merge it, or run CI or vote.</p></div>
@@ -173,8 +173,26 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     </ul>
   </section>
   <section class="card group" id="g-contributor" aria-labelledby="h-contributor">
-    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">592</span><p class="hint">The contributor has fixes to make first.</p></div>
+    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">593</span><p class="hint">The contributor has fixes to make first.</p></div>
     <ul>
+      <li class="item" data-pr="5327">
+        <a class="main" href="pr/5327/"><span class="num">#5327</span><span class="title">[ CASSANDRA-16677][4.0] Fix flaky ConnectionTest.testMessageDeliveryOnReconnect</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 2 lines in 1 file</span></div>
+        <div class="sub">netudima into <code>cassandra-4.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-16677">CASSANDRA-16677</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5327">GitHub PR</a> · Updated 2026-10-28</div>
+      </li>
+      <li class="item" data-pr="4968">
+        <a class="main" href="pr/4968/"><span class="num">#4968</span><span class="title">[CASSANDRA-21538] Fix NullPointerException in nodetool listpendinghints</span></a>
+        <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 221 lines in 3 files</span></div>
+        <div class="sub">Yukei7 into <code>cassandra-4.1</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21538">CASSANDRA-21538</a> ·
+          <a href="https://github.com/apache/cassandra/pull/4968">GitHub PR</a> · Updated 2026-10-28</div>
+      </li>
+      <li class="item" data-pr="4714">
+        <a class="main" href="pr/4714/"><span class="num">#4714</span><span class="title">CASSANDRA-21276: fix s390x unit tests</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 24 lines in 3 files</span></div>
+        <div class="sub">niyamsw into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21276">CASSANDRA-21276</a> ·
+          <a href="https://github.com/apache/cassandra/pull/4714">GitHub PR</a> · Updated 2026-10-28</div>
+      </li>
       <li class="item" data-pr="4582">
         <a class="main" href="pr/4582/"><span class="num">#4582</span><span class="title">CEP-38: Management API MVP Implementation [CASSANDRA-19476]</span></a>
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 12313 lines in 179 files</span></div>
@@ -288,12 +306,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 149 lines in 3 files</span></div>
         <div class="sub">dipAch into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21740">CASSANDRA-21740</a> ·
           <a href="https://github.com/apache/cassandra/pull/5249">GitHub PR</a> · Updated 2026-10-27</div>
-      </li>
-      <li class="item" data-pr="4714">
-        <a class="main" href="pr/4714/"><span class="num">#4714</span><span class="title">CASSANDRA-21276: fix s390x unit tests</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 24 lines in 3 files</span></div>
-        <div class="sub">niyamsw into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21276">CASSANDRA-21276</a> ·
-          <a href="https://github.com/apache/cassandra/pull/4714">GitHub PR</a> · Updated 2026-10-27</div>
       </li>
       <li class="item" data-pr="5320">
         <a class="main" href="pr/5320/"><span class="num">#5320</span><span class="title">CASSANDRA-21792: nodetool consensus_admin begin-migration and finish-migration fail with NotSerializableException when table names are given</span></a>
@@ -1236,12 +1248,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 244 lines in 2 files</span></div>
         <div class="sub">Runtian into <code>cassandra-4.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21249">CASSANDRA-21249</a> ·
           <a href="https://github.com/apache/cassandra/pull/4733">GitHub PR</a> · Updated 2026-10-15</div>
-      </li>
-      <li class="item" data-pr="4968">
-        <a class="main" href="pr/4968/"><span class="num">#4968</span><span class="title">[CASSANDRA-21538] Fix NullPointerException in nodetool listpendinghints</span></a>
-        <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 220 lines in 3 files</span></div>
-        <div class="sub">Yukei7 into <code>cassandra-4.1</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21538">CASSANDRA-21538</a> ·
-          <a href="https://github.com/apache/cassandra/pull/4968">GitHub PR</a> · Updated 2026-10-15</div>
       </li>
       <li class="item" data-pr="5258">
         <a class="main" href="pr/5258/"><span class="num">#5258</span><span class="title">Remove DevCenter from data modeling tools docs</span></a>
