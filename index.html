@@ -123,7 +123,7 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     <h1>Pull request reviews</h1>
     <p class="lede">Reports on <a href="https://github.com/apache/cassandra/pulls">apache/cassandra</a> pull requests, grouped by who acts next.
       Each report is advisory; committers decide.</p>
-    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">7</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">594</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">23</span> Drafts</a></nav>
+    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">7</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">595</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">23</span> Drafts</a></nav>
   </header>
   <section class="card group" id="g-ready" aria-labelledby="h-ready">
     <div class="group-head"><h2 id="h-ready">Ready for a committer</h2><span class="count">7</span><p class="hint">A committer can act now: merge it, or run CI or vote.</p></div>
@@ -173,13 +173,31 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     </ul>
   </section>
   <section class="card group" id="g-contributor" aria-labelledby="h-contributor">
-    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">594</span><p class="hint">The contributor has fixes to make first.</p></div>
+    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">595</span><p class="hint">The contributor has fixes to make first.</p></div>
     <ul>
+      <li class="item" data-pr="5240">
+        <a class="main" href="pr/5240/"><span class="num">#5240</span><span class="title">CASSANDRA-20159-4.0 IndexSummaryRedistribution should unmark compacting SSTables in batch</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 98 lines in 3 files</span></div>
+        <div class="sub">smiklosovic into <code>cassandra-4.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-20159">CASSANDRA-20159</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5240">GitHub PR</a> · Updated 2026-10-29</div>
+      </li>
       <li class="item" data-pr="4910">
         <a class="main" href="pr/4910/"><span class="num">#4910</span><span class="title">CEP-45: Topology Change Support for Mutation Tracking</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 8873 lines in 102 files</span></div>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 8889 lines in 103 files</span></div>
         <div class="sub">iamaleksey into <code>cep-45-mutation-tracking</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-20386">CASSANDRA-20386</a> ·
-          <a href="https://github.com/apache/cassandra/pull/4910">GitHub PR</a> · Updated 2026-10-28</div>
+          <a href="https://github.com/apache/cassandra/pull/4910">GitHub PR</a> · Updated 2026-10-29</div>
+      </li>
+      <li class="item" data-pr="5330">
+        <a class="main" href="pr/5330/"><span class="num">#5330</span><span class="title">CASSANDRA-21761: Re-adding a dropped column with the same frozen user type is rejected as incompatible</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 71 lines in 3 files</span></div>
+        <div class="sub">Suhel0328 into <code>cassandra-5.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21761">CASSANDRA-21761</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5330">GitHub PR</a> · Updated 2026-10-29</div>
+      </li>
+      <li class="item" data-pr="5260">
+        <a class="main" href="pr/5260/"><span class="num">#5260</span><span class="title">CASSANDRA-21755: Sanitize and bound client STARTUP options and escape formatting in ConnectedClient</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 505 lines in 8 files</span></div>
+        <div class="sub">AshenScribe into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21755">CASSANDRA-21755</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5260">GitHub PR</a> · Updated 2026-10-29</div>
       </li>
       <li class="item" data-pr="5329">
         <a class="main" href="pr/5329/"><span class="num">#5329</span><span class="title">Reject an empty USING TIMESTAMP bind value instead of throwing NullPointerException</span></a>
@@ -588,12 +606,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 20 lines in 2 files</span></div>
         <div class="sub">PreetiToppo into <code>cassandra-5.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21784">CASSANDRA-21784</a> ·
           <a href="https://github.com/apache/cassandra/pull/5285">GitHub PR</a> · Updated 2026-10-21</div>
-      </li>
-      <li class="item" data-pr="5260">
-        <a class="main" href="pr/5260/"><span class="num">#5260</span><span class="title">CASSANDRA-21755: Sanitize and bound client STARTUP options and escape formatting in ConnectedClient</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 282 lines in 4 files</span></div>
-        <div class="sub">AshenScribe into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21755">CASSANDRA-21755</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5260">GitHub PR</a> · Updated 2026-10-21</div>
       </li>
       <li class="item" data-pr="5282">
         <a class="main" href="pr/5282/"><span class="num">#5282</span><span class="title">CASSANDRA-21791: CEP-45 - improve tracked read coordination</span></a>
@@ -3600,12 +3612,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 339 lines in 3 files</span></div>
         <div class="sub">smiklosovic into <code>cassandra-4.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-19597">CASSANDRA-19597</a> ·
           <a href="https://github.com/apache/cassandra/pull/5241">GitHub PR</a> · Updated 2026-10-09</div>
-      </li>
-      <li class="item" data-pr="5240">
-        <a class="main" href="pr/5240/"><span class="num">#5240</span><span class="title">CASSANDRA-20159-4.0 IndexSummaryRedistribution should unmark compacting SSTables in batch</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 93 lines in 3 files</span></div>
-        <div class="sub">smiklosovic into <code>cassandra-4.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-20159">CASSANDRA-20159</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5240">GitHub PR</a> · Updated 2026-10-09</div>
       </li>
       <li class="item" data-pr="5126">
         <a class="main" href="pr/5126/"><span class="num">#5126</span><span class="title">Single partition isolation</span></a>
