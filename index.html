@@ -123,7 +123,7 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     <h1>Pull request reviews</h1>
     <p class="lede">Reports on <a href="https://github.com/apache/cassandra/pulls">apache/cassandra</a> pull requests, grouped by who acts next.
       Each report is advisory; committers decide.</p>
-    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">7</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">600</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">23</span> Drafts</a></nav>
+    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">7</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">603</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">23</span> Drafts</a></nav>
   </header>
   <section class="card group" id="g-ready" aria-labelledby="h-ready">
     <div class="group-head"><h2 id="h-ready">Ready for a committer</h2><span class="count">7</span><p class="hint">A committer can act now: merge it, or run CI or vote.</p></div>
@@ -173,8 +173,32 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     </ul>
   </section>
   <section class="card group" id="g-contributor" aria-labelledby="h-contributor">
-    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">600</span><p class="hint">The contributor has fixes to make first.</p></div>
+    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">603</span><p class="hint">The contributor has fixes to make first.</p></div>
     <ul>
+      <li class="item" data-pr="5261">
+        <a class="main" href="pr/5261/"><span class="num">#5261</span><span class="title">CASSANDRA-21756: Add configurable authentication timeout for native transport connections</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 411 lines in 12 files</span></div>
+        <div class="sub">AshenScribe into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21756">CASSANDRA-21756</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5261">GitHub PR</a> · Updated 2026-10-30</div>
+      </li>
+      <li class="item" data-pr="5337">
+        <a class="main" href="pr/5337/"><span class="num">#5337</span><span class="title">CASSANDRA-21824: Fix repaired metadata preservation when scrubbing corrupted SSTables</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">4 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 83173 lines in 768 files</span></div>
+        <div class="sub">AshenScribe into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21824">CASSANDRA-21824</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5337">GitHub PR</a> · Updated 2026-10-30</div>
+      </li>
+      <li class="item" data-pr="5336">
+        <a class="main" href="pr/5336/"><span class="num">#5336</span><span class="title">Reduce aggregation paging test data to avoid range-read timeouts</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 5 lines in 1 file</span></div>
+        <div class="sub">michaelsembwever into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21831">CASSANDRA-21831</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5336">GitHub PR</a> · Updated 2026-10-30</div>
+      </li>
+      <li class="item" data-pr="5338">
+        <a class="main" href="pr/5338/"><span class="num">#5338</span><span class="title">Compaction races with mutation tracking migration</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 51 lines in 2 files</span></div>
+        <div class="sub">AshenScribe into <code>cep-45-mutation-tracking</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21824">CASSANDRA-21824</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5338">GitHub PR</a> · Updated 2026-10-30</div>
+      </li>
       <li class="item" data-pr="5334">
         <a class="main" href="pr/5334/"><span class="num">#5334</span><span class="title">CASSANDRA-21825 CEP-45: Tracked full and preview repair includes merkle trees from witness replicas</span></a>
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 572 lines in 11 files</span></div>
@@ -432,12 +456,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 88 lines in 3 files</span></div>
         <div class="sub">Mmuzaf into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21812">CASSANDRA-21812</a> ·
           <a href="https://github.com/apache/cassandra/pull/5309">GitHub PR</a> · Updated 2026-10-26</div>
-      </li>
-      <li class="item" data-pr="5261">
-        <a class="main" href="pr/5261/"><span class="num">#5261</span><span class="title">CASSANDRA-21756: Add configurable authentication timeout for native transport connections</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 412 lines in 12 files</span></div>
-        <div class="sub">AshenScribe into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21756">CASSANDRA-21756</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5261">GitHub PR</a> · Updated 2026-10-26</div>
       </li>
       <li class="item" data-pr="5306">
         <a class="main" href="pr/5306/"><span class="num">#5306</span><span class="title">Allow format_time() unit arguments to accept text values</span></a>
