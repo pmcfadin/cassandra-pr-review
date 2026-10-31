@@ -123,7 +123,7 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     <h1>Pull request reviews</h1>
     <p class="lede">Reports on <a href="https://github.com/apache/cassandra/pulls">apache/cassandra</a> pull requests, grouped by who acts next.
       Each report is advisory; committers decide.</p>
-    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">7</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">603</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">23</span> Drafts</a></nav>
+    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">7</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">606</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">23</span> Drafts</a></nav>
   </header>
   <section class="card group" id="g-ready" aria-labelledby="h-ready">
     <div class="group-head"><h2 id="h-ready">Ready for a committer</h2><span class="count">7</span><p class="hint">A committer can act now: merge it, or run CI or vote.</p></div>
@@ -173,8 +173,32 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     </ul>
   </section>
   <section class="card group" id="g-contributor" aria-labelledby="h-contributor">
-    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">603</span><p class="hint">The contributor has fixes to make first.</p></div>
+    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">606</span><p class="hint">The contributor has fixes to make first.</p></div>
     <ul>
+      <li class="item" data-pr="5334">
+        <a class="main" href="pr/5334/"><span class="num">#5334</span><span class="title">CASSANDRA-21825 CEP-45: Tracked full and preview repair includes merkle trees from witness replicas</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 614 lines in 15 files</span></div>
+        <div class="sub">bdeggleston into <code>cep-45-mutation-tracking</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21825">CASSANDRA-21825</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5334">GitHub PR</a> · Updated 2026-10-31</div>
+      </li>
+      <li class="item" data-pr="5342">
+        <a class="main" href="pr/5342/"><span class="num">#5342</span><span class="title">Ignore COORDINATOR_BEHIND failures in tracked reads</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 154 lines in 2 files</span></div>
+        <div class="sub">AshenScribe into <code>cep-45-mutation-tracking</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21562">CASSANDRA-21562</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5342">GitHub PR</a> · Updated 2026-10-31</div>
+      </li>
+      <li class="item" data-pr="5341">
+        <a class="main" href="pr/5341/"><span class="num">#5341</span><span class="title">CASSANDRA-21832 Memory for an SSTable&#x27;s index summary can be under allocated</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 177 lines in 7 files</span></div>
+        <div class="sub">alanwang67 into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21832">CASSANDRA-21832</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5341">GitHub PR</a> · Updated 2026-10-31</div>
+      </li>
+      <li class="item" data-pr="5343">
+        <a class="main" href="pr/5343/"><span class="num">#5343</span><span class="title">CASSANDRA-21833: Fix repaired metadata handling during SSTable scrubbing</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 9 lines in 2 files</span></div>
+        <div class="sub">AshenScribe into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21833">CASSANDRA-21833</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5343">GitHub PR</a> · Updated 2026-10-31</div>
+      </li>
       <li class="item" data-pr="5261">
         <a class="main" href="pr/5261/"><span class="num">#5261</span><span class="title">CASSANDRA-21756: Add configurable authentication timeout for native transport connections</span></a>
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 411 lines in 12 files</span></div>
@@ -198,12 +222,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 51 lines in 2 files</span></div>
         <div class="sub">AshenScribe into <code>cep-45-mutation-tracking</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21824">CASSANDRA-21824</a> ·
           <a href="https://github.com/apache/cassandra/pull/5338">GitHub PR</a> · Updated 2026-10-30</div>
-      </li>
-      <li class="item" data-pr="5334">
-        <a class="main" href="pr/5334/"><span class="num">#5334</span><span class="title">CASSANDRA-21825 CEP-45: Tracked full and preview repair includes merkle trees from witness replicas</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 572 lines in 11 files</span></div>
-        <div class="sub">bdeggleston into <code>cep-45-mutation-tracking</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21825">CASSANDRA-21825</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5334">GitHub PR</a> · Updated 2026-10-30</div>
       </li>
       <li class="item" data-pr="5201">
         <a class="main" href="pr/5201/"><span class="num">#5201</span><span class="title">CASSANDRA-21649: Ensure SSTable files are deleted in order of last-updated timestamp (4.0)</span></a>
