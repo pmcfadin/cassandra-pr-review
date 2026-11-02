@@ -123,7 +123,7 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     <h1>Pull request reviews</h1>
     <p class="lede">Reports on <a href="https://github.com/apache/cassandra/pulls">apache/cassandra</a> pull requests, grouped by who acts next.
       Each report is advisory; committers decide.</p>
-    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">7</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">614</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">23</span> Drafts</a></nav>
+    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">7</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">615</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">24</span> Drafts</a></nav>
   </header>
   <section class="card group" id="g-ready" aria-labelledby="h-ready">
     <div class="group-head"><h2 id="h-ready">Ready for a committer</h2><span class="count">7</span><p class="hint">A committer can act now: merge it, or run CI or vote.</p></div>
@@ -173,8 +173,20 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     </ul>
   </section>
   <section class="card group" id="g-contributor" aria-labelledby="h-contributor">
-    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">614</span><p class="hint">The contributor has fixes to make first.</p></div>
+    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">615</span><p class="hint">The contributor has fixes to make first.</p></div>
     <ul>
+      <li class="item" data-pr="5353">
+        <a class="main" href="pr/5353/"><span class="num">#5353</span><span class="title">CASSANDRA-21838: Always send contentions in CAS write timeout errors on protocol v5</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 185 lines in 3 files</span></div>
+        <div class="sub">arvindKandpal-ksolves into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21838">CASSANDRA-21838</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5353">GitHub PR</a> · Updated 2026-11-02</div>
+      </li>
+      <li class="item" data-pr="4953">
+        <a class="main" href="pr/4953/"><span class="num">#4953</span><span class="title">CASSANDRA-21191: [CEP-59] Implementation of In-Band Connection Draining (Graceful Disconnect)</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 1274 lines in 23 files</span></div>
+        <div class="sub">AshenScribe into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21191">CASSANDRA-21191</a> ·
+          <a href="https://github.com/apache/cassandra/pull/4953">GitHub PR</a> · Updated 2026-11-02</div>
+      </li>
       <li class="item" data-pr="5351">
         <a class="main" href="pr/5351/"><span class="num">#5351</span><span class="title">CASSANDRA-21837: Add stateful test for Cassandra Auth and Permissions System</span></a>
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 653 lines in 1 file</span></div>
@@ -564,12 +576,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 78 lines in 3 files</span></div>
         <div class="sub">michaelsembwever into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21340">CASSANDRA-21340</a> ·
           <a href="https://github.com/apache/cassandra/pull/5308">GitHub PR</a> · Updated 2026-10-26</div>
-      </li>
-      <li class="item" data-pr="4953">
-        <a class="main" href="pr/4953/"><span class="num">#4953</span><span class="title">CASSANDRA-21191: [CEP-59] Implementation of In-Band Connection Draining (Graceful Disconnect)</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 1274 lines in 23 files</span></div>
-        <div class="sub">AshenScribe into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21191">CASSANDRA-21191</a> ·
-          <a href="https://github.com/apache/cassandra/pull/4953">GitHub PR</a> · Updated 2026-10-26</div>
       </li>
       <li class="item" data-pr="5307">
         <a class="main" href="pr/5307/"><span class="num">#5307</span><span class="title">[CASSANDRA-21808][trunk] Limit glibc malloc arenas in forked test JVMs and report OOM kills in…</span></a>
@@ -3879,8 +3885,14 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     </ul>
   </section>
   <section class="card group" id="g-draft" aria-labelledby="h-draft">
-    <div class="group-head"><h2 id="h-draft">Drafts</h2><span class="count">23</span><p class="hint">Early feedback only. Not a merge decision.</p></div>
+    <div class="group-head"><h2 id="h-draft">Drafts</h2><span class="count">24</span><p class="hint">Early feedback only. Not a merge decision.</p></div>
     <ul>
+      <li class="item" data-pr="5354">
+        <a class="main" href="pr/5354/"><span class="num">#5354</span><span class="title">CASSANDRA-21771 to 21775 Yifan&#x27;s take</span></a>
+        <div class="meta"><span class="chip s-na">Draft</span><span class="acts">Next: <b>Committer</b></span><span class="effort">Review effort: Large · 4050 lines in 31 files</span></div>
+        <div class="sub">smiklosovic into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21771">CASSANDRA-21771</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5354">GitHub PR</a> · Updated 2026-11-02</div>
+      </li>
       <li class="item" data-pr="5284">
         <a class="main" href="pr/5284/"><span class="num">#5284</span><span class="title">Reorganize pager tests and expand row-paging coverage</span></a>
         <div class="meta"><span class="chip s-na">Draft</span><span class="effort">Review effort: Large · 2253 lines in 11 files</span></div>
