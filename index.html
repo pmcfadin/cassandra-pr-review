@@ -123,10 +123,10 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     <h1>Pull request reviews</h1>
     <p class="lede">Reports on <a href="https://github.com/apache/cassandra/pulls">apache/cassandra</a> pull requests, grouped by who acts next.
       Each report is advisory; committers decide.</p>
-    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">7</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">634</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">25</span> Drafts</a></nav>
+    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">6</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">636</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">24</span> Drafts</a></nav>
   </header>
   <section class="card group" id="g-ready" aria-labelledby="h-ready">
-    <div class="group-head"><h2 id="h-ready">Ready for a committer</h2><span class="count">7</span><p class="hint">A committer can act now: merge it, or run CI or vote.</p></div>
+    <div class="group-head"><h2 id="h-ready">Ready for a committer</h2><span class="count">6</span><p class="hint">A committer can act now: merge it, or run CI or vote.</p></div>
     <ul>
       <li class="item" data-pr="5312">
         <a class="main" href="pr/5312/"><span class="num">#5312</span><span class="title">[CASSANDRA-21815-4.1] Prevent negative BufferPool overflow memory accounting</span></a>
@@ -152,12 +152,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="sub">bbotella into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21787">CASSANDRA-21787</a> ·
           <a href="https://github.com/apache/cassandra/pull/5273">GitHub PR</a> · Updated 2026-10-22</div>
       </li>
-      <li class="item" data-pr="5125">
-        <a class="main" href="pr/5125/"><span class="num">#5125</span><span class="title">CASSANDRA-21663 Failed force repair should clear force repair flag</span></a>
-        <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Committer</b></span><span class="effort">Review effort: Large · 1034 lines in 5 files</span></div>
-        <div class="sub">tommystendahl into <code>cassandra-5.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21663">CASSANDRA-21663</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5125">GitHub PR</a> · Updated 2026-10-12</div>
-      </li>
       <li class="item" data-pr="2636">
         <a class="main" href="pr/2636/"><span class="num">#2636</span><span class="title">CASSANDRA-18799 Remove org.caffinitas.ohc:ohc-core-j8 dependency</span></a>
         <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Committer</b></span><span class="effort">Review effort: Small · 11 lines in 2 files</span></div>
@@ -173,8 +167,32 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     </ul>
   </section>
   <section class="card group" id="g-contributor" aria-labelledby="h-contributor">
-    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">634</span><p class="hint">The contributor has fixes to make first.</p></div>
+    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">636</span><p class="hint">The contributor has fixes to make first.</p></div>
     <ul>
+      <li class="item" data-pr="5125">
+        <a class="main" href="pr/5125/"><span class="num">#5125</span><span class="title">CASSANDRA-21663 Failed force repair should clear force repair flag</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 455 lines in 4 files</span></div>
+        <div class="sub">tommystendahl into <code>cassandra-5.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21663">CASSANDRA-21663</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5125">GitHub PR</a> · Updated 2026-11-05</div>
+      </li>
+      <li class="item" data-pr="5354">
+        <a class="main" href="pr/5354/"><span class="num">#5354</span><span class="title">CASSANDRA-21771 to 21775 Yifan&#x27;s take</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 4127 lines in 34 files</span></div>
+        <div class="sub">smiklosovic into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21771">CASSANDRA-21771</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5354">GitHub PR</a> · Updated 2026-11-05</div>
+      </li>
+      <li class="item" data-pr="5146">
+        <a class="main" href="pr/5146/"><span class="num">#5146</span><span class="title">CASSANDRA-21663 Failed force repair should clear force repair flag</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 466 lines in 4 files</span></div>
+        <div class="sub">tommystendahl into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21663">CASSANDRA-21663</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5146">GitHub PR</a> · Updated 2026-11-05</div>
+      </li>
+      <li class="item" data-pr="5145">
+        <a class="main" href="pr/5145/"><span class="num">#5145</span><span class="title">CASSANDRA-21663 Failed force repair should clear force repair flag</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 466 lines in 4 files</span></div>
+        <div class="sub">tommystendahl into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21663">CASSANDRA-21663</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5145">GitHub PR</a> · Updated 2026-11-05</div>
+      </li>
       <li class="item" data-pr="5290">
         <a class="main" href="pr/5290/"><span class="num">#5290</span><span class="title">CASSANDRA-21537 (6.0): Serialise local metadata proposals so concurrent DDL keeps its retry budget</span></a>
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 1448 lines in 7 files</span></div>
@@ -2731,18 +2749,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="sub">maoling into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-20604">CASSANDRA-20604</a> ·
           <a href="https://github.com/apache/cassandra/pull/4124">GitHub PR</a> · Updated 2026-10-12</div>
       </li>
-      <li class="item" data-pr="5145">
-        <a class="main" href="pr/5145/"><span class="num">#5145</span><span class="title">CASSANDRA-21663 Failed force repair should clear force repair flag</span></a>
-        <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 1039 lines in 5 files</span></div>
-        <div class="sub">tommystendahl into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21663">CASSANDRA-21663</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5145">GitHub PR</a> · Updated 2026-10-12</div>
-      </li>
-      <li class="item" data-pr="5146">
-        <a class="main" href="pr/5146/"><span class="num">#5146</span><span class="title">CASSANDRA-21663 Failed force repair should clear force repair flag</span></a>
-        <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 1039 lines in 5 files</span></div>
-        <div class="sub">tommystendahl into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21663">CASSANDRA-21663</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5146">GitHub PR</a> · Updated 2026-10-12</div>
-      </li>
       <li class="item" data-pr="4255">
         <a class="main" href="pr/4255/"><span class="num">#4255</span><span class="title">CASSSIDECAR-254 - Include the AsyncProfiler Library and expose via JMX &amp; `nodetool profile`</span></a>
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">5 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 433 lines in 11 files</span></div>
@@ -3999,14 +4005,8 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     </ul>
   </section>
   <section class="card group" id="g-draft" aria-labelledby="h-draft">
-    <div class="group-head"><h2 id="h-draft">Drafts</h2><span class="count">25</span><p class="hint">Early feedback only. Not a merge decision.</p></div>
+    <div class="group-head"><h2 id="h-draft">Drafts</h2><span class="count">24</span><p class="hint">Early feedback only. Not a merge decision.</p></div>
     <ul>
-      <li class="item" data-pr="5354">
-        <a class="main" href="pr/5354/"><span class="num">#5354</span><span class="title">CASSANDRA-21771 to 21775 Yifan&#x27;s take</span></a>
-        <div class="meta"><span class="chip s-na">Draft</span><span class="acts">Next: <b>Committer</b></span><span class="effort">Review effort: Large · 4074 lines in 31 files</span></div>
-        <div class="sub">smiklosovic into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21771">CASSANDRA-21771</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5354">GitHub PR</a> · Updated 2026-11-03</div>
-      </li>
       <li class="item" data-pr="5355">
         <a class="main" href="pr/5355/"><span class="num">#5355</span><span class="title">CASSANDRA-21839 Run standalone Harry tests in CI with per-class configurations</span></a>
         <div class="meta"><span class="chip s-na">Draft</span><span class="acts">Next: <b>Committer</b></span><span class="effort">Review effort: Large · 3801 lines in 22 files</span></div>
