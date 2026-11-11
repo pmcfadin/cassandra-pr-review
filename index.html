@@ -123,7 +123,7 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     <h1>Pull request reviews</h1>
     <p class="lede">Reports on <a href="https://github.com/apache/cassandra/pulls">apache/cassandra</a> pull requests, grouped by who acts next.
       Each report is advisory; committers decide.</p>
-    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">6</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">654</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">24</span> Drafts</a></nav>
+    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">6</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">660</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">24</span> Drafts</a></nav>
   </header>
   <section class="card group" id="g-ready" aria-labelledby="h-ready">
     <div class="group-head"><h2 id="h-ready">Ready for a committer</h2><span class="count">6</span><p class="hint">A committer can act now: merge it, or run CI or vote.</p></div>
@@ -167,8 +167,56 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     </ul>
   </section>
   <section class="card group" id="g-contributor" aria-labelledby="h-contributor">
-    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">654</span><p class="hint">The contributor has fixes to make first.</p></div>
+    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">660</span><p class="hint">The contributor has fixes to make first.</p></div>
     <ul>
+      <li class="item" data-pr="5402">
+        <a class="main" href="pr/5402/"><span class="num">#5402</span><span class="title">CASSANDRA-21490: Certificates that fail to hot load should be retried (trunk)</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 735 lines in 6 files</span></div>
+        <div class="sub">jonmeredith into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21490">CASSANDRA-21490</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5402">GitHub PR</a> · Updated 2026-11-11</div>
+      </li>
+      <li class="item" data-pr="5401">
+        <a class="main" href="pr/5401/"><span class="num">#5401</span><span class="title">CASSANDRA-21490: Certificates that fail to hot load should be retried (6.0)</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 735 lines in 6 files</span></div>
+        <div class="sub">jonmeredith into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21490">CASSANDRA-21490</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5401">GitHub PR</a> · Updated 2026-11-11</div>
+      </li>
+      <li class="item" data-pr="5400">
+        <a class="main" href="pr/5400/"><span class="num">#5400</span><span class="title">CASSANDRA-21490: Certificates that fail to hot load should be retried (5.0)</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 548 lines in 6 files</span></div>
+        <div class="sub">jonmeredith into <code>cassandra-5.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21490">CASSANDRA-21490</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5400">GitHub PR</a> · Updated 2026-11-11</div>
+      </li>
+      <li class="item" data-pr="5399">
+        <a class="main" href="pr/5399/"><span class="num">#5399</span><span class="title">CASSANDRA-21490: Certificates that fail to hot load should be retried (4.1)</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 554 lines in 6 files</span></div>
+        <div class="sub">jonmeredith into <code>cassandra-4.1</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21490">CASSANDRA-21490</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5399">GitHub PR</a> · Updated 2026-11-11</div>
+      </li>
+      <li class="item" data-pr="5398">
+        <a class="main" href="pr/5398/"><span class="num">#5398</span><span class="title">CASSANDRA-21490: Certificates that fail to hot load should be retried (4.0)</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 162 lines in 2 files</span></div>
+        <div class="sub">jonmeredith into <code>cassandra-4.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21490">CASSANDRA-21490</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5398">GitHub PR</a> · Updated 2026-11-11</div>
+      </li>
+      <li class="item" data-pr="5260">
+        <a class="main" href="pr/5260/"><span class="num">#5260</span><span class="title">CASSANDRA-21755: Sanitize and bound client STARTUP options and escape formatting in ConnectedClient</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">4 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 1362 lines in 13 files</span></div>
+        <div class="sub">AshenScribe into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21755">CASSANDRA-21755</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5260">GitHub PR</a> · Updated 2026-11-11</div>
+      </li>
+      <li class="item" data-pr="5390">
+        <a class="main" href="pr/5390/"><span class="num">#5390</span><span class="title">CASSANDRA-21863 Correctly identify post-filtered frozen collections during SAI queries</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 613 lines in 25 files</span></div>
+        <div class="sub">maedhroz into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21863">CASSANDRA-21863</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5390">GitHub PR</a> · Updated 2026-11-11</div>
+      </li>
+      <li class="item" data-pr="5404">
+        <a class="main" href="pr/5404/"><span class="num">#5404</span><span class="title">CEP-45 - data resurrection issue in journal replay (CASSANDRA-21875)</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 2765 lines in 33 files</span></div>
+        <div class="sub">bdeggleston into <code>cep-45-mutation-tracking</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21875">CASSANDRA-21875</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5404">GitHub PR</a> · Updated 2026-11-11</div>
+      </li>
       <li class="item" data-pr="5392">
         <a class="main" href="pr/5392/"><span class="num">#5392</span><span class="title">CASSANDRA-21871; Avoid memoizing UNKNOWN dc/rack during startup when changing IP</span></a>
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 107 lines in 3 files</span></div>
@@ -210,12 +258,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 2 lines in 1 file</span></div>
         <div class="sub">smiklosovic into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21873">CASSANDRA-21873</a> ·
           <a href="https://github.com/apache/cassandra/pull/5397">GitHub PR</a> · Updated 2026-11-10</div>
-      </li>
-      <li class="item" data-pr="5390">
-        <a class="main" href="pr/5390/"><span class="num">#5390</span><span class="title">CASSANDRA-21863 Correctly identify post-filtered frozen collections during SAI queries</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 423 lines in 10 files</span></div>
-        <div class="sub">maedhroz into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21863">CASSANDRA-21863</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5390">GitHub PR</a> · Updated 2026-11-10</div>
       </li>
       <li class="item" data-pr="5389">
         <a class="main" href="pr/5389/"><span class="num">#5389</span><span class="title">CASSANDRA-21849: Add configurable outbound internode TCP connection rate limiter</span></a>
@@ -360,12 +402,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 19 lines in 2 files</span></div>
         <div class="sub">netudima into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21857">CASSANDRA-21857</a> ·
           <a href="https://github.com/apache/cassandra/pull/5376">GitHub PR</a> · Updated 2026-11-06</div>
-      </li>
-      <li class="item" data-pr="5260">
-        <a class="main" href="pr/5260/"><span class="num">#5260</span><span class="title">CASSANDRA-21755: Sanitize and bound client STARTUP options and escape formatting in ConnectedClient</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">3 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 976 lines in 12 files</span></div>
-        <div class="sub">AshenScribe into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21755">CASSANDRA-21755</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5260">GitHub PR</a> · Updated 2026-11-06</div>
       </li>
       <li class="item" data-pr="5125">
         <a class="main" href="pr/5125/"><span class="num">#5125</span><span class="title">CASSANDRA-21663 Failed force repair should clear force repair flag</span></a>
