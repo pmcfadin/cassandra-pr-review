@@ -123,7 +123,7 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     <h1>Pull request reviews</h1>
     <p class="lede">Reports on <a href="https://github.com/apache/cassandra/pulls">apache/cassandra</a> pull requests, grouped by who acts next.
       Each report is advisory; committers decide.</p>
-    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">6</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">661</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">24</span> Drafts</a></nav>
+    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">6</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">664</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">24</span> Drafts</a></nav>
   </header>
   <section class="card group" id="g-ready" aria-labelledby="h-ready">
     <div class="group-head"><h2 id="h-ready">Ready for a committer</h2><span class="count">6</span><p class="hint">A committer can act now: merge it, or run CI or vote.</p></div>
@@ -167,19 +167,49 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     </ul>
   </section>
   <section class="card group" id="g-contributor" aria-labelledby="h-contributor">
-    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">661</span><p class="hint">The contributor has fixes to make first.</p></div>
+    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">664</span><p class="hint">The contributor has fixes to make first.</p></div>
     <ul>
+      <li class="item" data-pr="5390">
+        <a class="main" href="pr/5390/"><span class="num">#5390</span><span class="title">CASSANDRA-21863 Assorted fixes for post-filtering on collection elements and inet columns</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 674 lines in 25 files</span></div>
+        <div class="sub">maedhroz into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21863">CASSANDRA-21863</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5390">GitHub PR</a> · Updated 2026-11-12</div>
+      </li>
+      <li class="item" data-pr="5406">
+        <a class="main" href="pr/5406/"><span class="num">#5406</span><span class="title">CASSANDRA-21863 Assorted fixes for post-filtering on collection elements and inet columns</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 262 lines in 8 files</span></div>
+        <div class="sub">maedhroz into <code>cassandra-5.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21863">CASSANDRA-21863</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5406">GitHub PR</a> · Updated 2026-11-12</div>
+      </li>
+      <li class="item" data-pr="5154">
+        <a class="main" href="pr/5154/"><span class="num">#5154</span><span class="title">21460 cursor bti</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 13896 lines in 90 files</span></div>
+        <div class="sub">rustyrazorblade into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21460">CASSANDRA-21460</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5154">GitHub PR</a> · Updated 2026-11-12</div>
+      </li>
+      <li class="item" data-pr="5408">
+        <a class="main" href="pr/5408/"><span class="num">#5408</span><span class="title">CASSANDRA-21878 Fix full repair with options -seq or -dcpar and -local, -dc, or -hosts</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 94 lines in 3 files</span></div>
+        <div class="sub">alanwang67 into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21878">CASSANDRA-21878</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5408">GitHub PR</a> · Updated 2026-11-12</div>
+      </li>
+      <li class="item" data-pr="5407">
+        <a class="main" href="pr/5407/"><span class="num">#5407</span><span class="title">[CASSANDRA-21877][5.0] Uploads to nightlies.apache.org failed without retries</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 22 lines in 1 file</span></div>
+        <div class="sub">netudima into <code>cassandra-5.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21877">CASSANDRA-21877</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5407">GitHub PR</a> · Updated 2026-11-12</div>
+      </li>
+      <li class="item" data-pr="5311">
+        <a class="main" href="pr/5311/"><span class="num">#5311</span><span class="title">CASSANDRA-21813 Fix Accord bugs</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 700 lines in 20 files</span></div>
+        <div class="sub">alanwang67 into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21813">CASSANDRA-21813</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5311">GitHub PR</a> · Updated 2026-11-12</div>
+      </li>
       <li class="item" data-pr="5330">
         <a class="main" href="pr/5330/"><span class="num">#5330</span><span class="title">CASSANDRA-21761: Re-adding a dropped column with the same frozen user type is rejected as incompatible</span></a>
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 636 lines in 3 files</span></div>
         <div class="sub">Suhel-ksolves into <code>cassandra-5.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21761">CASSANDRA-21761</a> ·
           <a href="https://github.com/apache/cassandra/pull/5330">GitHub PR</a> · Updated 2026-11-11</div>
-      </li>
-      <li class="item" data-pr="5311">
-        <a class="main" href="pr/5311/"><span class="num">#5311</span><span class="title">CASSANDRA-21813 Fix Accord bugs</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 756 lines in 21 files</span></div>
-        <div class="sub">alanwang67 into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21813">CASSANDRA-21813</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5311">GitHub PR</a> · Updated 2026-11-11</div>
       </li>
       <li class="item" data-pr="5260">
         <a class="main" href="pr/5260/"><span class="num">#5260</span><span class="title">CASSANDRA-21755: Sanitize and bound client STARTUP options and escape formatting in ConnectedClient</span></a>
@@ -228,12 +258,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 162 lines in 2 files</span></div>
         <div class="sub">jonmeredith into <code>cassandra-4.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21490">CASSANDRA-21490</a> ·
           <a href="https://github.com/apache/cassandra/pull/5398">GitHub PR</a> · Updated 2026-11-11</div>
-      </li>
-      <li class="item" data-pr="5390">
-        <a class="main" href="pr/5390/"><span class="num">#5390</span><span class="title">CASSANDRA-21863 Correctly identify post-filtered frozen collections during SAI queries</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 613 lines in 25 files</span></div>
-        <div class="sub">maedhroz into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21863">CASSANDRA-21863</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5390">GitHub PR</a> · Updated 2026-11-11</div>
       </li>
       <li class="item" data-pr="5392">
         <a class="main" href="pr/5392/"><span class="num">#5392</span><span class="title">CASSANDRA-21871; Avoid memoizing UNKNOWN dc/rack during startup when changing IP</span></a>
@@ -534,12 +558,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 524 lines in 2 files</span></div>
         <div class="sub">koo-taejin into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21842">CASSANDRA-21842</a> ·
           <a href="https://github.com/apache/cassandra/pull/5358">GitHub PR</a> · Updated 2026-11-04</div>
-      </li>
-      <li class="item" data-pr="5154">
-        <a class="main" href="pr/5154/"><span class="num">#5154</span><span class="title">21460 cursor bti</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 13616 lines in 90 files</span></div>
-        <div class="sub">rustyrazorblade into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21460">CASSANDRA-21460</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5154">GitHub PR</a> · Updated 2026-11-04</div>
       </li>
       <li class="item" data-pr="5345">
         <a class="main" href="pr/5345/"><span class="num">#5345</span><span class="title">[CASSANDRA-19039][5.0] Fix races deleting CDC files and commit log segments</span></a>
