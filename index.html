@@ -123,7 +123,7 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     <h1>Pull request reviews</h1>
     <p class="lede">Reports on <a href="https://github.com/apache/cassandra/pulls">apache/cassandra</a> pull requests, grouped by who acts next.
       Each report is advisory; committers decide.</p>
-    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">6</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">680</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">24</span> Drafts</a></nav>
+    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">6</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">682</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">24</span> Drafts</a></nav>
   </header>
   <section class="card group" id="g-ready" aria-labelledby="h-ready">
     <div class="group-head"><h2 id="h-ready">Ready for a committer</h2><span class="count">6</span><p class="hint">A committer can act now: merge it, or run CI or vote.</p></div>
@@ -167,13 +167,43 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     </ul>
   </section>
   <section class="card group" id="g-contributor" aria-labelledby="h-contributor">
-    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">680</span><p class="hint">The contributor has fixes to make first.</p></div>
+    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">682</span><p class="hint">The contributor has fixes to make first.</p></div>
     <ul>
+      <li class="item" data-pr="5426">
+        <a class="main" href="pr/5426/"><span class="num">#5426</span><span class="title">CASSANDRA-21064: Upgrade JVector version</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">3 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 1797 lines in 33 files</span></div>
+        <div class="sub">bbotella into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21064">CASSANDRA-21064</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5426">GitHub PR</a> · Updated 2026-11-16</div>
+      </li>
+      <li class="item" data-pr="5260">
+        <a class="main" href="pr/5260/"><span class="num">#5260</span><span class="title">CASSANDRA-21755: Sanitize and bound client STARTUP options and escape formatting in ConnectedClient</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">3 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 1733 lines in 18 files</span></div>
+        <div class="sub">AshenScribe into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21755">CASSANDRA-21755</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5260">GitHub PR</a> · Updated 2026-11-16</div>
+      </li>
+      <li class="item" data-pr="5427">
+        <a class="main" href="pr/5427/"><span class="num">#5427</span><span class="title">[CASSANDRA-21892-4.1] Fix commit log page cache eviction range</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 73 lines in 4 files</span></div>
+        <div class="sub">Yukei7 into <code>cassandra-4.1</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21892">CASSANDRA-21892</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5427">GitHub PR</a> · Updated 2026-11-16</div>
+      </li>
       <li class="item" data-pr="5154">
         <a class="main" href="pr/5154/"><span class="num">#5154</span><span class="title">21460 cursor bti</span></a>
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 16467 lines in 95 files</span></div>
         <div class="sub">rustyrazorblade into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21460">CASSANDRA-21460</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5154">GitHub PR</a> · Updated 2026-11-15</div>
+          <a href="https://github.com/apache/cassandra/pull/5154">GitHub PR</a> · Updated 2026-11-16</div>
+      </li>
+      <li class="item" data-pr="5389">
+        <a class="main" href="pr/5389/"><span class="num">#5389</span><span class="title">CASSANDRA-21849: Add configurable outbound internode TCP connection rate limiter</span></a>
+        <div class="meta"><span class="chip s-fail">Not ready to merge</span><span class="count must">1 must fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 711 lines in 16 files</span></div>
+        <div class="sub">minal-kyada into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21849">CASSANDRA-21849</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5389">GitHub PR</a> · Updated 2026-11-16</div>
+      </li>
+      <li class="item" data-pr="5414">
+        <a class="main" href="pr/5414/"><span class="num">#5414</span><span class="title">CASSANDRA-21849: Add configurable outbound internode TCP connection rate limiter - 6.0</span></a>
+        <div class="meta"><span class="chip s-fail">Not ready to merge</span><span class="count must">1 must fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 711 lines in 16 files</span></div>
+        <div class="sub">minal-kyada into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21849">CASSANDRA-21849</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5414">GitHub PR</a> · Updated 2026-11-16</div>
       </li>
       <li class="item" data-pr="5425">
         <a class="main" href="pr/5425/"><span class="num">#5425</span><span class="title">CASSANDRA-21855: CMS node with the lowest NodeId can deadlock on nonPeriodicTasks when it replays a delayed log that triggers a snapshot and then drops a table (trunk)</span></a>
@@ -253,12 +283,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="sub">maedhroz into <code>cassandra-5.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21863">CASSANDRA-21863</a> ·
           <a href="https://github.com/apache/cassandra/pull/5406">GitHub PR</a> · Updated 2026-11-13</div>
       </li>
-      <li class="item" data-pr="5414">
-        <a class="main" href="pr/5414/"><span class="num">#5414</span><span class="title">CASSANDRA-21849: Add configurable outbound internode TCP connection rate limiter - 6.0</span></a>
-        <div class="meta"><span class="chip s-fail">Not ready to merge</span><span class="count must">1 must fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 677 lines in 14 files</span></div>
-        <div class="sub">minal-kyada into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21849">CASSANDRA-21849</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5414">GitHub PR</a> · Updated 2026-11-13</div>
-      </li>
       <li class="item" data-pr="5404">
         <a class="main" href="pr/5404/"><span class="num">#5404</span><span class="title">CEP-45 - data resurrection issue in journal replay (CASSANDRA-21875)</span></a>
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 2766 lines in 40 files</span></div>
@@ -318,12 +342,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 636 lines in 3 files</span></div>
         <div class="sub">Suhel-ksolves into <code>cassandra-5.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21761">CASSANDRA-21761</a> ·
           <a href="https://github.com/apache/cassandra/pull/5330">GitHub PR</a> · Updated 2026-11-11</div>
-      </li>
-      <li class="item" data-pr="5260">
-        <a class="main" href="pr/5260/"><span class="num">#5260</span><span class="title">CASSANDRA-21755: Sanitize and bound client STARTUP options and escape formatting in ConnectedClient</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">3 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 1733 lines in 18 files</span></div>
-        <div class="sub">AshenScribe into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21755">CASSANDRA-21755</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5260">GitHub PR</a> · Updated 2026-11-11</div>
       </li>
       <li class="item" data-pr="5405">
         <a class="main" href="pr/5405/"><span class="num">#5405</span><span class="title">CASSANDRA-21876: Warn instead of throw when a profiler fails the kernelParamsCheck</span></a>
@@ -396,12 +414,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 2 lines in 1 file</span></div>
         <div class="sub">smiklosovic into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21873">CASSANDRA-21873</a> ·
           <a href="https://github.com/apache/cassandra/pull/5397">GitHub PR</a> · Updated 2026-11-10</div>
-      </li>
-      <li class="item" data-pr="5389">
-        <a class="main" href="pr/5389/"><span class="num">#5389</span><span class="title">CASSANDRA-21849: Add configurable outbound internode TCP connection rate limiter</span></a>
-        <div class="meta"><span class="chip s-fail">Not ready to merge</span><span class="count must">1 must fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 677 lines in 14 files</span></div>
-        <div class="sub">minal-kyada into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21849">CASSANDRA-21849</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5389">GitHub PR</a> · Updated 2026-11-10</div>
       </li>
       <li class="item" data-pr="5388">
         <a class="main" href="pr/5388/"><span class="num">#5388</span><span class="title">CASSANDRA-21868 Fix flaky CompactionsTest.testUncheckedTombstoneSizeTieredCompaction</span></a>
