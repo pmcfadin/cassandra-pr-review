@@ -123,7 +123,7 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     <h1>Pull request reviews</h1>
     <p class="lede">Reports on <a href="https://github.com/apache/cassandra/pulls">apache/cassandra</a> pull requests, grouped by who acts next.
       Each report is advisory; committers decide.</p>
-    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">6</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">686</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">26</span> Drafts</a></nav>
+    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">6</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">688</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">26</span> Drafts</a></nav>
   </header>
   <section class="card group" id="g-ready" aria-labelledby="h-ready">
     <div class="group-head"><h2 id="h-ready">Ready for a committer</h2><span class="count">6</span><p class="hint">A committer can act now: merge it, or run CI or vote.</p></div>
@@ -167,8 +167,26 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     </ul>
   </section>
   <section class="card group" id="g-contributor" aria-labelledby="h-contributor">
-    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">686</span><p class="hint">The contributor has fixes to make first.</p></div>
+    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">688</span><p class="hint">The contributor has fixes to make first.</p></div>
     <ul>
+      <li class="item" data-pr="5435">
+        <a class="main" href="pr/5435/"><span class="num">#5435</span><span class="title">CASSANDRA-21903: FetchLogFromPeersTest.catchupCoordinatorBehindTestPlacements is flaky</span></a>
+        <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 4 lines in 1 file</span></div>
+        <div class="sub">bbotella into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21903">CASSANDRA-21903</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5435">GitHub PR</a> · Updated 2026-11-18</div>
+      </li>
+      <li class="item" data-pr="5261">
+        <a class="main" href="pr/5261/"><span class="num">#5261</span><span class="title">CASSANDRA-21756: Add configurable authentication timeout for native transport connections</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 1429 lines in 21 files</span></div>
+        <div class="sub">AshenScribe into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21756">CASSANDRA-21756</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5261">GitHub PR</a> · Updated 2026-11-18</div>
+      </li>
+      <li class="item" data-pr="5436">
+        <a class="main" href="pr/5436/"><span class="num">#5436</span><span class="title">C21905 witness paxos repair failure</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 93 lines in 2 files</span></div>
+        <div class="sub">bdeggleston into <code>cep-45-mutation-tracking</code> · no ticket ·
+          <a href="https://github.com/apache/cassandra/pull/5436">GitHub PR</a> · Updated 2026-11-18</div>
+      </li>
       <li class="item" data-pr="5430">
         <a class="main" href="pr/5430/"><span class="num">#5430</span><span class="title">CASSANDRA-21755: Sanitize and bound client STARTUP options by default</span></a>
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 1743 lines in 18 files</span></div>
@@ -840,12 +858,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 9 lines in 2 files</span></div>
         <div class="sub">AshenScribe into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21833">CASSANDRA-21833</a> ·
           <a href="https://github.com/apache/cassandra/pull/5343">GitHub PR</a> · Updated 2026-10-31</div>
-      </li>
-      <li class="item" data-pr="5261">
-        <a class="main" href="pr/5261/"><span class="num">#5261</span><span class="title">CASSANDRA-21756: Add configurable authentication timeout for native transport connections</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 411 lines in 12 files</span></div>
-        <div class="sub">AshenScribe into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21756">CASSANDRA-21756</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5261">GitHub PR</a> · Updated 2026-10-30</div>
       </li>
       <li class="item" data-pr="5337">
         <a class="main" href="pr/5337/"><span class="num">#5337</span><span class="title">CASSANDRA-21824: Fix repaired metadata preservation when scrubbing corrupted SSTables</span></a>
