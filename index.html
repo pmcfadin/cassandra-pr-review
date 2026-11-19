@@ -123,7 +123,7 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     <h1>Pull request reviews</h1>
     <p class="lede">Reports on <a href="https://github.com/apache/cassandra/pulls">apache/cassandra</a> pull requests, grouped by who acts next.
       Each report is advisory; committers decide.</p>
-    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">6</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">688</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">26</span> Drafts</a></nav>
+    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">6</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">690</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">26</span> Drafts</a></nav>
   </header>
   <section class="card group" id="g-ready" aria-labelledby="h-ready">
     <div class="group-head"><h2 id="h-ready">Ready for a committer</h2><span class="count">6</span><p class="hint">A committer can act now: merge it, or run CI or vote.</p></div>
@@ -167,8 +167,20 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     </ul>
   </section>
   <section class="card group" id="g-contributor" aria-labelledby="h-contributor">
-    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">688</span><p class="hint">The contributor has fixes to make first.</p></div>
+    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">690</span><p class="hint">The contributor has fixes to make first.</p></div>
     <ul>
+      <li class="item" data-pr="5437">
+        <a class="main" href="pr/5437/"><span class="num">#5437</span><span class="title">CASSANDRA-21897 Assorted fixes for SAI replica reconciliation with multi-cell collections and range tombstones</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 260 lines in 6 files</span></div>
+        <div class="sub">maedhroz into <code>cassandra-5.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21897">CASSANDRA-21897</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5437">GitHub PR</a> · Updated 2026-11-19</div>
+      </li>
+      <li class="item" data-pr="5438">
+        <a class="main" href="pr/5438/"><span class="num">#5438</span><span class="title">Docs cql injection guidance</span></a>
+        <div class="meta"><span class="chip s-fail">Not ready to merge</span><span class="count must">1 must fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 9 lines in 1 file</span></div>
+        <div class="sub">hack-ita into <code>trunk</code> · no ticket ·
+          <a href="https://github.com/apache/cassandra/pull/5438">GitHub PR</a> · Updated 2026-11-19</div>
+      </li>
       <li class="item" data-pr="5435">
         <a class="main" href="pr/5435/"><span class="num">#5435</span><span class="title">CASSANDRA-21903: FetchLogFromPeersTest.catchupCoordinatorBehindTestPlacements is flaky</span></a>
         <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 4 lines in 1 file</span></div>
@@ -4319,17 +4331,17 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
   <section class="card group" id="g-draft" aria-labelledby="h-draft">
     <div class="group-head"><h2 id="h-draft">Drafts</h2><span class="count">26</span><p class="hint">Early feedback only. Not a merge decision.</p></div>
     <ul>
-      <li class="item" data-pr="5429">
-        <a class="main" href="pr/5429/"><span class="num">#5429</span><span class="title">CASSANDRA-21893: PaxosState can fail to load a system.paxos row after the upgrade to 6.0 when the blob and its version column are rewritten for the same ballot (trunk)</span></a>
-        <div class="meta"><span class="chip s-na">Draft</span><span class="acts">Next: <b>Reviewers</b></span><span class="effort">Review effort: Large · 1554 lines in 9 files</span></div>
-        <div class="sub">jonmeredith into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21893">CASSANDRA-21893</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5429">GitHub PR</a> · Updated 2026-11-17</div>
-      </li>
       <li class="item" data-pr="5428">
         <a class="main" href="pr/5428/"><span class="num">#5428</span><span class="title">CASSANDRA-21893: PaxosState can fail to load a system.paxos row after the upgrade to 6.0 when the blob and its version column are rewritten for the same ballot (6.0)</span></a>
-        <div class="meta"><span class="chip s-na">Draft</span><span class="acts">Next: <b>Reviewers</b></span><span class="effort">Review effort: Large · 1554 lines in 9 files</span></div>
+        <div class="meta"><span class="chip s-na">Draft</span><span class="acts">Next: <b>Reviewers</b></span><span class="effort">Review effort: Large · 1737 lines in 9 files</span></div>
         <div class="sub">jonmeredith into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21893">CASSANDRA-21893</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5428">GitHub PR</a> · Updated 2026-11-17</div>
+          <a href="https://github.com/apache/cassandra/pull/5428">GitHub PR</a> · Updated 2026-11-19</div>
+      </li>
+      <li class="item" data-pr="5429">
+        <a class="main" href="pr/5429/"><span class="num">#5429</span><span class="title">CASSANDRA-21893: PaxosState can fail to load a system.paxos row after the upgrade to 6.0 when the blob and its version column are rewritten for the same ballot (trunk)</span></a>
+        <div class="meta"><span class="chip s-na">Draft</span><span class="acts">Next: <b>Reviewers</b></span><span class="effort">Review effort: Large · 1737 lines in 9 files</span></div>
+        <div class="sub">jonmeredith into <code>trunk</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21893">CASSANDRA-21893</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5429">GitHub PR</a> · Updated 2026-11-19</div>
       </li>
       <li class="item" data-pr="5355">
         <a class="main" href="pr/5355/"><span class="num">#5355</span><span class="title">CASSANDRA-21839 Run standalone Harry tests in CI with per-class configurations</span></a>
