@@ -11,6 +11,15 @@ from cpr.triage import triage
 from tests.helpers import SHA, SHA2, bundle
 
 LOGIN = "pmcfadin"
+ORIGIN = "git@github.com:pmcfadin/cassandra-pr-review.git"
+
+
+def setUpModule():
+    # The Pages link follows the checkout's origin; pin it so the tests do not depend on where they run.
+    for p in (mock.patch.object(comment, "origin_url", lambda: ORIGIN), mock.patch.dict(os.environ)):
+        p.start()
+        unittest.addModuleCleanup(p.stop)
+    os.environ.pop("CPR_PAGES_BASE", None)
 
 
 def make_model(head=SHA):
@@ -95,6 +104,37 @@ class Body(unittest.TestCase):
         self.assertNotIn("Reason 5", body)
         self.assertLess(body.index("Reason 0"), body.index("Reason 1"))
         self.assertIn("…", body)
+
+
+class PagesBase(unittest.TestCase):
+    def base_for(self, origin):
+        with mock.patch.object(comment, "origin_url", lambda: origin):
+            return comment.pages_base()
+
+    def test_follows_origin(self):
+        for origin in ("git@github.com:pmcfadin/cassandra-pr-review.git",
+                       "https://github.com/pmcfadin/cassandra-pr-review.git",
+                       "https://github.com/pmcfadin/cassandra-pr-review",
+                       "ssh://git@github.com/pmcfadin/cassandra-pr-review.git"):
+            self.assertEqual(self.base_for(origin), "https://pmcfadin.github.io/cassandra-pr-review/pr", origin)
+
+    def test_fork_links_to_its_own_site(self):
+        self.assertEqual(self.base_for("git@github.com:BBotella/cassandra-pr-review.git"),
+                         "https://bbotella.github.io/cassandra-pr-review/pr")
+        with mock.patch.object(comment, "origin_url", lambda: "git@github.com:bbotella/cassandra-pr-review.git"):
+            self.assertIn("https://bbotella.github.io/cassandra-pr-review/pr/5201/", comment.build_body(make_model()))
+
+    def test_user_site_repo_is_the_root(self):
+        self.assertEqual(self.base_for("git@github.com:someone/someone.github.io.git"), "https://someone.github.io/pr")
+
+    def test_env_overrides(self):
+        with mock.patch.dict(os.environ, {"CPR_PAGES_BASE": "https://reviews.example.org/pr/"}):
+            self.assertEqual(self.base_for(None), "https://reviews.example.org/pr")
+
+    def test_unknown_origin_refuses(self):
+        for origin in (None, "git@gitlab.com:someone/cassandra-pr-review.git"):
+            with self.assertRaises(comment.CommentError):
+                self.base_for(origin)
 
 
 class Plan(Base):

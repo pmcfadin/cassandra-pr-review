@@ -7,6 +7,7 @@ that one function. Writes happen only from `post`, and only when the guards pass
 import datetime
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -14,7 +15,8 @@ import tempfile
 from cpr import REPO, VERSION, net, site
 from cpr.ingest import bundle as bundle_mod
 
-PAGES_BASE = "https://pmcfadin.github.io/cassandra-pr-review/pr"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_GITHUB_REMOTE = re.compile(r"github\.com[:/]([^/]+)/([^/]+?)(?:\.git)?/?$")
 MAX_CHARS = 1500
 MAX_REASONS = 5
 PUBLISH_FIRST = "publish first: run bin/publish-pages"
@@ -40,8 +42,31 @@ def fetch_page(url):
     return net.http_get(url)
 
 
+def origin_url():
+    """URL of this checkout's `origin` remote, or None. Tests replace it."""
+    try:
+        p = subprocess.run(["git", "-C", ROOT, "remote", "get-url", "origin"], capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return p.stdout.strip() if p.returncode == 0 else None
+
+
+def pages_base():
+    """Where bin/publish-pages publishes: $CPR_PAGES_BASE, else the GitHub Pages site of this checkout's origin."""
+    env = os.environ.get("CPR_PAGES_BASE", "").strip()
+    if env:
+        return env.rstrip("/")
+    url = origin_url()
+    m = _GITHUB_REMOTE.search(url or "")
+    if not m:
+        raise CommentError(f"cannot tell where reports are published from origin {url or '(none)'}: set CPR_PAGES_BASE")
+    owner, repo = m.group(1).lower(), m.group(2)
+    host = f"{owner}.github.io"
+    return f"https://{host}/pr" if repo.lower() == host else f"https://{host}/{repo}/pr"
+
+
 def pages_url(number):
-    return f"{PAGES_BASE}/{number}/"
+    return f"{pages_base()}/{number}/"
 
 
 def marker(number, head=None):
