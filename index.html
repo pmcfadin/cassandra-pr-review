@@ -123,7 +123,7 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     <h1>Pull request reviews</h1>
     <p class="lede">Reports on <a href="https://github.com/apache/cassandra/pulls">apache/cassandra</a> pull requests, grouped by who acts next.
       Each report is advisory; committers decide.</p>
-    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">6</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">694</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">26</span> Drafts</a></nav>
+    <nav class="stats" aria-label="Groups"><a class="stat" href="#g-ready"><span class="count">6</span> Ready for a committer</a><a class="stat" href="#g-contributor"><span class="count">695</span> Waiting on the contributor</a><a class="stat" href="#g-unknown"><span class="count">2</span> Cannot tell yet</a><a class="stat" href="#g-draft"><span class="count">26</span> Drafts</a></nav>
   </header>
   <section class="card group" id="g-ready" aria-labelledby="h-ready">
     <div class="group-head"><h2 id="h-ready">Ready for a committer</h2><span class="count">6</span><p class="hint">A committer can act now: merge it, or run CI or vote.</p></div>
@@ -167,8 +167,26 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
     </ul>
   </section>
   <section class="card group" id="g-contributor" aria-labelledby="h-contributor">
-    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">694</span><p class="hint">The contributor has fixes to make first.</p></div>
+    <div class="group-head"><h2 id="h-contributor">Waiting on the contributor</h2><span class="count">695</span><p class="hint">The contributor has fixes to make first.</p></div>
     <ul>
+      <li class="item" data-pr="5443">
+        <a class="main" href="pr/5443/"><span class="num">#5443</span><span class="title">CASSANDRA-21879 6.0 Fix equals and hashCode of column constraints and document removal of custom constraint providers with TCM</span></a>
+        <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 838 lines in 19 files</span></div>
+        <div class="sub">smiklosovic into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21879">CASSANDRA-21879</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5443">GitHub PR</a> · Updated 2026-11-20</div>
+      </li>
+      <li class="item" data-pr="5440">
+        <a class="main" href="pr/5440/"><span class="num">#5440</span><span class="title">CASSANDRA-21910: Allow reading SAI index from remote storage</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 425 lines in 4 files</span></div>
+        <div class="sub">lukasz-antoniak into <code>cassandra-5.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21910">CASSANDRA-21910</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5440">GitHub PR</a> · Updated 2026-11-20</div>
+      </li>
+      <li class="item" data-pr="5394">
+        <a class="main" href="pr/5394/"><span class="num">#5394</span><span class="title">CASSANDRA-20942 6.0 Introduce the concept of locally trained compression dictionaries with promotion and discarding</span></a>
+        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 4730 lines in 39 files</span></div>
+        <div class="sub">smiklosovic into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-20942">CASSANDRA-20942</a> ·
+          <a href="https://github.com/apache/cassandra/pull/5394">GitHub PR</a> · Updated 2026-11-20</div>
+      </li>
       <li class="item" data-pr="5424">
         <a class="main" href="pr/5424/"><span class="num">#5424</span><span class="title">CASSANDRA-21855: CMS node with the lowest NodeId can deadlock on nonPeriodicTasks when it replays a delayed log that triggers a snapshot and then drops a table (6.0)</span></a>
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 264 lines in 6 files</span></div>
@@ -222,12 +240,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Medium · 93 lines in 2 files</span></div>
         <div class="sub">bdeggleston into <code>cep-45-mutation-tracking</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21905">CASSANDRA-21905</a> ·
           <a href="https://github.com/apache/cassandra/pull/5436">GitHub PR</a> · Updated 2026-11-19</div>
-      </li>
-      <li class="item" data-pr="5440">
-        <a class="main" href="pr/5440/"><span class="num">#5440</span><span class="title">CASSANDRA-21910: Allow reading SAI index from remote storage</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">2 fixs</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 314 lines in 2 files</span></div>
-        <div class="sub">lukasz-antoniak into <code>cassandra-5.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21910">CASSANDRA-21910</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5440">GitHub PR</a> · Updated 2026-11-19</div>
       </li>
       <li class="item" data-pr="5437">
         <a class="main" href="pr/5437/"><span class="num">#5437</span><span class="title">CASSANDRA-21897 Assorted fixes for SAI replica reconciliation with multi-cell collections and range tombstones</span></a>
@@ -498,12 +510,6 @@ footer { font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid var
         <div class="meta"><span class="chip s-should">Waiting for review</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Small · 372 lines in 5 files</span></div>
         <div class="sub">dipAch into <code>cassandra-5.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-21861">CASSANDRA-21861</a> ·
           <a href="https://github.com/apache/cassandra/pull/5395">GitHub PR</a> · Updated 2026-11-10</div>
-      </li>
-      <li class="item" data-pr="5394">
-        <a class="main" href="pr/5394/"><span class="num">#5394</span><span class="title">CASSANDRA-20942 6.0 Introduce the concept of locally trained compression dictionaries with promotion and discarding</span></a>
-        <div class="meta"><span class="chip s-should">Needs changes</span><span class="count">1 fix</span><span class="acts">Next: <b>Contributor</b></span><span class="effort">Review effort: Large · 2053 lines in 33 files</span></div>
-        <div class="sub">smiklosovic into <code>cassandra-6.0</code> · <a href="https://issues.apache.org/jira/browse/CASSANDRA-20942">CASSANDRA-20942</a> ·
-          <a href="https://github.com/apache/cassandra/pull/5394">GitHub PR</a> · Updated 2026-11-10</div>
       </li>
       <li class="item" data-pr="5396">
         <a class="main" href="pr/5396/"><span class="num">#5396</span><span class="title">[CASSANDRA-21861] Fix CONTAINS and CONTAINS KEY on an unindexed frozen collection in queries driven by a SAI index</span></a>
