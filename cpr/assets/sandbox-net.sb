@@ -1,9 +1,11 @@
-;; NET variant of sandbox.sb: identical except no `(deny network*)` and the extra writable GRADLE dir (GRADLE_USER_HOME).
-;; Used only to build the accord submodule (source cloned by the trusted pre-step). A unit test keeps it in step.
+;; NET variant of sandbox.sb: identical except no `(deny network*)`. Used only for trusted code: the accord submodule
+;; (source cloned by the trusted pre-step), a Gradle project's dependency resolution at the merge-base, and the
+;; in-JVM dtest jar a subproject's tests compile against. A unit test keeps it in step.
 (version 1)
-;; Profile for every step that runs a PR's code (ant, javac, JUnit). Parameters are absolute, normalized paths:
-;; WT build clone, M2 Maven repository copy, GIT the build clone's repository dir, HOME, ROOT this tool's checkout,
-;; WORK the work directory, RUN this run's directory, OBJECTS the fetch clone's object store (alternates).
+;; Profile for every step that runs a PR's code (ant, gradle, javac, JUnit). Parameters are absolute, normalized paths:
+;; WT build clone, M2 Maven repository copy, GRADLE the run's GRADLE_USER_HOME, GIT the build clone's repository dir,
+;; HOME, ROOT this tool's checkout, WORK the work directory, RUN this run's directory, OBJECTS the fetch clone's
+;; object store (alternates).
 (allow default)
 (allow network-bind)
 (allow network-inbound)

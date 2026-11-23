@@ -9,34 +9,36 @@ import os
 import re
 import time
 
-from cpr import REPO, VERSION, staticanalysis
-from cpr.ingest import ci_summary, clone, github, history as history_mod, jira, keys, roster
+from cpr import VERSION, layout, project as project_mod, staticanalysis
+from cpr.ingest import ci_summary, clone, gh_checks, github, history as history_mod, jira, keys, roster
 from cpr.net import NetError, Recorder, http_get
 
 BUNDLE_SCHEMA = 1
-_PR_URL_RE = re.compile(rf"https://github\.com/{re.escape(REPO)}/pull/(\d+)")
-_CHECKSTYLE = ".build/checkstyle.xml"
 
 
 class IngestError(Exception):
     pass
 
 
-def pr_dir(work_dir, number):
-    return os.path.join(work_dir, "pr", str(number))
+def pr_dir(work_dir, slug, number):
+    return layout.pr_dir(work_dir, slug, number)
 
 
-def latest_bundle_path(work_dir, number):
-    return os.path.join(pr_dir(work_dir, number), "latest", "bundle.json")
+def latest_bundle_path(work_dir, slug, number):
+    return os.path.join(pr_dir(work_dir, slug, number), "latest", "bundle.json")
 
 
-def _sibling(number, recorder, key):
+def _pr_url_re(project):
+    return re.compile(rf"https://github\.com/{re.escape(project.repo)}/pull/(\d+)")
+
+
+def _sibling(project, number, recorder, key):
     """The PR as a sibling record, or None when its own resolved key is a different ticket."""
     try:
-        pr = github.fetch_pr(number, recorder)
+        pr = github.fetch_pr(project.repo, number, recorder)
     except (github.PRNotFound, NetError):
         return None
-    resolved = keys.resolve(pr["title"], pr["head_ref"], pr["body"], [])
+    resolved = keys.resolve(pr["title"], pr["head_ref"], pr["body"], [], project)
     if resolved["key"] != key:
         return None
     return {
@@ -51,14 +53,15 @@ def _sibling(number, recorder, key):
     }
 
 
-def discover_siblings(pr, key, ticket, recorder):
+def discover_siblings(project, pr, key, ticket, recorder):
     numbers = set()
+    url_re = _pr_url_re(project)
     for link in (ticket or {}).get("remotelinks", []):
-        m = _PR_URL_RE.match(link.get("url") or "")
+        m = url_re.match(link.get("url") or "")
         if m:
             numbers.add(int(m.group(1)))
     try:
-        numbers.update(github.search_pr_numbers(key, recorder))
+        numbers.update(github.search_pr_numbers(project.repo, key, recorder))
     except NetError:
         pass
     numbers.discard(pr["number"])
@@ -68,7 +71,7 @@ def discover_siblings(pr, key, ticket, recorder):
         "head_sha": pr["head_sha"], "is_self": True,
     }]
     for n in sorted(numbers):
-        s = _sibling(n, recorder, key)
+        s = _sibling(project, n, recorder, key)
         if s:
             s["is_self"] = False
             siblings.append(s)
@@ -108,23 +111,24 @@ def collect_ci(ticket, siblings, recorder):
     return {"status": "ok", "summaries": summaries, "result_archives": archives}
 
 
-def voter_emails(pr, reviews, recorder):
+def voter_emails(project, pr, reviews, recorder):
     """Commit emails for the PR author and every GitHub approver, used to match ASF ids."""
     logins = {pr["author"]} | {r["user"] for r in reviews if r["state"] == "APPROVED"}
-    return {login: github.commit_emails_for(login, recorder) for login in sorted(filter(None, logins))}
+    return {login: github.commit_emails_for(project.repo, login, recorder) for login in sorted(filter(None, logins))}
 
 
-def ingest(number, work_dir, log=print):
-    """Fetch everything for PR `number` and return the bundle. Raw responses go under work_dir."""
-    raw = Recorder(os.path.join(pr_dir(work_dir, number), "raw"))
-    log(f"fetching PR #{number}")
-    pr = github.fetch_pr(number, raw)
-    commits = github.fetch_commits(number, raw)
-    reviews = github.fetch_reviews(number, raw)
-    review_comments = github.fetch_review_comments(number, raw)
-    issue_comments = github.fetch_issue_comments(number, raw)
+def ingest(project, number, work_dir, log=print):
+    """Fetch everything for `project` PR `number` and return the bundle. Raw responses go under work_dir."""
+    repo = project.repo
+    raw = Recorder(os.path.join(pr_dir(work_dir, project.slug, number), "raw"))
+    log(f"fetching {repo}#{number}")
+    pr = github.fetch_pr(repo, number, raw)
+    commits = github.fetch_commits(repo, number, raw)
+    reviews = github.fetch_reviews(repo, number, raw)
+    review_comments = github.fetch_review_comments(repo, number, raw)
+    issue_comments = github.fetch_issue_comments(repo, number, raw)
 
-    key_info = keys.resolve(pr["title"], pr["head_ref"], pr["body"], [c["message"] for c in commits])
+    key_info = keys.resolve(pr["title"], pr["head_ref"], pr["body"], [c["message"] for c in commits], project)
     jira_info = {"status": "skipped", "ticket": None, "error": "no JIRA key"}
     if key_info["key"]:
         log(f"fetching {key_info['key']}")
@@ -134,30 +138,35 @@ def ingest(number, work_dir, log=print):
     siblings = []
     if key_info["key"]:
         log("finding sibling PRs")
-        siblings = discover_siblings(pr, key_info["key"], ticket, raw)
+        siblings = discover_siblings(project, pr, key_info["key"], ticket, raw)
     else:
         siblings = [{"number": pr["number"], "url": pr["url"], "title": pr["title"], "base": pr["base"],
                      "state": pr["state"], "merged": pr["merged"], "draft": pr["draft"],
                      "head_sha": pr["head_sha"], "is_self": True}]
 
-    ci = {"status": "skipped" if not key_info["key"] else ("unavailable" if jira_info["status"] == "unavailable" else "ok"),
-          "summaries": [], "result_archives": []}
-    if ticket:
-        log("reading CI summaries")
-        ci = collect_ci(ticket, siblings, raw)
+    if project.ci_provider == "github-checks":
+        log("reading GitHub checks of the head")
+        gh = gh_checks.fetch(repo, pr["head_sha"], raw)
+        ci = {"status": gh["status"], "provider": "github-checks", "github": gh, "summaries": [], "result_archives": []}
+    else:
+        ci = {"status": "skipped" if not key_info["key"] else ("unavailable" if jira_info["status"] == "unavailable" else "ok"),
+              "summaries": [], "result_archives": []}
+        if ticket:
+            log("reading CI summaries")
+            ci = collect_ci(ticket, siblings, raw)
 
     log("updating local clone")
-    clone_path = os.path.join(work_dir, "cassandra")
-    clone.ensure(clone_path)
+    clone_path = layout.clone_dir(work_dir, project)
+    clone.ensure(clone_path, repo)
     clone.fetch(clone_path, number, pr["base"])
     mb = clone.merge_base(clone_path, number, pr["base"])
     files = clone.changed_files(clone_path, mb, number)
     diff_text = clone.diff(clone_path, mb, number)
-    checkstyle_xml = clone.show(clone_path, clone.base_ref(pr["base"]), _CHECKSTYLE)
+    checkstyle_xml = clone.show(clone_path, clone.base_ref(pr["base"]), project.static["checkstyle"]["configs"]["main"])
     changes_head = clone.show(clone_path, clone.base_ref(pr["base"]), "CHANGES.txt")
 
     log("reading history of the changed code")
-    history = history_mod.gather(clone_path, mb, diff_text, files)
+    history = history_mod.gather(clone_path, mb, diff_text, files, project=project)
     if history["keys"]:
         try:
             history["tickets"] = jira.lookup_keys(history["keys"], raw)
@@ -165,16 +174,17 @@ def ingest(number, work_dir, log=print):
             history["tickets_error"] = str(e)
 
     roster_info = roster.load(os.path.join(work_dir, "roster.json"))
-    emails = voter_emails(pr, reviews, raw)
+    emails = voter_emails(project, pr, reviews, raw)
 
     git_info = {"merge_base": mb, "head_ref": clone.pr_ref(number), "clone": clone_path}
     log("running static analysis")
-    static = staticanalysis.analyze({"pr": pr, "git": git_info}, work_dir, log=log)
+    static = staticanalysis.analyze({"meta": {"project": project.slug, "repo": repo}, "pr": pr, "git": git_info},
+                                    work_dir, log=log)
 
     return {
         "schema": BUNDLE_SCHEMA,
         "meta": {"tool_version": VERSION, "fetched_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                 "repo": REPO},
+                 "project": project.slug, "repo": repo},
         "pr": pr,
         "commits": commits,
         "reviews": reviews,
@@ -202,9 +212,8 @@ def ingest(number, work_dir, log=print):
 
 
 def save(bundle, work_dir):
-    number = bundle["pr"]["number"]
-    sha = bundle["pr"]["head_sha"]
-    paths = [os.path.join(pr_dir(work_dir, number), sha, "bundle.json"), latest_bundle_path(work_dir, number)]
+    slug, number, sha = project_mod.of(bundle).slug, bundle["pr"]["number"], bundle["pr"]["head_sha"]
+    paths = [os.path.join(pr_dir(work_dir, slug, number), sha, "bundle.json"), latest_bundle_path(work_dir, slug, number)]
     for path in paths:
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w") as f:
@@ -212,11 +221,13 @@ def save(bundle, work_dir):
     return paths[0]
 
 
-def load_cached(work_dir, number):
-    path = latest_bundle_path(work_dir, number)
+def load_cached(work_dir, slug, number):
+    path = latest_bundle_path(work_dir, slug, number)
     if not os.path.exists(path):
-        raise IngestError(f"no cached ingest for PR #{number} in {work_dir}; run without --offline first")
+        raise IngestError(f"no cached ingest for {slug}#{number} in {work_dir}; run without --offline first")
     with open(path) as f:
         bundle = json.load(f)
+    if project_mod.of(bundle).slug != slug:
+        raise IngestError(f"{path} holds a {project_mod.of(bundle).slug} PR, not {slug}#{number}")
     bundle["static_analysis"] = staticanalysis.load_cached(bundle)
     return bundle

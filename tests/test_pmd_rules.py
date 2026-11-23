@@ -238,7 +238,8 @@ class RulesSection(unittest.TestCase):
         base = {"src/java/A.java": entry()}
         with tempfile.TemporaryDirectory() as d, mock.patch.object(sa_mod.baseline, "obtain", return_value=obtained), \
                 mock.patch.object(sa_mod.clone_mod, "_git", return_value="a" * 40 + "\n"):
-            return sa_mod._rules(cfg, d, "repo", "trunk", changed, base, head, {"src/java/A.java": [(1, 10)]},
+            from cpr import project
+            return sa_mod._rules(project.load("cassandra"), cfg, d, "repo", "trunk", changed, base, head, {"src/java/A.java": [(1, 10)]},
                                  ("pmd-7", RULESET, "f" * 40, True, None, "no build; without type info: x"), {}, "pmd", lambda m: None,
                                  self.root)
 
@@ -268,21 +269,21 @@ class RulesSection(unittest.TestCase):
 
 class Aux(unittest.TestCase):
     def status(self, d, number, head, **kw):
-        p = os.path.join(d, "build-runs", str(number), head)
+        p = os.path.join(d, "build-runs", "cassandra", str(number), head)
         os.makedirs(p)
         with open(os.path.join(p, "status.json"), "w") as f:
             json.dump({"head": head, "status": "pass", **kw}, f)
 
     def test_without_a_build_there_is_no_classpath_and_the_note_says_why(self):
         with tempfile.TemporaryDirectory() as d:
-            cp, note = auxpath.resolve(d, 1, "h" * 40)
+            cp, note = auxpath.resolve(d, "cassandra", 1, "h" * 40)
         self.assertIsNone(cp)
         self.assertIn("without type info", note)
 
     def test_a_build_that_did_not_keep_its_classes_gives_none(self):
         with tempfile.TemporaryDirectory() as d:
             self.status(d, 1, "h" * 40)
-            cp, note = auxpath.resolve(d, 1, "h" * 40)
+            cp, note = auxpath.resolve(d, "cassandra", 1, "h" * 40)
         self.assertIsNone(cp)
         self.assertIn("did not keep", note)
 
@@ -292,14 +293,14 @@ class Aux(unittest.TestCase):
             os.makedirs(classes)
             open(jar, "w").close()
             self.status(d, 1, "h" * 40, classpath={"classes": [classes, os.path.join(d, "gone")], "jars": [jar, os.path.join(d, "x.jar")]})
-            cp, note = auxpath.resolve(d, 1, "h" * 40)
+            cp, note = auxpath.resolve(d, "cassandra", 1, "h" * 40)
         self.assertEqual(cp, os.pathsep.join([classes, jar]))
         self.assertIn("with type info", note)
 
     def test_a_status_for_another_head_is_ignored(self):
         with tempfile.TemporaryDirectory() as d:
             self.status(d, 1, "a" * 40, classpath={"classes": [d], "jars": []})
-            self.assertIsNone(auxpath.resolve(d, 1, "b" * 40)[0])
+            self.assertIsNone(auxpath.resolve(d, "cassandra", 1, "b" * 40)[0])
 
 
 def rule(name, cat, n, tests=0, house=False, locs=None):
@@ -446,8 +447,10 @@ class Rate(unittest.TestCase):
                 os.makedirs(os.path.dirname(os.path.join(d, rel)), exist_ok=True)
                 with open(os.path.join(d, rel), "w") as f:
                     f.write(text)
-            changed = [{"path": "src/java/A.java", "status": "M"}, {"path": "src/java/N.java", "status": "A"},
-                       {"path": "test/unit/T.java", "status": "A"}, {"path": "src/java/Gone.java", "status": "D"}]
+            changed = [{"path": "src/java/A.java", "status": "M", "test": False},
+                       {"path": "src/java/N.java", "status": "A", "test": False},
+                       {"path": "test/unit/T.java", "status": "A", "test": True},
+                       {"path": "src/java/Gone.java", "status": "D", "test": False}]
             # A: lines 2-5 added = "", b, "  ", c -> two non-blank; N: whole file, three non-blank
             self.assertEqual(rate.added_production_loc(changed, {"src/java/A.java": [(2, 5)]}, d), 5)
 

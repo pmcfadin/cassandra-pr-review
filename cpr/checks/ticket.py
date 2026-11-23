@@ -35,18 +35,19 @@ def _jira_unknown(ctx):
     return None
 
 
-@check("jira.key-present", "PR references a CASSANDRA ticket", "ticket", "jira", blocking=True)
+@check("jira.key-present", "PR references a {key} ticket", "ticket", "jira", blocking=True)
 def key_present(bundle, ctx):
     info = bundle["jira_key"]
     base = ctx.pr["base"]
     if info["key"]:
         return Result("pass", f"{info['key']} found in {', '.join(info['sources'])}")
+    k = ctx.project.jira_keys[0]
     if not is_release_branch(base):
-        return Result("warn", f"No CASSANDRA ticket, but the base `{base}` is a feature branch",
+        return Result("warn", f"No {k} ticket, but the base `{base}` is a feature branch",
                       action="Feature-branch work often has no ticket; add one if the work will reach trunk.",
                       blocking=False)
-    return Result("fail", "No CASSANDRA-NNNNN key in the title, branch, body, or commits",
-                  action="Create or find the JIRA ticket and put its key in the PR title, e.g. `CASSANDRA-12345: <summary>`.")
+    return Result("fail", f"No {ctx.project.key_placeholder} key in the title, branch, body, or commits",
+                  action=f"Create or find the JIRA ticket and put its key in the PR title, e.g. `{k}-12345: <summary>`.")
 
 
 @check("jira.ticket-exists", "Ticket exists in JIRA", "ticket", "jira", blocking=True)
@@ -122,7 +123,7 @@ def branch_coverage(bundle, ctx):
         return Result("not-applicable", "Fix Version is not set, so the expected branches are unknown")
     missing = [b for b in wanted if b not in have]
     if missing:
+        order = " (merge order 4.0 → 4.1 → 5.0 → 6.0 → trunk)" if any(b != "trunk" for b in branches) else ""
         return Result("warn", f"No PR yet for {', '.join('`' + b + '`' for b in missing)}", evidence,
-                      action="Open a PR per missing branch (merge order 4.0 → 4.1 → 5.0 → 6.0 → trunk), "
-                             "or explain on the ticket why it is not needed.")
+                      action=f"Open a PR per missing branch{order}, or explain on the ticket why it is not needed.")
     return Result("pass", f"PRs exist for all {len(wanted)} Fix Version branches", evidence)

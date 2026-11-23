@@ -1,0 +1,101 @@
+{
+ "tier": "medium",
+ "lines": 128,
+ "notes": [],
+ "lenses": {
+  "cass-logic-boundary": {
+   "status": "ok",
+   "files": [
+    "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/S1-347/1/refdir/.claude/skills/shallow-review/references/general/specialists/logic.md",
+    "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/S1-347/1/refdir/.claude/skills/shallow-review/references/general/specialists/boundary.md",
+    "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/S1-347/1/refdir/.claude/skills/targeted-review/references/categories/conditions-and-predicates.md"
+   ],
+   "categories": [
+    "conditions-and-predicates"
+   ],
+   "focus": [],
+   "not_reviewed": [],
+   "missing": [],
+   "error": null
+  },
+  "cass-concurrency-lifecycle": {
+   "status": "ok",
+   "files": [
+    "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/S1-347/1/refdir/.claude/skills/shallow-review/references/general/specialists/concurrency.md",
+    "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/S1-347/1/refdir/.claude/skills/targeted-review/references/categories/concurrency-and-locking.md",
+    "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/S1-347/1/refdir/sidecar/CONTRIBUTING.md",
+    "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/S1-347/1/refdir/sidecar/docs/vertx-threading-model.md"
+   ],
+   "categories": [
+    "concurrency-and-locking"
+   ],
+   "focus": [],
+   "not_reviewed": [],
+   "missing": [],
+   "error": null
+  },
+  "cass-persistence-compat": {
+   "status": "ok",
+   "files": [
+    "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/S1-347/1/refdir/.claude/skills/shallow-review/references/general/specialists/resources.md",
+    "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/S1-347/1/refdir/sidecar/CONTRIBUTING.md",
+    "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/S1-347/1/refdir/sidecar/OPENAPI.md"
+   ],
+   "categories": [],
+   "focus": [],
+   "not_reviewed": [],
+   "missing": [],
+   "error": null
+  },
+  "cass-completeness-symmetry": {
+   "status": "ok",
+   "files": [
+    "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/S1-347/1/refdir/.claude/skills/shallow-review/references/general/specialists/absence.md",
+    "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/S1-347/1/refdir/.claude/skills/shallow-review/references/general/specialists/completeness.md",
+    "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/S1-347/1/refdir/.claude/skills/targeted-review/references/categories/api-contracts-and-completeness.md",
+    "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/S1-347/1/refdir/sidecar/CONTRIBUTING.md",
+    "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/S1-347/1/refdir/sidecar/OPENAPI.md"
+   ],
+   "categories": [
+    "api-contracts-and-completeness"
+   ],
+   "focus": [],
+   "not_reviewed": [],
+   "missing": [],
+   "error": null
+  },
+  "cass-test-regime": {
+   "status": "ok",
+   "files": [
+    "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/S1-347/1/refdir/sidecar/TESTING.md"
+   ],
+   "categories": [],
+   "focus": [],
+   "not_reviewed": [],
+   "missing": [],
+   "error": null
+  },
+  "cassandra-standards": {
+   "status": "ok",
+   "files": [
+    "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/S1-347/1/refdir/sidecar/CONTRIBUTING.md",
+    "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/S1-347/1/refdir/sidecar/TESTING.md"
+   ],
+   "categories": [],
+   "focus": [],
+   "not_reviewed": [],
+   "missing": [],
+   "error": null
+  }
+ },
+ "checklists": {
+  "sha": "66d056b803d5928bd5725e8291013914906390f1",
+  "refdir": "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/S1-347/1/refdir",
+  "missing": [],
+  "guides": {
+   "repo": "apache/cassandra-sidecar",
+   "sha": "19e3143801e497534d441dd53c04155ee87e98ef",
+   "missing": []
+  }
+ }
+}

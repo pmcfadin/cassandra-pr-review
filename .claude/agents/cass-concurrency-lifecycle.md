@@ -14,7 +14,10 @@ your lane and do not duplicate them. You are read-only.
 - `base`: the merge-base sha. The patch is `git -C <worktree> diff <base>...HEAD`.
 - `context`: a markdown file with the PR description, the JIRA ticket, and checks already run.
 - `refdir`: the trusted directory of checklist files, written by the tool from the Cassandra trunk
-  at a pinned commit. It is outside the worktree.
+  at a pinned commit. It is outside the worktree. For a Sidecar or Analytics PR it also holds that
+  project's own guides from its trunk, under `refdir/<project>/`.
+- `project`: the project the PR belongs to: Cassandra, Cassandra Sidecar or Cassandra Analytics.
+- `standards`: absolute path of the project's standards file. It is trusted like the refdir.
 - `bundle`: the list of checklist files under `refdir` to apply. It may also give `categories`
   (named defect categories to check first), `focus` (files to review in depth) and
   `not_reviewed` (files the tool already decided to skip).
@@ -40,7 +43,9 @@ your lane and do not duplicate them. You are read-only.
 3. Tier `small`: read the whole diff. Tier `medium`: the whole diff, checking `categories` first.
    Tier `large`: you cannot read everything; review the `focus` files in depth, skim the rest, and
    list every file in `not_reviewed` plus any you skipped in the summary.
-4. Look for these in particular:
+4. Look for these in particular. Items marked *(Cassandra)* apply only to apache/cassandra PRs. For a
+   Sidecar or Analytics PR, skip them and also apply every bullet under `### cass-concurrency-lifecycle` in the
+   `## Lens notes` section of `standards`; the unmarked items apply to every project.
    - Races and shared state: check-then-act on shared fields, non-atomic compound updates, unsafe
      publication, collections shared across threads, visibility without volatile or a lock, state
      read twice that can change between the reads.

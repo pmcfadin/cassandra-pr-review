@@ -1,0 +1,524 @@
+{
+ "status": "ran",
+ "complete": true,
+ "approved": false,
+ "counts": {
+  "blocker": 0,
+  "major": 7,
+  "minor": 2,
+  "nit": 4
+ },
+ "issues": [
+  {
+   "id": "issue-1",
+   "severity": "major",
+   "severity_spread": [
+    "major",
+    "major",
+    "major",
+    "major",
+    "major"
+   ],
+   "lenses": [
+    "cassandra-standards",
+    "cass-logic-boundary",
+    "cass-concurrency-lifecycle",
+    "cass-persistence-compat",
+    "cass-completeness-symmetry"
+   ],
+   "rule": "Derived cache invalidated before its source is updated (logic checklist 30; conditions and predicates)",
+   "problem": "addExcludedMetricIfNotExists sets allMetrics = null inside the computeIfAbsent mapping function, which runs before ConcurrentHashMap inserts the new entry. Trigger: thread A calls counter(\"excluded.x\") for the first time and nulls the cache. Before A's computeIfAbsent returns, thread B calls getMetrics(), rebuilds the snapshot from excludedMetrics (which does not yet contain the entry) and stores it in allMetrics. A then inserts the entry and nothing invalidates again. getMetrics() keeps returning a map without the excluded metric until some unrelated register() or remove() happens. That defeats the documented purpose of getMetrics(), which is to include excluded metrics so they are not re-registered. register() is not affected because it invalidates again after registerInternal returns; the counter/histogram/meter/timer/gauge paths are.",
+   "fix": "Invalidate after the insert. Call excludedMetrics.computeIfAbsent(...) first, and when it newly added the entry, set allMetrics = null after it returns. For example, record a flag in the mapping lambda, then invalidate once computeIfAbsent has returned. This also removes the synchronized block from inside the CHM mapping function.",
+   "location": "server/src/main/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistry.java:286",
+   "locations": [
+    "server/src/main/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistry.java:289",
+    "server/src/main/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistry.java:286",
+    "server/src/main/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistry.java:293"
+   ],
+   "also_fixes": [
+    {
+     "lens": "cassandra-standards",
+     "fix": "Call computeIfAbsent first, and invalidate allMetrics after it returns (only when the metric was newly added, for example by tracking that inside the mapping function). That way a snapshot taken after the invalidation sees the entry."
+    },
+    {
+     "lens": "cass-concurrency-lifecycle",
+     "fix": "Invalidate after the map insert. Call excludedMetrics.computeIfAbsent(...) without side effects, then do `synchronized (this) { allMetrics = null; }` after it returns. Skip the invalidation if the returned instance was not newly created, or invalidate unconditionally, which is harmless. This also removes the monitor acquisition from inside the ConcurrentHashMap bin lock."
+    },
+    {
+     "lens": "cass-persistence-compat",
+     "fix": "Invalidate after the insert: call excludedMetrics.computeIfAbsent(...) with a pure mapping function, and if the returned instance is the newly created one (or simply always when the key was absent), then synchronized(this){ allMetrics = null; }. Alternatively do the put and the invalidation in one synchronized block on the same lock getMetrics() uses, or use a version counter compared when publishing the rebuilt map."
+    },
+    {
+     "lens": "cass-completeness-symmetry",
+     "fix": "Do the invalidation after computeIfAbsent returns, for example: Metric m = excludedMetrics.computeIfAbsent(name, mappingFunction); invalidate(); return m. Alternatively invalidate in a try/finally around it. Extract a shared invalidateAllMetrics() helper for the four call sites."
+    }
+   ],
+   "members": [
+    {
+     "lens": "cass-logic-boundary",
+     "id": "lb-1"
+    },
+    {
+     "lens": "cassandra-standards",
+     "id": "cs-1"
+    },
+    {
+     "lens": "cass-concurrency-lifecycle",
+     "id": "cl-1"
+    },
+    {
+     "lens": "cass-persistence-compat",
+     "id": "pc-1"
+    },
+    {
+     "lens": "cass-completeness-symmetry",
+     "id": "cs-1"
+    }
+   ],
+   "impact": "silent-wrong-result",
+   "confidence": "medium",
+   "title": "Invalidate cached allMetrics after the excluded metric is inserted, not before"
+  },
+  {
+   "id": "issue-2",
+   "severity": "major",
+   "severity_spread": [
+    "major",
+    "nit"
+   ],
+   "lenses": [
+    "cassandra-standards",
+    "cass-completeness-symmetry"
+   ],
+   "rule": "Scope: unrelated changes mixed into the patch (sidecar standards, Scope)",
+   "problem": "The patch caches PeriodicTaskKey.hashCode, which is unrelated to FilteringMetricRegistry. CASSSIDECAR-347 does not mention it and gives no profiling evidence for it. This is a drive-by optimisation.",
+   "fix": "Drop the PeriodicTaskExecutor change from this PR, or move it to its own ticket with its own justification.",
+   "location": "server/src/main/java/org/apache/cassandra/sidecar/tasks/PeriodicTaskExecutor.java:302",
+   "locations": [
+    "server/src/main/java/org/apache/cassandra/sidecar/tasks/PeriodicTaskExecutor.java:302"
+   ],
+   "also_fixes": [
+    {
+     "lens": "cass-completeness-symmetry",
+     "fix": "Drop it from this patch, or mention it in the PR description and the ticket."
+    }
+   ],
+   "members": [
+    {
+     "lens": "cassandra-standards",
+     "id": "cs-2"
+    },
+    {
+     "lens": "cass-completeness-symmetry",
+     "id": "cs-2"
+    }
+   ],
+   "impact": null,
+   "confidence": null,
+   "title": "Split the PeriodicTaskKey hashCode caching out of this patch"
+  },
+  {
+   "id": "issue-3",
+   "severity": "major",
+   "severity_spread": [
+    "major"
+   ],
+   "lenses": [
+    "cass-test-regime"
+   ],
+   "rule": "Test must be able to fail; assertions check the outcome",
+   "problem": "pool.submit(...) at line 338 discards the returned Future. The assertThat(registry.getMetrics()).isNotEmpty() on line 346 runs inside the task, so an AssertionError or any other exception there is swallowed by the executor and the test still passes. The assertion is also trivially true, because the calling thread has just registered a metric. The test therefore does not check what getMetrics() returns while registrations are in flight. The only real check is the single getMetrics() call after awaitTermination.",
+   "fix": "Collect the Futures and call get() on each, or record the Throwables in a queue and assert it is empty. Replace isNotEmpty() with an assertion that can fail under a race, for example that the map contains the metric this thread just registered.",
+   "location": "server/src/test/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistryTest.java:346",
+   "locations": [
+    "server/src/test/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistryTest.java:346"
+   ],
+   "also_fixes": [],
+   "members": [
+    {
+     "lens": "cass-test-regime",
+     "id": "tr-1"
+    }
+   ],
+   "impact": "silent-wrong-result",
+   "confidence": "high",
+   "title": "Surface failures from worker threads in the concurrent registration test"
+  },
+  {
+   "id": "issue-4",
+   "severity": "minor",
+   "severity_spread": [
+    "minor"
+   ],
+   "lenses": [
+    "cass-test-regime"
+   ],
+   "rule": "Coverage of the change; timing-sensitive tests need evidence of repeated runs",
+   "problem": "The cache is invalidated in addExcludedMetricIfNotExists before the metric is inserted into excludedMetrics, and in register/remove only after the mutation. In the removal test (line 374) getMetrics() is called only before the threads start and after they finish, never concurrently with remove(). In the registration test each thread calls getMetrics() once, right after its own register(). A stale cache, for example one that misses an excluded metric because getMetrics() ran between the invalidation and the insert, would only show up as a lost or extra entry in the final call, and only in a rare interleaving. The test would almost always pass against a faulty invalidation order. Nothing in the PR shows repeated runs, and the 100-thread, latch-released tests are timing-sensitive.",
+   "fix": "Add a reader thread that loops on getMetrics() while writers register and remove. After all writers finish, assert the final map equals the expected key set. Run the test in a repeated loop (for example @RepeatedTest) or show repeated-run evidence in the PR.",
+   "location": "server/src/test/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistryTest.java:327",
+   "locations": [
+    "server/src/test/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistryTest.java:327"
+   ],
+   "also_fixes": [],
+   "members": [
+    {
+     "lens": "cass-test-regime",
+     "id": "tr-2"
+    }
+   ],
+   "impact": null,
+   "confidence": "medium",
+   "title": "Interleave getMetrics reads with writers in the concurrency tests"
+  },
+  {
+   "id": "issue-5",
+   "severity": "minor",
+   "severity_spread": [
+    "minor"
+   ],
+   "lenses": [
+    "cass-test-regime"
+   ],
+   "rule": "Coverage of the change: new branches and boundaries are exercised",
+   "problem": "remove() was rewritten with two branches: excluded metric present, or fall back to super.remove(). It also gained a new return-value contract (true if removed). The test discards the return value and asserts only the final map sizes. It never checks that removing a missing name returns false, or that getMetrics() drops a removed excluded or included metric on the very next call. A stale cached map after a single remove() would not be caught on the deterministic path.",
+   "fix": "Add a deterministic test: register an included and an excluded metric, call getMetrics(), then remove each and assert the return value is true and the next getMetrics() omits it. Assert that removing an unknown name returns false.",
+   "location": "server/src/test/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistryTest.java:374",
+   "locations": [
+    "server/src/test/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistryTest.java:374"
+   ],
+   "also_fixes": [],
+   "members": [
+    {
+     "lens": "cass-test-regime",
+     "id": "tr-3"
+    }
+   ],
+   "impact": null,
+   "confidence": "medium",
+   "title": "Assert remove() return values and the cache refresh after removal"
+  },
+  {
+   "id": "issue-6",
+   "severity": "nit",
+   "severity_spread": [
+    "nit"
+   ],
+   "lenses": [
+    "cassandra-standards"
+   ],
+   "rule": "Code style: needless complexity",
+   "problem": "The reassignment 'allMetrics = existingAllMetrics = Collections.unmodifiableMap(...)' and the else branch that re-reads the field make the method harder to follow. The method also now also performs the initial copy while holding the registry monitor.",
+   "fix": "Use a local variable for the built map, assign it to the field once, and return it.",
+   "location": "server/src/main/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistry.java:166",
+   "locations": [
+    "server/src/main/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistry.java:166"
+   ],
+   "also_fixes": [],
+   "members": [
+    {
+     "lens": "cassandra-standards",
+     "id": "cs-3"
+    }
+   ],
+   "impact": "cosmetic",
+   "confidence": "high",
+   "title": "Simplify the double-checked locking in getMetrics"
+  },
+  {
+   "id": "issue-7",
+   "severity": "nit",
+   "severity_spread": [
+    "nit"
+   ],
+   "lenses": [
+    "cass-concurrency-lifecycle"
+   ],
+   "rule": "Lock on a private monitor, not the publicly reachable instance",
+   "problem": "The cache is guarded by the registry's own monitor. The registry is a public object handed to Vert.x/Dropwizard reporters, so any external code that synchronizes on it can stall getMetrics and every register/remove. This is speculative, because I found no such caller.",
+   "fix": "Guard the cache with a private final Object lock, or avoid the lock entirely by invalidating through an AtomicReference with compareAndSet.",
+   "location": "server/src/main/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistry.java:172",
+   "locations": [
+    "server/src/main/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistry.java:172"
+   ],
+   "also_fixes": [],
+   "members": [
+    {
+     "lens": "cass-concurrency-lifecycle",
+     "id": "cl-2"
+    }
+   ],
+   "impact": "performance",
+   "confidence": "low",
+   "title": "Use a private lock object instead of synchronized(this)"
+  },
+  {
+   "id": "issue-8",
+   "severity": "nit",
+   "severity_spread": [
+    "nit"
+   ],
+   "lenses": [
+    "cass-test-regime"
+   ],
+   "rule": "Coverage of the change",
+   "problem": "The point of the change is that getMetrics() returns a precomputed map until the registry changes. No test checks that two consecutive calls with no mutation return the same instance, or that a mutation produces a new one. A regression back to rebuilding the map on every call would pass every new test.",
+   "fix": "Add assertThat(registry.getMetrics()).isSameAs(registry.getMetrics()) with no mutation in between, and isNotSameAs after a register().",
+   "location": "server/src/test/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistryTest.java:255",
+   "locations": [
+    "server/src/test/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistryTest.java:255"
+   ],
+   "also_fixes": [],
+   "members": [
+    {
+     "lens": "cass-test-regime",
+     "id": "tr-4"
+    }
+   ],
+   "impact": null,
+   "confidence": "low",
+   "title": "Assert that getMetrics() returns the cached map between mutations"
+  }
+ ],
+ "issue_counts": {
+  "blocker": 0,
+  "major": 3,
+  "minor": 2,
+  "nit": 3
+ },
+ "must_fix": 3,
+ "checklists": {
+  "sha": "66d056b803d5928bd5725e8291013914906390f1"
+ },
+ "about": {
+  "models": [
+   "sonnet"
+  ],
+  "ran_at": "2026-11-20 17:17 UTC",
+  "tier": "medium",
+  "lines": 128
+ },
+ "lenses": [
+  {
+   "name": "cassandra-standards",
+   "agent": "cassandra-standards-reviewer",
+   "focus": "patch vs its JIRA ticket, Cassandra contribution standards, security (self-gating), edits to .claude/ or AGENTS.md",
+   "status": "ran",
+   "approve": false,
+   "summary": "The patch caches the merged map returned by FilteringMetricRegistry#getMetrics in a volatile field. It clears the cache on register, remove and when a metric is added to the excluded map. This matches CASSSIDECAR-347 and adds the CHANGES.txt entry under 0.3.0. Risks: the invalidation for excluded metrics runs before the metric is inserted, so a concurrent getMetrics() can cache a stale map that omits the new metric until the next change. The patch also includes an unrelated PeriodicTaskExecutor hashCode change that the ticket does not mention. No security surface touched. PR description is a bare 'Patch by ... reviewed by TBD' line, but the ticket is clear.",
+   "spec_conformance": "partial",
+   "tests_ran": "none",
+   "tests_detail": "not run: review-only lens",
+   "findings": [
+    {
+     "id": "cs-1",
+     "severity": "major",
+     "impact": "silent-wrong-result",
+     "confidence": "medium",
+     "location": "server/src/main/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistry.java:289",
+     "rule": "CASSSIDECAR-347: cache must be recomputed whenever the registry changes; the ticket's concurrency test plan",
+     "problem": "addExcludedMetricIfNotExists nulls allMetrics inside the computeIfAbsent mapping function, so the null is set before the entry is in excludedMetrics. A concurrent getMetrics() can take the lock after the invalidation, iterate excludedMetrics (a ConcurrentHashMap iteration does not see the in-flight insert), and store a snapshot that lacks the new excluded metric. Nothing invalidates it again, so getMetrics() keeps returning the stale map until the next register or remove. The Javadoc says getMetrics exists to prevent re-registering excluded metrics, so a stale map defeats that. The register() path does not have this problem because it invalidates after registration.",
+     "fix": "Call computeIfAbsent first, and invalidate allMetrics after it returns (only when the metric was newly added, for example by tracking that inside the mapping function). That way a snapshot taken after the invalidation sees the entry.",
+     "title": "Invalidate the cached map after the excluded metric is inserted, not before"
+    },
+    {
+     "id": "cs-2",
+     "severity": "major",
+     "location": "server/src/main/java/org/apache/cassandra/sidecar/tasks/PeriodicTaskExecutor.java:302",
+     "rule": "Scope: unrelated changes mixed into the patch (sidecar standards, Scope)",
+     "problem": "The patch caches PeriodicTaskKey.hashCode, which is unrelated to FilteringMetricRegistry. CASSSIDECAR-347 does not mention it and gives no profiling evidence for it. This is a drive-by optimisation.",
+     "fix": "Drop the PeriodicTaskExecutor change from this PR, or move it to its own ticket with its own justification.",
+     "title": "Split the PeriodicTaskKey hashCode caching out of this patch"
+    },
+    {
+     "id": "cs-3",
+     "severity": "nit",
+     "impact": "cosmetic",
+     "confidence": "high",
+     "location": "server/src/main/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistry.java:166",
+     "rule": "Code style: needless complexity",
+     "problem": "The reassignment 'allMetrics = existingAllMetrics = Collections.unmodifiableMap(...)' and the else branch that re-reads the field make the method harder to follow. The method also now also performs the initial copy while holding the registry monitor.",
+     "fix": "Use a local variable for the built map, assign it to the field once, and return it.",
+     "title": "Simplify the double-checked locking in getMetrics"
+    }
+   ],
+   "error": null
+  },
+  {
+   "name": "cass-logic-boundary",
+   "agent": "cass-logic-boundary",
+   "focus": "conditions, boundaries and numbers, null and type safety, input validation",
+   "status": "ran",
+   "approve": false,
+   "summary": "PR #261 (CASSSIDECAR-347) caches the merged metrics map in FilteringMetricRegistry.getMetrics() in a volatile field and invalidates it on register(), remove() and the excluded-metric creation path. It also precomputes the hashCode in PeriodicTaskKey. I read the whole diff (medium tier) and applied conditions-and-predicates first, then logic.md and boundary.md, plus the sidecar cass-logic-boundary lens notes. The invalidation in register() and remove() happens after the mutation, so those paths are correct. The excluded-metric path invalidates before the mutation, which can leave a stale cached map (one finding). The PeriodicTaskKey hashCode precompute is behavior-equivalent because the identifier is final. Not reviewed: the new test file FilteringMetricRegistryTest.java and CHANGES.txt (other lenses own them). Nothing else skipped.",
+   "spec_conformance": "partial",
+   "tests_ran": "none",
+   "tests_detail": "not run: review-only lens",
+   "findings": [
+    {
+     "id": "lb-1",
+     "severity": "major",
+     "impact": "silent-wrong-result",
+     "confidence": "medium",
+     "location": "server/src/main/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistry.java:286",
+     "rule": "Derived cache invalidated before its source is updated (logic checklist 30; conditions and predicates)",
+     "problem": "addExcludedMetricIfNotExists sets allMetrics = null inside the computeIfAbsent mapping function, which runs before ConcurrentHashMap inserts the new entry. Trigger: thread A calls counter(\"excluded.x\") for the first time and nulls the cache. Before A's computeIfAbsent returns, thread B calls getMetrics(), rebuilds the snapshot from excludedMetrics (which does not yet contain the entry) and stores it in allMetrics. A then inserts the entry and nothing invalidates again. getMetrics() keeps returning a map without the excluded metric until some unrelated register() or remove() happens. That defeats the documented purpose of getMetrics(), which is to include excluded metrics so they are not re-registered. register() is not affected because it invalidates again after registerInternal returns; the counter/histogram/meter/timer/gauge paths are.",
+     "fix": "Invalidate after the insert. Call excludedMetrics.computeIfAbsent(...) first, and when it newly added the entry, set allMetrics = null after it returns. For example, record a flag in the mapping lambda, then invalidate once computeIfAbsent has returned. This also removes the synchronized block from inside the CHM mapping function.",
+     "title": "Invalidate cached allMetrics after the excluded metric is inserted, not before"
+    }
+   ],
+   "error": null
+  },
+  {
+   "name": "cass-concurrency-lifecycle",
+   "agent": "cass-concurrency-lifecycle",
+   "focus": "races, locking, lifecycle and ordering, resource cleanup",
+   "status": "ran",
+   "approve": false,
+   "summary": "Patch caches the merged allowed+excluded metric map in FilteringMetricRegistry (volatile allMetrics, rebuilt under synchronized(this) in getMetrics, invalidated by setting it to null on register/remove/excluded-add). It also precomputes PeriodicTaskKey.hashCode and adds a CHANGES.txt entry and tests. Applied checklists: shallow-review concurrency.md, targeted-review concurrency-and-locking.md, sidecar CONTRIBUTING.md and vertx-threading-model.md, plus the cass-concurrency-lifecycle notes in sidecar-standards.md. I traced the read path (volatile read, then double-checked rebuild under the monitor) and the included-metric register and remove paths; all three order correctly. I found one ordering bug on the excluded-metric add path. There is no deadlock risk: the monitor is taken inside the ConcurrentHashMap.computeIfAbsent mapping function, but getMetrics only iterates the map without bin locks. Not reviewed: nothing. Tests were not run.",
+   "spec_conformance": "partial",
+   "tests_ran": "none",
+   "tests_detail": "not run: review-only lens",
+   "findings": [
+    {
+     "id": "cl-1",
+     "severity": "major",
+     "impact": "silent-wrong-result",
+     "confidence": "medium",
+     "location": "server/src/main/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistry.java:286",
+     "rule": "Cache invalidation fires before commit (F-14); publication ordering of state vs. signal",
+     "problem": "addExcludedMetricIfNotExists sets allMetrics = null inside the computeIfAbsent mapping function, which runs before the entry is put into excludedMetrics. Trigger: thread A requests a new filtered metric (for example counter(\"excluded.x\")) and reaches the mapping function, which nulls allMetrics. Before computeIfAbsent inserts the entry, thread B calls getMetrics(). B sees null, rebuilds the snapshot without excluded.x and caches it in allMetrics. A then inserts excluded.x and never invalidates again. getMetrics() now omits that excluded metric until some unrelated register or remove happens, possibly never. The javadoc says getMetrics must return excluded metrics 'to prevent re-registering of excluded metrics', and the old code always included them. The register and remove paths invalidate after the mutation and are correct. Only this path has the wrong order.",
+     "fix": "Invalidate after the map insert. Call excludedMetrics.computeIfAbsent(...) without side effects, then do `synchronized (this) { allMetrics = null; }` after it returns. Skip the invalidation if the returned instance was not newly created, or invalidate unconditionally, which is harmless. This also removes the monitor acquisition from inside the ConcurrentHashMap bin lock.",
+     "title": "Invalidate allMetrics after inserting the excluded metric, not before"
+    },
+    {
+     "id": "cl-2",
+     "severity": "nit",
+     "impact": "performance",
+     "confidence": "low",
+     "location": "server/src/main/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistry.java:172",
+     "rule": "Lock on a private monitor, not the publicly reachable instance",
+     "problem": "The cache is guarded by the registry's own monitor. The registry is a public object handed to Vert.x/Dropwizard reporters, so any external code that synchronizes on it can stall getMetrics and every register/remove. This is speculative, because I found no such caller.",
+     "fix": "Guard the cache with a private final Object lock, or avoid the lock entirely by invalidating through an AtomicReference with compareAndSet.",
+     "title": "Use a private lock object instead of synchronized(this)"
+    }
+   ],
+   "error": null
+  },
+  {
+   "name": "cass-persistence-compat",
+   "agent": "cass-persistence-compat",
+   "focus": "serialization and versioning, mixed-version clusters, IO and crash safety, logging and metrics",
+   "status": "ran",
+   "approve": false,
+   "summary": "PR #261 (CASSSIDECAR-347) caches the merged allowed+excluded metric map in FilteringMetricRegistry.getMetrics(), invalidates it on register/remove/excluded-metric add, and caches the hash code in PeriodicTaskExecutor.PeriodicTaskKey. I read the whole diff (medium tier) and applied the bundle checklists (resources.md, sidecar CONTRIBUTING.md and OPENAPI.md) plus the Sidecar '### cass-persistence-compat' lens notes. There is no REST, schema, config, serialization or file IO change, so those items do not apply. The checks that mattered were the invalidation ordering against getMetrics and the lock ordering (no deadlock found: getMetrics only iterates the ConcurrentHashMap). One real defect found: the cache is invalidated before the excluded metric is inserted, so a concurrent getMetrics can cache a map without it. Not reviewed: nothing (test file skimmed only).",
+   "spec_conformance": "partial",
+   "tests_ran": "none",
+   "tests_detail": "not run: review-only lens",
+   "findings": [
+    {
+     "id": "pc-1",
+     "severity": "major",
+     "impact": "silent-wrong-result",
+     "confidence": "medium",
+     "location": "server/src/main/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistry.java:286",
+     "rule": "Observability: metrics registered once, registry state consistent; cache invalidation must follow the mutation",
+     "problem": "addExcludedMetricIfNotExists sets allMetrics = null inside the computeIfAbsent mapping function, which runs before the entry is put into excludedMetrics. A concurrent getMetrics() that runs between the null-out and the insertion sees allMetrics == null, rebuilds the map from excludedMetrics without the new entry, and caches it. Nothing invalidates it afterwards, so the excluded metric is missing from getMetrics() until some later register/remove/new excluded metric. getMetrics() is documented to include excluded metrics 'to prevent re-registering of excluded metrics', so callers (e.g. code checking getMetrics() before register) can re-register the metric or report incomplete data, with no error. The new concurrency test does not exercise this window.",
+     "fix": "Invalidate after the insert: call excludedMetrics.computeIfAbsent(...) with a pure mapping function, and if the returned instance is the newly created one (or simply always when the key was absent), then synchronized(this){ allMetrics = null; }. Alternatively do the put and the invalidation in one synchronized block on the same lock getMetrics() uses, or use a version counter compared when publishing the rebuilt map."
+    }
+   ],
+   "error": null
+  },
+  {
+   "name": "cass-completeness-symmetry",
+   "agent": "cass-completeness-symmetry",
+   "focus": "missing counterpart changes, API contracts, refactor aftermath",
+   "status": "ran",
+   "approve": false,
+   "summary": "PR #261 (CASSSIDECAR-347) caches the merged allowed+excluded map in FilteringMetricRegistry.getMetrics() behind a volatile field. It invalidates the cache from register(), remove() and the excluded-metric creation path. It also precomputes PeriodicTaskExecutor.PeriodicTaskKey.hashCode and adds a CHANGES.txt entry. Applied bundle checklists: absence.md, completeness.md, api-contracts-and-completeness.md, sidecar CONTRIBUTING.md and OPENAPI.md, plus the cass-completeness-symmetry lens notes in sidecar-standards.md. Checked that every mutating path reaches the invalidation. Dropwizard's counter/histogram/meter/timer/gauge go through the overridden register() for allowed metrics, so they are covered. removeMatching goes through the overridden remove(). The excluded-metric path invalidates too early (see cs-1). Not reviewed: nothing; tests were only skimmed.",
+   "spec_conformance": "partial",
+   "tests_ran": "none",
+   "tests_detail": "not run: review-only lens",
+   "findings": [
+    {
+     "id": "cs-1",
+     "severity": "major",
+     "impact": "silent-wrong-result",
+     "confidence": "medium",
+     "location": "server/src/main/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistry.java:293",
+     "rule": "Counterpart / ordering: cache invalidation must happen after the mutation it guards",
+     "problem": "addExcludedMetricIfNotExists sets allMetrics = null inside the computeIfAbsent mapping function, before the new entry is stored in excludedMetrics. If getMetrics() runs on another thread in that window, it sees allMetrics == null, rebuilds the snapshot without the new excluded metric and caches it. Nothing invalidates the cache again, so the stale map is returned by getMetrics() until the next unrelated register or remove. The javadoc says this map exists to prevent re-registering excluded metrics. A consumer that reads getMetrics() and then registers a metric that is not in the snapshot can wrongly re-register or duplicate an excluded metric. register() and remove() invalidate after the mutation and are fine. This path is the exception.",
+     "fix": "Do the invalidation after computeIfAbsent returns, for example: Metric m = excludedMetrics.computeIfAbsent(name, mappingFunction); invalidate(); return m. Alternatively invalidate in a try/finally around it. Extract a shared invalidateAllMetrics() helper for the four call sites.",
+     "title": "Invalidate allMetrics after the excluded metric is inserted, not before"
+    },
+    {
+     "id": "cs-2",
+     "severity": "nit",
+     "impact": "cosmetic",
+     "confidence": "medium",
+     "location": "server/src/main/java/org/apache/cassandra/sidecar/tasks/PeriodicTaskExecutor.java:302",
+     "rule": "Patch does only what the ticket asks",
+     "problem": "The PeriodicTaskKey hashCode precompute has no relation to CASSSIDECAR-347 (FilteringMetricRegistry#getMetrics). It is not mentioned in the ticket, the PR description or CHANGES.txt, and the diff has no test for it.",
+     "fix": "Drop it from this patch, or mention it in the PR description and the ticket.",
+     "title": "Move the PeriodicTaskKey hashCode caching out of this metrics ticket"
+    }
+   ],
+   "error": null
+  },
+  {
+   "name": "cass-test-regime",
+   "agent": "cass-test-regime",
+   "focus": "right test suite, regression test fails without the fix, repeated runs",
+   "status": "ran",
+   "approve": false,
+   "summary": "PR #261 (CASSSIDECAR-347) caches the merged map returned by FilteringMetricRegistry.getMetrics() and invalidates it on register, remove and excluded-metric creation. It also precomputes the PeriodicTaskKey hash code and adds a CHANGES.txt entry. Checklist applied: refdir/sidecar/TESTING.md plus the cass-test-regime lens notes in sidecar-standards.md. The right suite is used: plain JUnit unit tests in FilteringMetricRegistryTest need no Cassandra, so no integration test is required. This is a performance improvement, not a bug fix, so a test that fails on base is not expected; the new tests check that invalidation keeps results correct. The main gap is that the concurrency tests would not fail on a thread-side assertion failure, and none of them runs getMetrics() concurrently with removal or with excluded-metric creation, which is the racy interleaving. Not reviewed: nothing.",
+   "spec_conformance": "partial",
+   "tests_ran": "none",
+   "tests_detail": "not run: review-only lens",
+   "findings": [
+    {
+     "id": "tr-1",
+     "severity": "major",
+     "impact": "silent-wrong-result",
+     "confidence": "high",
+     "location": "server/src/test/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistryTest.java:346",
+     "rule": "Test must be able to fail; assertions check the outcome",
+     "problem": "pool.submit(...) at line 338 discards the returned Future. The assertThat(registry.getMetrics()).isNotEmpty() on line 346 runs inside the task, so an AssertionError or any other exception there is swallowed by the executor and the test still passes. The assertion is also trivially true, because the calling thread has just registered a metric. The test therefore does not check what getMetrics() returns while registrations are in flight. The only real check is the single getMetrics() call after awaitTermination.",
+     "fix": "Collect the Futures and call get() on each, or record the Throwables in a queue and assert it is empty. Replace isNotEmpty() with an assertion that can fail under a race, for example that the map contains the metric this thread just registered.",
+     "title": "Surface failures from worker threads in the concurrent registration test"
+    },
+    {
+     "id": "tr-2",
+     "severity": "minor",
+     "confidence": "medium",
+     "location": "server/src/test/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistryTest.java:327",
+     "rule": "Coverage of the change; timing-sensitive tests need evidence of repeated runs",
+     "problem": "The cache is invalidated in addExcludedMetricIfNotExists before the metric is inserted into excludedMetrics, and in register/remove only after the mutation. In the removal test (line 374) getMetrics() is called only before the threads start and after they finish, never concurrently with remove(). In the registration test each thread calls getMetrics() once, right after its own register(). A stale cache, for example one that misses an excluded metric because getMetrics() ran between the invalidation and the insert, would only show up as a lost or extra entry in the final call, and only in a rare interleaving. The test would almost always pass against a faulty invalidation order. Nothing in the PR shows repeated runs, and the 100-thread, latch-released tests are timing-sensitive.",
+     "fix": "Add a reader thread that loops on getMetrics() while writers register and remove. After all writers finish, assert the final map equals the expected key set. Run the test in a repeated loop (for example @RepeatedTest) or show repeated-run evidence in the PR.",
+     "title": "Interleave getMetrics reads with writers in the concurrency tests"
+    },
+    {
+     "id": "tr-3",
+     "severity": "minor",
+     "confidence": "medium",
+     "location": "server/src/test/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistryTest.java:374",
+     "rule": "Coverage of the change: new branches and boundaries are exercised",
+     "problem": "remove() was rewritten with two branches: excluded metric present, or fall back to super.remove(). It also gained a new return-value contract (true if removed). The test discards the return value and asserts only the final map sizes. It never checks that removing a missing name returns false, or that getMetrics() drops a removed excluded or included metric on the very next call. A stale cached map after a single remove() would not be caught on the deterministic path.",
+     "fix": "Add a deterministic test: register an included and an excluded metric, call getMetrics(), then remove each and assert the return value is true and the next getMetrics() omits it. Assert that removing an unknown name returns false.",
+     "title": "Assert remove() return values and the cache refresh after removal"
+    },
+    {
+     "id": "tr-4",
+     "severity": "nit",
+     "confidence": "low",
+     "location": "server/src/test/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistryTest.java:255",
+     "rule": "Coverage of the change",
+     "problem": "The point of the change is that getMetrics() returns a precomputed map until the registry changes. No test checks that two consecutive calls with no mutation return the same instance, or that a mutation produces a new one. A regression back to rebuilding the map on every call would pass every new test.",
+     "fix": "Add assertThat(registry.getMetrics()).isSameAs(registry.getMetrics()) with no mutation in between, and isNotSameAs after a register().",
+     "title": "Assert that getMetrics() returns the cached map between mutations"
+    }
+   ],
+   "error": null
+  }
+ ]
+}

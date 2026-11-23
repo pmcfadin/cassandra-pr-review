@@ -395,11 +395,11 @@ class RunnerTests(unittest.TestCase):
         with open(sandbox.PROFILE) as f:
             base = f.read().splitlines()
         with open(sandbox.PROFILE_NET) as f:
-            net = [ln for ln in f.read().splitlines() if not ln.startswith(";; NET") and not ln.startswith(";; Used only")]
+            net = f.read().splitlines()[3:]  # the three-line NET header
         self.assertNotIn("(deny network*)", net)
-        self.assertEqual([ln for ln in base if ln != "(deny network*)"],
-                         [ln for ln in net if ln != '  (subpath (param "GRADLE"))'])
+        self.assertEqual([ln for ln in base if ln != "(deny network*)"], net)
         self.assertIn('  (subpath (param "GRADLE"))', net)
+        self.assertIn('  (subpath (param "GRADLE"))', base)
 
     def test_offline_skips_networked_resolve(self):
         sh = FakeShell(self.happy_script())
@@ -509,7 +509,7 @@ class CliTests(unittest.TestCase):
                 rc = cli.main(["build", "5201", "--work-dir", work])
         self.assertEqual(rc, 0)
         self.assertIn("not-built", out.getvalue())
-        with open(os.path.join(work, "build-runs", "5201", HEAD, "status.json")) as f:
+        with open(os.path.join(work, "build-runs", "cassandra", "5201", HEAD, "status.json")) as f:
             self.assertEqual(json.load(f)["status"], "not-built")
 
 
@@ -547,7 +547,7 @@ class KeptClasspath(unittest.TestCase):
     def test_the_classpath_feeds_pmd_through_auxpath(self):
         from cpr.staticanalysis import auxpath
         path, st = self.go(FakeShell(self.script()))
-        cp, note = auxpath.resolve(self.work, self.bundle["pr"]["number"], self.bundle["pr"]["head_sha"])
+        cp, note = auxpath.resolve(self.work, "cassandra", self.bundle["pr"]["number"], self.bundle["pr"]["head_sha"])
         self.assertEqual(cp.split(os.pathsep), st["classpath"]["classes"] + st["classpath"]["jars"])
         self.assertIn("with type info", note)
 
@@ -570,8 +570,11 @@ class KeptClasspath(unittest.TestCase):
 
     def test_only_the_five_newest_runs_keep_their_classpath(self):
         base = os.path.join(self.work, "build-runs")
+
+        def run_dir(i):  # across projects: the cap is for the whole work dir
+            return os.path.join(base, "cassandra" if i % 2 else "sidecar", str(100 + i), "h" * 39 + str(i))
         for i in range(7):
-            rd = os.path.join(base, str(100 + i), "h" * 39 + str(i))
+            rd = run_dir(i)
             os.makedirs(os.path.join(rd, "classpath", "classes", "main"))
             with open(os.path.join(rd, "status.json"), "w") as f:
                 json.dump({"status": "pass", "classpath": {"classes": [os.path.join(rd, "classpath", "classes", "main")], "jars": []}}, f)
@@ -579,9 +582,8 @@ class KeptClasspath(unittest.TestCase):
         pruned = runner.prune_classpaths(self.work, keep=5)
         self.assertEqual(sorted(os.path.basename(os.path.dirname(p)) for p in pruned), ["100", "101"])
         for i in range(7):
-            rd = os.path.join(base, str(100 + i), "h" * 39 + str(i))
-            self.assertEqual(os.path.isdir(os.path.join(rd, "classpath")), i >= 2)
-        with open(os.path.join(base, "100", "h" * 39 + "0", "status.json")) as f:
+            self.assertEqual(os.path.isdir(os.path.join(run_dir(i), "classpath")), i >= 2)
+        with open(os.path.join(run_dir(0), "status.json")) as f:
             self.assertTrue(json.load(f)["classpath"]["pruned"])
 
 

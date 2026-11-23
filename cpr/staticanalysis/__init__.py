@@ -11,6 +11,7 @@ import os
 import shutil
 import time
 
+from cpr import layout, project as project_mod
 from cpr.ingest import clone as clone_mod
 from cpr.staticanalysis import auxpath, baseline, classify, inputs, rate, ruleset as ruleset_mod, run, tools, typerules
 
@@ -110,20 +111,23 @@ def _analyze(bundle, work_dir, log):
     if not repo or not os.path.isdir(os.path.join(repo, ".git")) or not clone_mod.has_refs(repo, number, base_branch):
         return unavailable("no local clone or PR refs", base_branch)
     mb, head = git["merge_base"], clone_mod.pr_ref(number)
-    changed = inputs.changed_java(repo, mb, head, cfg["exclude"])
+    proj = project_mod.of(bundle)
+    st = proj.static
+    changed = inputs.changed_java(repo, mb, head, st.get("exclude", ()), proj.static_kind)
     commits = inputs.commits(repo, mb, head)
     if not changed:
         out = unavailable("no changed Java files", base_branch, status="not-applicable")
         out["commits"] = commits
         return out
-    sd = os.path.join(work_dir, "pr", str(number), pr["head_sha"], "static")
+    slug = proj.slug
+    sd = os.path.join(layout.pr_dir(work_dir, slug, number), pr["head_sha"], "static")
     base_ref = clone_mod.base_ref(base_branch)
-    cs_id, pmd_id = tools.checkstyle_id(cfg, base_branch), cfg["pmd"]
-    cfgs = run.fetch_configs(repo, base_ref, os.path.join(sd, "cfg"))
+    cs_id, pmd_id = tools.checkstyle_id(cfg, base_branch, st["checkstyle"].get("tool")), cfg["pmd"]
+    cfgs = run.fetch_configs(repo, base_ref, os.path.join(sd, "cfg"), st["checkstyle"])
     ruleset = os.path.join(os.path.dirname(tools.CONFIG), "pmd-pr.xml")
     cs_sha = sha_text(*[_read(p) for _, p in sorted((cfgs or {}).items())])
     pmd_sha = sha_text(_read(ruleset), json.dumps(cfg["thresholds"], sort_keys=True))
-    aux_cp, aux_note = auxpath.resolve(work_dir, number, pr["head_sha"])
+    aux_cp, aux_note = auxpath.resolve(work_dir, slug, number, pr["head_sha"])
     java_cache = {}
     cs_ok = cs_id and tools.is_installed(work_dir, cs_id) and cfgs
     pmd_ok = tools.is_installed(work_dir, pmd_id)
@@ -139,7 +143,7 @@ def _analyze(bundle, work_dir, log):
         if saved.get("key") == key:
             log("static analysis: cached for this head sha")
             return saved["result"]
-    out = _run(cfg, work_dir, repo, base_branch, changed, mb, head, sd, (cs_id, cfgs, cs_sha, cs_ok),
+    out = _run(proj, cfg, work_dir, repo, base_branch, changed, mb, head, sd, (cs_id, cfgs, cs_sha, cs_ok),
                (pmd_id, ruleset, pmd_sha, pmd_ok, aux_cp, aux_note), java_cache, log)
     out["commits"] = commits
     os.makedirs(sd, exist_ok=True)
@@ -148,7 +152,7 @@ def _analyze(bundle, work_dir, log):
     return out
 
 
-def _run(cfg, work_dir, repo, base_branch, changed, mb, head, sd, cs, pmd, java_cache, log):
+def _run(proj, cfg, work_dir, repo, base_branch, changed, mb, head, sd, cs, pmd, java_cache, log):
     for side in ("base", "head", "raw"):
         shutil.rmtree(os.path.join(sd, side), ignore_errors=True)
     shas = inputs.extract(repo, changed, mb, head, sd)
@@ -161,10 +165,10 @@ def _run(cfg, work_dir, repo, base_branch, changed, mb, head, sd, cs, pmd, java_
            "duplication": []}
     head_rels = [c["path"] for c in changed if c["status"] != "D"]
     log(f"static analysis: {len(changed)} changed Java files")
-    out["tools"]["checkstyle"], out["checkstyle"] = _checkstyle(cfg, work_dir, changed, shas, head_lines, sd, raw, budget,
+    out["tools"]["checkstyle"], out["checkstyle"] = _checkstyle(proj, cfg, work_dir, changed, shas, head_lines, sd, raw, budget,
                                                                  cs, base_branch, java_cache)
     out["tools"]["pmd"], out["complexity"]["methods"], out["complexity"]["findings"], rules = _pmd(
-        cfg, work_dir, repo, base_branch, changed, shas, head_lines, sd, raw, budget, pmd, java_cache, log)
+        proj, cfg, work_dir, repo, base_branch, changed, shas, head_lines, sd, raw, budget, pmd, java_cache, log)
     out["pmd_rules"] = rules or {"status": "unavailable", "reason": out["tools"]["pmd"]["reason"] or "PMD did not run"}
     out["tools"]["cpd"], out["duplication"] = _cpd(cfg, work_dir, changed, head_rels, head_lines, sd, raw, budget,
                                                    pmd, java_cache)
@@ -173,13 +177,15 @@ def _run(cfg, work_dir, repo, base_branch, changed, mb, head, sd, cs, pmd, java_
     return out
 
 
-def _checkstyle(cfg, work_dir, changed, shas, head_lines, sd, raw, budget, cs, base_branch, java_cache):
+def _checkstyle(proj, cfg, work_dir, changed, shas, head_lines, sd, raw, budget, cs, base_branch, java_cache):
     cs_id, cfgs, cs_sha, ok = cs
     version = cfg["tools"][cs_id]["version"] if cs_id else None
-    head_rels = [c["path"] for c in changed if c["status"] != "D" and run.checkstyle_scope(c["path"])]
+    scope_of, spec = proj.static_kind, proj.static["checkstyle"]
+    head_rels = [c["path"] for c in changed if c["status"] != "D" and scope_of(c["path"])]
     n = len(head_rels)
     if not n:
-        return tool_result("not-applicable", "no changed files under src/java or test", version), []
+        return tool_result("not-applicable", f"no changed files under {proj.static.get('scope_label', 'main or test sources')}",
+                           version), []
     if not cs_id or not cfgs:
         return tool_result("unknown", f"no checkstyle config on {base_branch}", version, n), []
     if not ok:
@@ -194,11 +200,11 @@ def _checkstyle(cfg, work_dir, changed, shas, head_lines, sd, raw, budget, cs, b
         t = budget.timeout()
         if t is None:
             return {"files": {}, "missing": rels, "problem": "PR time budget exhausted", "seconds": 0}
-        return run.run_checkstyle(java, jar, cfgs, root, rels, raw, label, t)
+        return run.run_checkstyle(java, jar, cfgs, root, rels, raw, label, t, spec, scope_of)
 
     head = side(root_h, head_rels, "head")
     base_paths = {c["base_path"]: shas["base"][c["base_path"]] for c in changed
-                  if c["base_path"] and run.checkstyle_scope(c["base_path"]) and c["base_path"] in shas["base"]}
+                  if c["base_path"] and scope_of(c["base_path"]) and c["base_path"] in shas["base"]}
 
     def base_runner(paths):
         r = side(root_b, paths, "base")
@@ -217,7 +223,7 @@ def _checkstyle(cfg, work_dir, changed, shas, head_lines, sd, raw, budget, cs, b
             classify.classify_checkstyle(changed, base_files, head["files"], head_lines))
 
 
-def _pmd(cfg, work_dir, repo, base_branch, changed, shas, head_lines, sd, raw, budget, pmd, java_cache, log):
+def _pmd(proj, cfg, work_dir, repo, base_branch, changed, shas, head_lines, sd, raw, budget, pmd, java_cache, log):
     pmd_id, ruleset, pmd_sha, ok, aux_cp, aux_note = pmd
     version = cfg["tools"][pmd_id]["version"]
     head_rels = [c["path"] for c in changed if c["status"] != "D"]
@@ -264,12 +270,12 @@ def _pmd(cfg, work_dir, repo, base_branch, changed, shas, head_lines, sd, raw, b
     head_ok = {p: f for p, f in head["files"].items() if p not in bad}
     methods, findings = classify.classify_complexity(ok_changed, base_files, head_ok, head_lines, cfg["thresholds"])
     tool = tool_result(status, reason, version, n, n - len(bad), secs)
-    rules = _rules(cfg, work_dir, repo, base_branch, ok_changed, base_files, head_ok, head_lines, pmd, env, pmd_bin, log,
+    rules = _rules(proj, cfg, work_dir, repo, base_branch, ok_changed, base_files, head_ok, head_lines, pmd, env, pmd_bin, log,
                    os.path.join(sd, "head"))
     return tool, methods, findings, rules
 
 
-def _rules(cfg, work_dir, repo, base_branch, changed, base_files, head_files, head_lines, pmd, env, pmd_bin, log,
+def _rules(proj, cfg, work_dir, repo, base_branch, changed, base_files, head_files, head_lines, pmd, env, pmd_bin, log,
            head_root):
     """The `pmd_rules` section: introduced violations per catalog rule, which rules are house style (the branch
     breaks them in many files), which are usual for Cassandra (the PR's count is within the branch's rate) and which
@@ -282,9 +288,12 @@ def _rules(cfg, work_dir, repo, base_branch, changed, base_files, head_files, he
     base_ref = clone_mod.base_ref(base_branch)
     tip = clone_mod._git(repo, "rev-parse", base_ref).strip()
     caps = cfg["caps"]
-    data, source, note = baseline.obtain(os.path.join(work_dir, "static-cache"), repo, base_ref, base_branch, tip, pmd_bin,
+    # Baselines are per repository (the clone's directory name): every project has a `trunk`.
+    cache_dir = os.path.join(work_dir, "static-cache", "baselines", os.path.basename(os.path.normpath(repo)))
+    data, source, note = baseline.obtain(cache_dir, repo, base_ref, base_branch, tip, pmd_bin,
                                          env, text, pmd_id, pmd_sha, caps["baseline_seconds"], caps["pmd_threads"],
-                                         cfg["exclude"], log)
+                                         proj.static.get("exclude", ()), log,
+                                         roots=proj.static.get("baseline_roots", ()), include=proj.static.get("main", ()))
     if data is None:
         data, source = baseline.from_touched(base_files), "touched-files"
         note = (f"The branch baseline could not be built ({note}); house style is the density of each rule in the "

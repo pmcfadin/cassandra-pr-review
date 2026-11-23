@@ -12,9 +12,9 @@ from cpr import buildresult
 NO_TYPES = "without type info: rules that resolve types may misfire"
 
 
-def resolve(work_dir, number, head):
+def resolve(work_dir, slug, number, head):
     """-> (classpath string or None, note). The note is always set: it says why type info was or was not used."""
-    run = buildresult.load(work_dir, number, head)
+    run = buildresult.load(work_dir, slug, number, head)
     if not run:
         return None, "no build of this head; " + NO_TYPES
     if run.get("status") in ("not-built", "build-failed"):

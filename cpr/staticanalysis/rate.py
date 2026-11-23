@@ -64,7 +64,7 @@ def added_production_loc(changed, head_lines, head_root):
     """
     total = 0
     for c in changed:
-        if c["status"] == "D" or c["path"].startswith("test/"):
+        if c["status"] == "D" or c.get("test"):
             continue
         path = os.path.join(head_root, c["path"])
         whole = c["status"] == "A" or c["path"] not in head_lines

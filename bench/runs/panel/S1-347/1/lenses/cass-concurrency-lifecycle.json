@@ -1,0 +1,31 @@
+{
+  "summary": "Patch caches the merged allowed+excluded metric map in FilteringMetricRegistry (volatile allMetrics, rebuilt under synchronized(this) in getMetrics, invalidated by setting it to null on register/remove/excluded-add). It also precomputes PeriodicTaskKey.hashCode and adds a CHANGES.txt entry and tests. Applied checklists: shallow-review concurrency.md, targeted-review concurrency-and-locking.md, sidecar CONTRIBUTING.md and vertx-threading-model.md, plus the cass-concurrency-lifecycle notes in sidecar-standards.md. I traced the read path (volatile read, then double-checked rebuild under the monitor) and the included-metric register and remove paths; all three order correctly. I found one ordering bug on the excluded-metric add path. There is no deadlock risk: the monitor is taken inside the ConcurrentHashMap.computeIfAbsent mapping function, but getMetrics only iterates the map without bin locks. Not reviewed: nothing. Tests were not run.",
+  "spec_conformance": "partial",
+  "tests_ran": "none",
+  "tests_detail": "not run: review-only lens",
+  "findings": [
+    {
+      "id": "cl-1",
+      "severity": "major",
+      "impact": "silent-wrong-result",
+      "confidence": "medium",
+      "location": "server/src/main/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistry.java:286",
+      "title": "Invalidate allMetrics after inserting the excluded metric, not before",
+      "rule": "Cache invalidation fires before commit (F-14); publication ordering of state vs. signal",
+      "problem": "addExcludedMetricIfNotExists sets allMetrics = null inside the computeIfAbsent mapping function, which runs before the entry is put into excludedMetrics. Trigger: thread A requests a new filtered metric (for example counter(\"excluded.x\")) and reaches the mapping function, which nulls allMetrics. Before computeIfAbsent inserts the entry, thread B calls getMetrics(). B sees null, rebuilds the snapshot without excluded.x and caches it in allMetrics. A then inserts excluded.x and never invalidates again. getMetrics() now omits that excluded metric until some unrelated register or remove happens, possibly never. The javadoc says getMetrics must return excluded metrics 'to prevent re-registering of excluded metrics', and the old code always included them. The register and remove paths invalidate after the mutation and are correct. Only this path has the wrong order.",
+      "fix": "Invalidate after the map insert. Call excludedMetrics.computeIfAbsent(...) without side effects, then do `synchronized (this) { allMetrics = null; }` after it returns. Skip the invalidation if the returned instance was not newly created, or invalidate unconditionally, which is harmless. This also removes the monitor acquisition from inside the ConcurrentHashMap bin lock."
+    },
+    {
+      "id": "cl-2",
+      "severity": "nit",
+      "impact": "performance",
+      "confidence": "low",
+      "location": "server/src/main/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistry.java:172",
+      "title": "Use a private lock object instead of synchronized(this)",
+      "rule": "Lock on a private monitor, not the publicly reachable instance",
+      "problem": "The cache is guarded by the registry's own monitor. The registry is a public object handed to Vert.x/Dropwizard reporters, so any external code that synchronizes on it can stall getMetrics and every register/remove. This is speculative, because I found no such caller.",
+      "fix": "Guard the cache with a private final Object lock, or avoid the lock entirely by invalidating through an AtomicReference with compareAndSet."
+    }
+  ],
+  "approve": false
+}

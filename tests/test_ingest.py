@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from unittest import mock
 
-from cpr import net
+from cpr import net, project
 from cpr.ingest import bundle as bundle_mod, ci_summary, clone, github, jira, keys, roster
 
 FIX = os.path.join(os.path.dirname(__file__), "fixtures")
@@ -197,8 +197,8 @@ class Siblings(unittest.TestCase):
         }
         ticket = {"remotelinks": [{"url": "https://github.com/apache/cassandra/pull/5200"}]}
         with mock.patch.object(github, "search_pr_numbers", return_value=[5198, 5300, 5201]), \
-                mock.patch.object(github, "fetch_pr", side_effect=lambda n, r: others[n]):
-            sibs = bundle_mod.discover_siblings(me, "CASSANDRA-21649", ticket, None)
+                mock.patch.object(github, "fetch_pr", side_effect=lambda repo, n, r: others[n]):
+            sibs = bundle_mod.discover_siblings(project.load("cassandra"), me, "CASSANDRA-21649", ticket, None)
         self.assertEqual({s["number"]: s["base"] for s in sibs},
                          {5201: "cassandra-4.0", 5200: "cassandra-4.1", 5198: "cassandra-5.0"})
         self.assertTrue(next(s for s in sibs if s["number"] == 5201)["is_self"])
@@ -208,7 +208,7 @@ class PrNotFound(unittest.TestCase):
     def test_missing_pr_raises(self):
         with mock.patch.object(github, "gh_json", side_effect=net.NetError("gh: Not Found (HTTP 404)", 404)):
             with self.assertRaises(github.PRNotFound):
-                github.fetch_pr(999999, None)
+                github.fetch_pr("apache/cassandra", 999999, None)
 
 
 class Clone(unittest.TestCase):
@@ -272,13 +272,13 @@ class OfflineCache(unittest.TestCase):
             bundle_mod.save(b, d)
             with mock.patch("urllib.request.urlopen", side_effect=AssertionError("network used")), \
                     mock.patch("subprocess.run", side_effect=AssertionError("subprocess used")):
-                again = bundle_mod.load_cached(d, b["pr"]["number"])
+                again = bundle_mod.load_cached(d, "cassandra", b["pr"]["number"])
         self.assertEqual(again["pr"]["head_sha"], b["pr"]["head_sha"])
 
     def test_offline_with_no_cache(self):
         with tempfile.TemporaryDirectory() as d:
             with self.assertRaises(bundle_mod.IngestError):
-                bundle_mod.load_cached(d, 1234)
+                bundle_mod.load_cached(d, "cassandra", 1234)
 
     def test_recorder_replays_offline(self):
         with tempfile.TemporaryDirectory() as d:

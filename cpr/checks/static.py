@@ -112,10 +112,11 @@ def checkstyle(bundle, ctx):
     counts = [ev(f"{len(pre)} pre-existing error(s) in touched files, {len(fixed)} fixed")]
     if intro:
         rows = [ev(f"`{_where(f)}` {f.get('rule')}: {f.get('message')}", location=_where(f)) for f in intro[:50]]
-        return Result("warn", f"{len(intro)} checkstyle error(s) introduced ({ver}); `ant check` would fail",
+        cmd = ctx.project.commands
+        return Result("warn", f"{len(intro)} checkstyle error(s) introduced ({ver}); {cmd['check']} would fail",
                       rows + counts, action_required=True,
-                      action="Fix each error, or add a suppression comment that explains why; run `ant checkstyle` "
-                             "and `ant checkstyle-test` to confirm.")
+                      action="Fix each error, or add a suppression comment that explains why; run "
+                             f"{cmd['checkstyle']} to confirm.")
     return Result("pass", f"No checkstyle errors introduced ({ver})", counts)
 
 
@@ -149,7 +150,7 @@ def complexity(bundle, ctx):
     intro = [f for f in cx.get("findings") or [] if _intro(f)]
     over = sorted((f for f in intro if f.get("rule") == "CognitiveComplexity" and (f.get("score") or 0) >= thr),
                   key=lambda f: -(f.get("score") or 0))
-    bad = [f for f in over if not str(f.get("file", "")).startswith("test/")]
+    bad = [f for f in over if ctx.project.static_kind(str(f.get("file", ""))) != "test"]
     in_tests = len(over) - len(bad)
     if in_tests:
         rows.insert(0, ev(f"{in_tests} test method(s) introduced at or above {thr} (not counted in the headline)"))
@@ -215,7 +216,7 @@ def pmd_rules(bundle, ctx):
     rest = pmd_rules_rows(sa)
     usual = [r for r in pr.get("rules") or [] if r.get("usual") and not r.get("house") and r.get("production", 0) > 0]
     if usual:
-        rows.append(ev(f"{len(usual)} rule(s) are usual for Cassandra at this size (not counted): "
+        rows.append(ev(f"{len(usual)} rule(s) are usual for {ctx.project.name} at this size (not counted): "
                        + ", ".join(f"{r['rule']} {r['production']} vs {r['expected']:g} expected" for r in usual[:6])
                        + (" ..." if len(usual) > 6 else "")))
     untyped = [r for r in pr.get("rules") or [] if r.get("needs_types") and not pr.get("type_info") and not r.get("house")
@@ -269,14 +270,15 @@ def banned_api(bundle, ctx):
 
 def _banned_api(bundle, ctx):
     xml = bundle["base_files"].get("checkstyle_xml")
+    config = ctx.project.static["checkstyle"]["configs"]["main"]
     if xml is None:
-        return Result("not-applicable", f"The base branch `{ctx.pr['base']}` has no `.build/checkstyle.xml`")
+        return Result("not-applicable", f"The base branch `{ctx.pr['base']}` has no `{config}`")
     rules = banned_rules(xml)
     if not rules:
-        return Result("unknown", "Could not parse `.build/checkstyle.xml` from the base branch")
+        return Result("unknown", f"Could not parse `{config}` from the base branch")
     hits = []
     for path, info in ctx.added.items():
-        if not (path.startswith("src/java/") and path.endswith(".java")):
+        if not (ctx.project.static_kind(path) == "main" and path.endswith(".java")):
             continue
         lines = info["added"]
         for idx, (n, text) in enumerate(lines):
@@ -290,29 +292,34 @@ def _banned_api(bundle, ctx):
                     break
     if hits:
         return Result("warn", f"{len(hits)} added line(s) match checkstyle bans", hits[:50],
-                      action="Use the project alternative named in each message, or run `ant checkstyle` to confirm.")
+                      action="Use the project alternative named in each message, or run "
+                             f"{ctx.project.commands['checkstyle_main']} to confirm.")
     return Result("pass", f"No added line matches the {len(rules)} checkstyle ban rules")
 
 
 @check("static.license-header", "New files carry the Apache licence header", "static", "static", blocking=False)
 def license_header(bundle, ctx):
     missing = []
+    exempt = [re.compile(r) for r in ctx.project.static.get("license_exempt", ())]
     for path, info in ctx.added.items():
-        if not info["new_file"] or not path.endswith(_LICENSED_EXT) or path.startswith("test/resources/"):
+        if not info["new_file"] or not path.endswith(_LICENSED_EXT) or any(r.search(path) for r in exempt):
             continue
         head = "\n".join(t for _, t in info["added"][:30])
         if _LICENSE_MARKER not in head:
             missing.append(ev(f"`{path}`", location=path))
     if missing:
         return Result("warn", f"{len(missing)} new file(s) lack the Apache licence header", missing,
-                      action="Copy the ASF licence header from any existing source file; `ant check` runs the RAT licence check.")
+                      action=f"Copy the ASF licence header from any existing source file; {ctx.project.commands['rat']}.")
     return Result("pass", "Every new source file has the licence header")
 
 
 @check("static.protected-paths", "No edits to generated code or bundled jars", "static", "static", blocking=False)
 def protected_paths(bundle, ctx):
-    hits = [ev(f"`{p}`", location=p) for p in ctx.paths if p.startswith(("src/gen-java/", "lib/"))]
-    grammar = [ev(f"`{p}` (CQL grammar: discuss on dev@ first)", location=p) for p in ctx.paths if p.startswith("src/antlr/")]
+    st = ctx.project.static
+    protected, grammar_rx = [re.compile(r) for r in st.get("protected", ())], [re.compile(r) for r in st.get("grammar", ())]
+    hits = [ev(f"`{p}`", location=p) for p in ctx.paths if any(r.search(p) for r in protected)]
+    grammar = [ev(f"`{p}` (CQL grammar: discuss on dev@ first)", location=p) for p in ctx.paths
+               if any(r.search(p) for r in grammar_rx)]
     if hits:
         return Result("warn", "Edits under `src/gen-java/` or `lib/`", hits + grammar,
                       action="Generated code is rebuilt by the build; dependencies change through the build POM "

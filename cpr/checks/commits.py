@@ -1,12 +1,18 @@
 """Commit message, trailer, and CHANGES.txt checks."""
 
+import functools
 import re
 
-from cpr import paths
 from cpr.checks import Result, check, ev
 
-_PATCH_BY_RE = re.compile(r"^patch by .+?[;,]\s*reviewed by .+? for (CASSANDRA-\d+)", re.IGNORECASE | re.MULTILINE)
-_CHANGES_RE = re.compile(r"^ \* .+\((?:CASSANDRA-\d+(?:,\s*)?)+\)\s*$")
+
+@functools.lru_cache(maxsize=None)
+def _regexes(keys):
+    """(patch-by line, CHANGES.txt line) for the project's key prefixes. The key may be a markdown link `[KEY-N](url)`."""
+    k = "(?:" + "|".join(map(re.escape, keys)) + r")-\d+"
+    patch_by = re.compile(rf"^patch by .+?[;,]\s*reviewed by .+? for \[?({k})", re.IGNORECASE | re.MULTILINE)
+    changes = re.compile(rf"^ \* .+\((?:{k}(?:,\s*)?)+\)\s*$")
+    return patch_by, changes
 _AI_HINT_RE = re.compile(r"\b(claude|copilot|chatgpt|gpt-\d|codex|gemini|llm|ai[- ]generated|ai[- ]assisted)\b",
                          re.IGNORECASE)
 
@@ -17,14 +23,16 @@ def message_format(bundle, ctx):
     if not commits:
         return Result("unknown", "No commits found")
     rows, problems = [], []
+    patch_by, _ = _regexes(ctx.project.jira_keys)
+    key_n = f"{ctx.project.jira_keys[0]}-N"
     for c in commits:
         first = c["message"].splitlines()[0] if c["message"] else ""
-        m = _PATCH_BY_RE.search(c["message"])
+        m = patch_by.search(c["message"])
         issues = []
-        if ctx.key and ctx.key.lower() in first.lower():
+        if ctx.key and ctx.key.lower() in first.lower() and ctx.project.commit_subject_key == "forbidden":
             issues.append("first line repeats the ticket key")
         if not m:
-            issues.append("no `patch by …; reviewed by … for CASSANDRA-N` line")
+            issues.append(f"no `patch by …; reviewed by … for {key_n}` line")
         elif ctx.key and m.group(1).upper() != ctx.key:
             issues.append(f"`patch by` line names {m.group(1)}, not {ctx.key}")
         rows.append(ev(f"`{c['sha'][:10]}` {first[:90]}" + (f" — {'; '.join(issues)}" if issues else " — ok")))
@@ -32,9 +40,9 @@ def message_format(bundle, ctx):
     note = f"{len(commits)} commit(s); committers squash to one per branch when they commit."
     rows.append(ev(note))
     if problems:
-        return Result("warn", "Commit message does not follow the `patch by … reviewed by … for CASSANDRA-N` format",
+        return Result("warn", f"Commit message does not follow the `patch by … reviewed by … for {key_n}` format",
                       rows, action="Format the final commit as: one-line summary, blank line, "
-                                   "`patch by <you>; reviewed by <reviewers> for CASSANDRA-N`. Committers often rewrite "
+                                   f"`patch by <you>; reviewed by <reviewers> for {key_n}`. Committers often rewrite "
                                    "this when committing, so this alone does not block.",
                       action_required=False)
     return Result("pass", "Commit message(s) follow the project format", rows)
@@ -60,26 +68,28 @@ def provenance(bundle, ctx):
         return Result("warn", "Signs of AI assistance without an `Assisted-by:` trailer",
                       rows + [ev(h) for h in hints],
                       action="If AI tools helped write this patch, add an `Assisted-by: <agent>:<model>` trailer "
-                             "(see AGENTS.md in apache/cassandra).")
+                             f"({ctx.project.commands.get('ai_trailer_source', 'see AGENTS.md in apache/cassandra')}).")
     summary = f"{len(rows)} trailer(s) found" if rows else "No co-author or AI trailers (none required)"
     return Result("pass", summary, rows)
 
 
 @check("changelog.entry", "CHANGES.txt entry", "changelog", "commits", blocking=False)
 def changelog(bundle, ctx):
-    prod = [p for p in ctx.paths if paths.is_prod(p)]
+    prod = [p for p in ctx.paths if ctx.classify.is_prod(p)]
     if not prod:
         return Result("not-applicable", "No production code changed (test, doc, or build only)")
+    _, changes = _regexes(ctx.project.jira_keys)
+    key_n = f"{ctx.project.jira_keys[0]}-N"
     added = [t for _, t in ctx.added.get("CHANGES.txt", {}).get("added", [])]
     if not added:
         return Result("warn", "Production code changed but CHANGES.txt did not",
-                      action=f"Add ` * <summary> ({ctx.key or 'CASSANDRA-N'})` at the top of the correct version "
+                      action=f"Add ` * <summary> ({ctx.key or key_n})` at the top of the correct version "
                              "section in CHANGES.txt. Some committers add it at commit time; say so on the PR if agreed.")
-    good = [t for t in added if _CHANGES_RE.match(t)]
+    good = [t for t in added if changes.match(t)]
     rows = [ev(f"`{t.strip()}`") for t in added[:5]]
     if not good:
-        return Result("warn", "CHANGES.txt changed, but no line matches ` * <summary> (CASSANDRA-N)`", rows,
-                      action="Use the format ` * <summary> (CASSANDRA-N)`.")
+        return Result("warn", f"CHANGES.txt changed, but no line matches ` * <summary> ({key_n})`", rows,
+                      action=f"Use the format ` * <summary> ({key_n})`.")
     if ctx.key and not any(ctx.key in t for t in good):
         return Result("warn", f"CHANGES.txt entry does not mention {ctx.key}", rows,
                       action=f"Reference {ctx.key} in the entry.")

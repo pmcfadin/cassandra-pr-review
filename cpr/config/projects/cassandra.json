@@ -1,0 +1,90 @@
+{
+ "_comment": "apache/cassandra. The values reproduce the rules cpr has always applied; regexes are searched against repo-relative paths. Fields: openspec/changes/project-profiles/design.md and sibling-checks/design.md.",
+ "slug": "cassandra",
+ "repo": "apache/cassandra",
+ "name": "Cassandra",
+ "jira_keys": ["CASSANDRA"],
+ "key_digits": 3,
+ "key_placeholder": "CASSANDRA-NNNNN",
+ "bare_number_branch_key": true,
+ "paths": {
+  "prod": ["^src/java/", "^pylib/"],
+  "test": ["^test/", "/test/", "^pylib/cqlshlib/test/"],
+  "test_resources": ["^test/resources/", "^test/data/", "^test/conf/"],
+  "generated": ["^src/gen-java/", "\\.(db|bin)$", "/gen/"],
+  "doc": ["^doc/", "^(?!src/).*\\.(adoc|md)$"],
+  "build": ["^\\.build/", "^\\.circleci/", "^\\.jenkins/", "^build\\.xml", "^ide/", "^\\.github/"],
+  "suites": [
+   ["^test/unit/", "unit", "Unit (test/unit)"],
+   ["^test/distributed/", "distributed", "In-JVM dtest (test/distributed)"],
+   ["^test/burn/", "burn", "Burn (test/burn)"],
+   ["^test/long/", "long", "Long (test/long)"],
+   ["^test/microbench/", "microbench", "Microbench (test/microbench)"],
+   ["^test/simulator/", "simulator", "Simulator (test/simulator)"],
+   ["^test/harry/", "harry", "Harry (test/harry)"],
+   ["^test/memory/", "memory", "Memory (test/memory)"],
+   ["^test/anttasks/", "anttasks", "Ant tasks (test/anttasks)"],
+   ["^pylib/cqlshlib/test/", "cqlsh", "cqlsh (pylib/cqlshlib/test)"]
+  ],
+  "subsystem": {"kind": "package", "root": "org/apache/cassandra/"}
+ },
+ "ci_provider": "jira-ci-summary",
+ "disabled_checks": [],
+ "labplan": true,
+ "build": {"tool": "ant"},
+ "docs_dir": null,
+ "commit_subject_key": "forbidden",
+ "commands": {
+  "check": "`ant check`",
+  "checkstyle": "`ant checkstyle` and `ant checkstyle-test`",
+  "checkstyle_main": "`ant checkstyle`",
+  "rat": "`ant check` runs the RAT licence check",
+  "ai_trailer_source": "see AGENTS.md in apache/cassandra",
+  "test_advice": "Add a test that fails without this change: a unit test under test/unit, or an in-JVM dtest under test/distributed for multi-node behaviour. If no test is possible, explain why on the ticket."
+ },
+ "static": {
+  "main": ["^src/java/"],
+  "test": ["^test/"],
+  "exclude": ["src/gen-java/", "modules/accord/"],
+  "baseline_roots": ["src/java"],
+  "scope_label": "src/java or test",
+  "license_exempt": ["^test/resources/"],
+  "protected": ["^src/gen-java/", "^lib/"],
+  "grammar": ["^src/antlr/"],
+  "checkstyle": {
+   "tool": null,
+   "files": [".build/checkstyle.xml", ".build/checkstyle_suppressions.xml", ".build/checkstyle_test.xml"],
+   "required": [".build/checkstyle.xml", ".build/checkstyle_suppressions.xml"],
+   "configs": {"main": ".build/checkstyle.xml", "test": ".build/checkstyle_test.xml"},
+   "properties": {"checkstyle.log.dir": "{logdir}", "checkstyle.suppressions": "{config_dir}/checkstyle_suppressions.xml"}
+  }
+ },
+ "compat_surfaces": [
+  ["config", "^(conf/cassandra[^/]*\\.yaml|src/java/org/apache/cassandra/config/Config\\.java)$"],
+  ["native protocol", "^(src/java/org/apache/cassandra/transport/|doc/native_protocol)"],
+  ["CQL grammar", "^src/antlr/"],
+  ["CQL semantics", "^src/java/org/apache/cassandra/cql3/"],
+  ["messaging", "^src/java/org/apache/cassandra/net/"],
+  ["sstable format", "^src/java/org/apache/cassandra/io/sstable/"],
+  ["commitlog / hints", "^src/java/org/apache/cassandra/(db/commitlog|hints)/"],
+  ["schema / system tables", "^src/java/org/apache/cassandra/(schema/|db/SystemKeyspace)"],
+  ["nodetool", "^src/java/org/apache/cassandra/tools/nodetool/"],
+  ["JMX", "MBean\\.java$"],
+  ["metrics", "^src/java/org/apache/cassandra/metrics/"],
+  ["virtual tables", "^src/java/org/apache/cassandra/db/virtual/"],
+  ["guardrails", "^src/java/org/apache/cassandra/db/guardrails/"],
+  ["dependencies", "^(\\.build/(build-resolve|parent-pom-template|cassandra-deps-template|cassandra-build-deps-template)\\.xml|lib/)"]
+ ],
+ "not_checked": [
+  "`ant check` (checkstyle and RAT) was not run; the static checks here approximate it from the diff.",
+  "Tests are built and run only for committers' PRs (or a PR the owner approved) and only a selection of unit tests; otherwise CI evidence comes only from summaries attached to JIRA.",
+  "CI failures are counted, not compared against known flaky tests (Butler) yet.",
+  "Code review lenses read the diff; they do not build or run tests."
+ ],
+ "lenses": {
+  "standards": "docs/research/cassandra-standards.md",
+  "testing_doc": "docs/report/testing.md",
+  "guides": {},
+  "drop": []
+ }
+}

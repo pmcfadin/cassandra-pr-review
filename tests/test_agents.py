@@ -126,3 +126,35 @@ class PanelModel(unittest.TestCase):
         for lens in review.load_panel():
             fm = front_matter(read(os.path.join(AGENTS, lens["agent"] + ".md")))
             self.assertEqual(fm.get("model"), "sonnet", lens["agent"])
+
+
+class ProjectStandards(unittest.TestCase):
+    """sibling-lenses: each subproject's standards file has a Lens notes section per panel lens."""
+
+    def test_lens_notes_per_lens(self):
+        from cpr import project as project_mod, review
+        names = [l["name"] for l in review.load_panel()]
+        for slug in project_mod.slugs():
+            p = project_mod.load(slug)
+            text = read(os.path.join(ROOT, p.lens_standards))
+            if slug == "cassandra":
+                self.assertNotIn("## Lens notes", text)  # Cassandra lenses keep their own lists
+                continue
+            with self.subTest(project=slug):
+                notes = text.split("\n## Lens notes", 1)
+                self.assertEqual(len(notes), 2, "no ## Lens notes section")
+                headings = re.findall(r"^### (\S+)\s*$", notes[1], re.MULTILINE)
+                self.assertEqual(headings, names)
+                for section in re.split(r"^### \S+\s*$", notes[1], flags=re.MULTILINE)[1:]:
+                    self.assertGreaterEqual(len(re.findall(r"^- ", section, re.MULTILINE)), 3)
+
+    def test_prompts_name_the_lens_notes(self):
+        for path in cass_lenses() + [STANDARDS]:
+            text = read(path)
+            with self.subTest(path=path):
+                self.assertIn("`standards`", text)
+                self.assertIn("## Lens notes", text)
+                self.assertIn("`project`", text)
+        for path in cass_lenses():
+            name = os.path.basename(path)[:-3]
+            self.assertIn(f"`### {name}`", read(path))

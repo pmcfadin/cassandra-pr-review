@@ -1,17 +1,31 @@
-"""Parse `patch by …; reviewed by … for CASSANDRA-N` credit lines and resolve names to ASF committers."""
+"""Parse `patch by …; reviewed by … for KEY-N` credit lines and resolve names to ASF committers.
 
+`keys` is the project's JIRA key prefixes (project.jira_keys). Sidecar sometimes writes the key as a markdown
+link, `for [CASSSIDECAR-378](https://...)`, so an opening bracket before the key is allowed.
+"""
+
+import functools
 import json
 import os
 import re
 import unicodedata
 
 ALIASES = os.path.join(os.path.dirname(__file__), "data", "people-aliases.json")
+CASSANDRA = ("CASSANDRA",)
 
-# The verb tolerates the typos found in history: reviwed, reviewd, revieewed, reivewed, review by.
-_CREDIT_RE = re.compile(r"patch by (.+?)[;,]\s*re[a-z]*w[a-z]*[- ]by (.+?)(?:\s+for\s+(CASSANDRA-\d+)|\s*$|\n\n)",
+
+@functools.lru_cache(maxsize=None)
+def _regexes(keys):
+    k = "(?:" + "|".join(map(re.escape, keys)) + r")-\d+"
+    # The verb tolerates the typos found in history: reviwed, reviewd, revieewed, reivewed, review by.
+    credit = re.compile(rf"patch by (.+?)[;,]\s*re[a-z]*w[a-z]*[- ]by (.+?)(?:\s+for\s+\[?({k})|\s*$|\n\n)",
                         re.IGNORECASE)
-_PATCH_ONLY_RE = re.compile(r"patch by (.+?)(?:\s+for\s+(CASSANDRA-\d+)|\s*$)", re.IGNORECASE)
-_KEY_RE = re.compile(r"\bCASSANDRA-\d+\b", re.IGNORECASE)
+    patch_only = re.compile(rf"patch by (.+?)(?:\s+for\s+\[?({k})|\s*$)", re.IGNORECASE)
+    for_key = re.compile(rf"\bfor\s+\[?({k})", re.IGNORECASE)
+    any_key = re.compile(rf"\b{k}\b", re.IGNORECASE)
+    return credit, patch_only, for_key, any_key
+
+
 _SPLIT_RE = re.compile(r"\s*(?:,|\band\b|&|\+)\s*", re.IGNORECASE)
 _PLACEHOLDERS = {"tbd", "tba", "?", "", "none", "n/a"}
 
@@ -25,30 +39,32 @@ def _names(text):
     return out
 
 
-def parse(message):
-    """Return {"authors": [...], "reviewers": [...], "key": "CASSANDRA-N" | None, "credited": bool}.
+def parse(message, keys=CASSANDRA):
+    """Return {"authors": [...], "reviewers": [...], "key": "KEY-N" | None, "credited": bool}.
 
     The text is whitespace-collapsed first so lines wrapped mid-credit still parse.
     """
+    credit, patch_only, _, _ = _regexes(tuple(keys))
     flat = " ".join((message or "").split())
-    m = _CREDIT_RE.search(flat)
+    m = credit.search(flat)
     if m:
         return {"authors": _names(m.group(1)), "reviewers": _names(m.group(2)),
-                "key": m.group(3).upper() if m.group(3) else primary_key(message), "credited": True}
-    m = _PATCH_ONLY_RE.search(flat)
+                "key": m.group(3).upper() if m.group(3) else primary_key(message, keys), "credited": True}
+    m = patch_only.search(flat)
     if m:
         return {"authors": _names(m.group(1)), "reviewers": [],
-                "key": m.group(2).upper() if m.group(2) else primary_key(message), "credited": True}
-    return {"authors": [], "reviewers": [], "key": primary_key(message), "credited": False}
+                "key": m.group(2).upper() if m.group(2) else primary_key(message, keys), "credited": True}
+    return {"authors": [], "reviewers": [], "key": primary_key(message, keys), "credited": False}
 
 
-def primary_key(message):
-    """The ticket a commit belongs to: the `for CASSANDRA-N` of its credit line, else the first key."""
+def primary_key(message, keys=CASSANDRA):
+    """The ticket a commit belongs to: the `for KEY-N` of its credit line, else the first key."""
+    _, _, for_key, any_key = _regexes(tuple(keys))
     flat = " ".join((message or "").split())
-    m = re.search(r"\bfor\s+(CASSANDRA-\d+)", flat, re.IGNORECASE)
+    m = for_key.search(flat)
     if m and re.search(r"patch by", flat, re.IGNORECASE):
         return m.group(1).upper()
-    m = _KEY_RE.search(message or "")
+    m = any_key.search(message or "")
     return m.group(0).upper() if m else None
 
 

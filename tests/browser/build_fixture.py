@@ -144,13 +144,23 @@ def bundle_model(name):
     return model_mod.build(b, checks_mod.run_all(b), triage(b), render.load_docs(), diffview.unavailable("not built here"))
 
 
+def sidecar_model():
+    """A Cassandra Sidecar report: Gradle modules, CI from the recorded GitHub checks of sidecar #400."""
+    from cpr import checks as checks_mod, diffview, project
+    from cpr.triage import triage
+    from tests.helpers import sidecar_bundle
+    b = sidecar_bundle()
+    return model_mod.build(b, checks_mod.run_all(b), triage(b), render.load_docs(project=project.of(b)),
+                           diffview.unavailable("not built here"))
+
+
 def build_site(out_dir, model):
-    """An index over five different reports: contributor, draft, reviewers (siblings), unknown and ready-ish mixes."""
+    """An index over seven Cassandra reports (contributor, draft, reviewers, unknown and ready-ish mixes) and one Sidecar report."""
     from cpr import site
     reports = os.path.join(out_dir, "site-reports")
     for name in ("4967-huge.json.gz", "5201-backport-set.json.gz", "5212-no-jira.json.gz", "5228-stale-ci.json.gz", "5238-draft.json.gz"):
         m = bundle_model(name)
-        render.write(m, os.path.join(reports, str(m["pr"]["number"]), "index.html"))
+        render.write(m, os.path.join(reports, "cassandra", str(m["pr"]["number"]), "index.html"))
     # Two more reports so every kind of group exists: nothing left for the contributor, and a read failure.
     for number, verdict in ((6001, "awaiting-review"), (6002, "insufficient-evidence")):
         m = bundle_model("5212-no-jira.json.gz")
@@ -159,7 +169,9 @@ def build_site(out_dir, model):
             c["status"], c["action_required"] = "pass", False
         m["recommendation"] = {**m["recommendation"], "verdict": verdict, "reasons": []}
         m.pop("view", None)
-        render.write(m, os.path.join(reports, str(number), "index.html"))
+        render.write(m, os.path.join(reports, "cassandra", str(number), "index.html"))
+    side = sidecar_model()
+    render.write(side, os.path.join(reports, "sidecar", str(side["pr"]["number"]), "index.html"))
     rows = site.build(reports, os.path.join(out_dir, "site"))
     return os.path.join(out_dir, "site", "index.html"), rows
 
@@ -178,6 +190,7 @@ def main(out_dir):
     render.write(unreviewed(model), os.path.join(out_dir, "unreviewed.html"))
     huge = bundle_model("4967-huge.json.gz")
     render.write(huge, os.path.join(out_dir, "huge.html"))
+    render.write(sidecar_model(), os.path.join(out_dir, "sidecar.html"))
     index, rows = build_site(out_dir, model)
     print(json.dumps({"build": os.path.join(out_dir, "build.html"), "build_none": os.path.join(out_dir, "build-none.html"),
                       "report": os.path.join(out_dir, "report.html"), "hostile": os.path.join(out_dir, "hostile.html"),
@@ -185,8 +198,11 @@ def main(out_dir):
                       "labplan_none": os.path.join(out_dir, "labplan-none.html"),
                       "pmd_rules": os.path.join(out_dir, "pmd-rules.html"),
                       "about": os.path.join(out_dir, "about.html"), "unreviewed": os.path.join(out_dir, "unreviewed.html"),
-                      "huge": os.path.join(out_dir, "huge.html"), "index": index,
-                      "index_groups": {r["group"]: sum(1 for x in rows if x["group"] == r["group"]) for r in rows},
+                      "huge": os.path.join(out_dir, "huge.html"), "sidecar": os.path.join(out_dir, "sidecar.html"),
+                      "index": index,
+                      "index_groups": {p: {r["group"]: sum(1 for x in rows if (x["project"], x["group"]) == (p, r["group"]))
+                                           for r in rows if r["project"] == p}
+                                       for p in sorted({r["project"] for r in rows})},
                       "hostile_title": HOSTILE_TITLE, "hostile_evidence": HOSTILE_EVIDENCE}))
 
 

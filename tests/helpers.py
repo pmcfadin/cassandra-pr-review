@@ -112,6 +112,51 @@ def bundle(**kw):
     return copy.deepcopy(b)
 
 
+def github_ci(fixture, head):
+    """The bundle's `ci.github` from recorded check-runs and workflow runs (tests/fixtures/ci/gh-*-<fixture>.json)."""
+    import json
+    import os
+    from unittest import mock
+    from cpr.ingest import gh_checks
+    d = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures", "ci")
+    pages = {}
+    for kind in ("check-runs", "workflow-runs"):
+        with open(os.path.join(d, f"gh-{kind}-{fixture}.json")) as f:
+            pages[kind] = [json.load(f)]
+    for w in pages["workflow-runs"][0]["workflow_runs"]:
+        w["head_sha"] = head  # recorded for the real head; the synthetic bundle has its own
+    with mock.patch.object(gh_checks, "gh_json",
+                           side_effect=lambda path, **k: pages["check-runs" if "/check-runs" in path else "workflow-runs"]):
+        return gh_checks.fetch("apache/cassandra-sidecar", head, None)
+
+
+def sidecar_bundle(**kw):
+    """A sidecar PR: Gradle modules, CASSSIDECAR key, trunk only, credit line with a markdown-link key."""
+    files = [("server/src/main/java/org/apache/cassandra/sidecar/routes/FooHandler.java", ["int x = 1;"], False),
+             ("server/src/test/java/org/apache/cassandra/sidecar/routes/FooHandlerTest.java", ["@Test void t() {}"], False),
+             ("CHANGES.txt", [" * Fix the foo handler (CASSSIDECAR-378)"], False)]
+    b = with_files(bundle(), files)
+    b["meta"] = {**b["meta"], "project": "sidecar", "repo": "apache/cassandra-sidecar"}
+    b["pr"] = {**b["pr"], "number": 397, "url": "https://github.com/apache/cassandra-sidecar/pull/397",
+               "title": "CASSSIDECAR-378: Fix the foo handler", "base": "trunk", "head_ref": "CASSSIDECAR-378",
+               "head_repo": "alice/cassandra-sidecar"}
+    b["commits"] = [{**b["commits"][0], "message": "CASSSIDECAR-378: Fix the foo handler (#397)\n\nPatch by Alice; "
+                     "Reviewed by Bob, Carol for [CASSSIDECAR-378](https://issues.apache.org/jira/browse/CASSSIDECAR-378)"}]
+    b["jira_key"] = {"key": "CASSSIDECAR-378", "sources": ["title", "branch"], "conflicts": [],
+                     "mentioned": ["CASSSIDECAR-378"]}
+    b["jira"] = {**b["jira"], "ticket": {**b["jira"]["ticket"], "key": "CASSSIDECAR-378",
+                                          "url": "https://issues.apache.org/jira/browse/CASSSIDECAR-378",
+                                          "fix_versions": ["0.5.0"], "components": []}}
+    b["siblings"] = [{**b["siblings"][0], "number": 397, "url": b["pr"]["url"], "base": "trunk"}]
+    b["release_branches"] = ["trunk"]
+    b["ci"] = {"status": "ok", "provider": "github-checks", "github": github_ci("sidecar-400", SHA),
+               "summaries": [], "result_archives": []}
+    b["base_files"] = {**b["base_files"], "checkstyle_xml": None}
+    for k, v in kw.items():
+        b[k] = {**b[k], **v} if isinstance(v, dict) and isinstance(b.get(k), dict) else v
+    return copy.deepcopy(b)
+
+
 def with_files(b, files):
     """Replace files and diff. `files` is [(path, added_lines, new_file)]."""
     b["files"] = [{"path": p, "previous_path": None, "status": "A" if new else "M", "additions": len(lines),

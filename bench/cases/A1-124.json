@@ -1,0 +1,40 @@
+{
+  "id": "A1-124",
+  "title": "CASSANALYTICS-124 Commitlog reading not progressing in CDC due to incorrect CommitLogReader.isFullyRead",
+  "repo": "apache/cassandra-analytics",
+  "pr": 176,
+  "base_sha": "f7f9f0ca9faff5368d7e8bbfe1f5d8e75fab8c84",
+  "head_sha": "34c6c38253d59a9fe8485368fea3145e2dffe205",
+  "ticket": "CASSANALYTICS-124",
+  "cutoff": "2026-03-09",
+  "notes": "First Analytics case (2 files, +40/-7; small tier). Head is the landed trunk commit (squash of PR #176). The hard issue is from CASSANALYTICS-127 (created 2026-03-10, the day after the case landed), whose description names commit 34c6c382 as the cause, and its fix commit 2427d27: the block added after the sync-segment loop sets position to log.maxOffset() whenever statusTracker.shouldContinue(), without checking that the segment was complete, so a commit log still being written is marked fully read (isFullyRead true) and later mutations in it are never read; it also broke CdcTests.testMockedCdc. Lines at the head: BufferingCommitLogReader.java:321-326. The file is in cassandra-four-zero-bridge (a copy of Cassandra's commit log reader). Training contamination: post-dates the case head; recheck per model. First panel run (2026-11-20, Sonnet): found by cass-concurrency-lifecycle (cl-2, line 325).",
+  "known_issues": [
+    {
+      "id": "K1",
+      "source": "https://issues.apache.org/jira/browse/CASSANALYTICS-127",
+      "severity": "major",
+      "hard": true,
+      "files": [
+        "cassandra-four-zero-bridge/src/main/java/org/apache/cassandra/db/commitlog/BufferingCommitLogReader.java"
+      ],
+      "lines": [
+        321,
+        326
+      ],
+      "match_terms": [
+        "maxoffset"
+      ],
+      "match_any": [
+        "fully read",
+        "isfullyread",
+        "complete",
+        "partial",
+        "still being written",
+        "skip",
+        "lost",
+        "never read"
+      ],
+      "summary": "After the loop, position is set to log.maxOffset() without checking the segment is complete, so an incomplete commit log is marked fully read"
+    }
+  ]
+}

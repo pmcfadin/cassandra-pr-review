@@ -10,6 +10,16 @@
       "url": "https://github.com/checkstyle/checkstyle/releases/download/checkstyle-8.40/checkstyle-8.40-all.jar",
       "sha256": "670f057d61cc6cef8f0440f838f4adcea6a16c9e634bc0e96a1c6eeab53fc0e4"
     },
+    "checkstyle-9.3": {
+      "name": "checkstyle", "version": "9.3", "kind": "jar", "min_java": 8,
+      "url": "https://github.com/checkstyle/checkstyle/releases/download/checkstyle-9.3/checkstyle-9.3-all.jar",
+      "sha256": "02ad3307e46059a7c4f8af6c5f61f477bc5fd910e56afb145c45904c95d213ac"
+    },
+    "checkstyle-7.8.1": {
+      "name": "checkstyle", "version": "7.8.1", "kind": "jar", "min_java": 8,
+      "url": "https://github.com/checkstyle/checkstyle/releases/download/checkstyle-7.8.1/checkstyle-7.8.1-all.jar",
+      "sha256": "4392f7055818b23403118bb893268b5c5a7df48e681fe6e8eac4b5e8351384af"
+    },
     "pmd-7.28.0": {
       "name": "pmd", "version": "7.28.0", "kind": "zip", "min_java": 8,
       "url": "https://github.com/pmd/pmd/releases/download/pmd_releases%2F7.28.0/pmd-dist-7.28.0-bin.zip",
@@ -27,6 +37,5 @@
   "cpd_min_tokens": 100,
   "house_style_share": 0.25,
   "usual_p": 0.01,
-  "caps": {"tool_seconds": 120, "pr_seconds": 300, "pmd_max_files": 400, "baseline_seconds": 900, "pmd_threads": 4},
-  "exclude": ["src/gen-java/", "modules/accord/"]
+  "caps": {"tool_seconds": 120, "pr_seconds": 300, "pmd_max_files": 400, "baseline_seconds": 900, "pmd_threads": 4}
 }

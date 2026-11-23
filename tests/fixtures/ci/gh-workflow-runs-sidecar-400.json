@@ -1,0 +1,1 @@
+{"total_count":1,"workflow_runs":[{"conclusion":"success","event":"pull_request","head_sha":"7e621eda9cafce152fdb078262d26837dddda630","html_url":"https://github.com/apache/cassandra-sidecar/actions/runs/43643571833","name":"CI","status":"completed"}]}

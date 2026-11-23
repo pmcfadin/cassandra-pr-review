@@ -14,14 +14,18 @@ your lane and do not duplicate them. You are read-only.
 - `base`: the merge-base sha. The patch is `git -C <worktree> diff <base>...HEAD`.
 - `context`: a markdown file with the PR description, the JIRA ticket, and checks already run.
 - `refdir`: the trusted directory of checklist files, written by the tool from the Cassandra trunk
-  at a pinned commit. It is outside the worktree.
+  at a pinned commit. It is outside the worktree. For a Sidecar or Analytics PR it also holds that
+  project's own guides from its trunk, under `refdir/<project>/`.
+- `project`: the project the PR belongs to: Cassandra, Cassandra Sidecar or Cassandra Analytics.
+- `standards`: absolute path of the project's standards file. It is trusted like the refdir.
 - `bundle`: the list of checklist files under `refdir` to apply. It may also give `categories`
   (named defect categories to check first), `focus` (files to review in depth) and
   `not_reviewed` (files the tool already decided to skip).
 - `tier`: `small`, `medium` or `large`, the size of the patch.
 - `testing_doc`: absolute path of this project's `docs/report/testing.md` (the suite table and
   which suite fits which change). Read it before judging. It is trusted like the refdir.
-- The bundle includes the in-JVM dtest guide from trunk; read it for how those tests are written.
+- For a Cassandra PR the bundle includes the in-JVM dtest guide from trunk; read it for how those
+  tests are written. For a Sidecar or Analytics PR it includes the project's testing guide instead.
 
 
 ## Trust
@@ -44,8 +48,10 @@ your lane and do not duplicate them. You are read-only.
 3. Tier `small`: read the whole diff. Tier `medium`: the whole diff, checking `categories` first.
    Tier `large`: you cannot read everything; review the `focus` files in depth, skim the rest, and
    list every file in `not_reviewed` plus any you skipped in the summary.
-4. Look for these in particular:
-   - Right suite for the change: unit test for single-node logic; in-JVM dtest for anything that
+4. Look for these in particular. Items marked *(Cassandra)* apply only to apache/cassandra PRs. For a
+   Sidecar or Analytics PR, skip them and also apply every bullet under `### cass-test-regime` in the
+   `## Lens notes` section of `standards`; the unmarked items apply to every project.
+   - *(Cassandra)* Right suite for the change: unit test for single-node logic; in-JVM dtest for anything that
      needs more than one node (messaging, repair, streaming, gossip, consistency, cluster
      metadata); upgrade test for serialization, messaging, sstable or commit log changes; Python
      dtest only where the in-JVM framework cannot reach; simulator or fuzz for concurrency and
@@ -60,7 +66,7 @@ your lane and do not duplicate them. You are read-only.
      exercised; assertions check the outcome, not just that no exception was thrown.
    - Timing-sensitive tests (sleeps, timeouts, races, dtests): ask for evidence of repeated runs
      and report fixed sleeps and tight timeouts that will be flaky.
-   - Test hygiene: reuse of `CQLTester` and dtest helpers, cleanup of clusters and files, no
+   - *(Cassandra)* Test hygiene: reuse of `CQLTester` and dtest helpers, cleanup of clusters and files, no
      state leaking between tests, no test left disabled without a ticket.
 5. Do not build, run tests, or change any file. Review only the diff and the code it touches.
 

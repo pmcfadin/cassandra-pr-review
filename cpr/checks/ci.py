@@ -1,8 +1,10 @@
-"""CI evidence checks: summaries attached to JIRA, their freshness, profile, and failures."""
+"""CI evidence checks: summaries attached to JIRA (apache/cassandra) or GitHub check-runs (the subprojects),
+their freshness, profile, and failures."""
 
 import re
 
 from cpr.checks import Result, check, ev
+from cpr.ingest import gh_checks
 
 # Diff paths that need the "pre-commit w/ upgrades" profile.
 UPGRADE_SENSITIVE = [
@@ -58,8 +60,48 @@ def _no_source(bundle, ctx):
     return None
 
 
+def _github(bundle, ctx):
+    """The GitHub checks section when this project's CI is GitHub Actions, else None."""
+    return (bundle["ci"].get("github") or {}) if ctx.project.ci_provider == "github-checks" else None
+
+
+def _run_rows(runs, limit=40):
+    return [ev(f"{r.get('name')}: {r.get('conclusion') or r.get('status')}", r.get("url")) for r in runs[:limit]]
+
+
+def _github_evidence(gh, ctx):
+    head = ctx.pr["head_sha"][:10]
+    if gh.get("status") != "ok":
+        return Result("unknown", "GitHub checks could not be read", [ev(gh.get("error") or "")])
+    c = gh_checks.summary(gh)
+    ci_branches = ctx.project.data.get("ci_branches")
+    if not c["total"] and not gh.get("workflow_runs") and ci_branches and ctx.pr["base"] not in ci_branches:
+        return Result("not-applicable", f"{ctx.project.name}'s CI workflows run only for PRs to "
+                                        + ", ".join(f"`{b}`" for b in ci_branches) + f"; this PR targets `{ctx.pr['base']}`")
+    if not c["total"]:
+        waiting = c["awaiting_approval"]
+        if waiting:
+            return Result("unknown", "CI is waiting for a maintainer to approve the workflow runs",
+                          [ev(f"{w.get('name')}: approval required", w.get("url")) for w in waiting],
+                          action="A committer approves the workflow runs on the PR (Checks tab) after reading the change.")
+        return Result("fail", f"CI not yet run on the head `{head}`",
+                      [ev(f"{w.get('name')}: {w.get('conclusion') or w.get('status')}", w.get("url"))
+                       for w in gh.get("workflow_runs") or []],
+                      action="Push to the PR branch to trigger CI, or ask a committer to re-run the workflows.")
+    rows = [ev(f"{c['completed']} of {c['total']} checks completed: {c['passed']} passed, {c['failed']} failed, "
+               f"{c['skipped']} skipped, {c['cancelled']} cancelled")]
+    if c["pending"]:
+        pending = [r for r in gh["check_runs"] if r.get("status") != "completed"]
+        return Result("unknown", f"CI is still running on `{head}` ({c['pending']} of {c['total']} checks pending)",
+                      rows + _run_rows(pending), action="Wait for the checks to finish.")
+    return Result("pass", f"CI ran on the head `{head}`: {c['total']} checks", rows)
+
+
 @check("ci.evidence", "CI results exist for every target branch", "ci", "ci", blocking=True, owner="committer")
 def evidence(bundle, ctx):
+    gh = _github(bundle, ctx)
+    if gh is not None:
+        return _github_evidence(gh, ctx)
     missing_src = _no_source(bundle, ctx)
     if missing_src:
         return missing_src
@@ -88,6 +130,12 @@ def evidence(bundle, ctx):
 
 @check("ci.freshness", "CI ran on the current PR head", "ci", "ci", blocking=False, owner="committer")
 def freshness(bundle, ctx):
+    gh = _github(bundle, ctx)
+    if gh is not None:
+        if not gh.get("check_runs"):
+            return Result("not-applicable", "No CI checks to compare")
+        # Check-runs are read for the head sha itself.
+        return Result("pass", f"The checks are for the PR head `{ctx.pr['head_sha'][:10]}`")
     missing_src = _no_source(bundle, ctx)
     if missing_src:
         return missing_src
@@ -138,8 +186,25 @@ def profile(bundle, ctx):
     return Result("pass", "Upgrade tests ran on every branch with CI", files)
 
 
+def _github_failures(gh):
+    runs = [r for r in gh.get("check_runs") or [] if r.get("status") == "completed"]
+    if not runs:
+        return Result("not-applicable", "No completed CI checks")
+    failed = [r for r in runs if r.get("conclusion") in gh_checks.FAILED]
+    cancelled = [r for r in runs if r.get("conclusion") == "cancelled"]
+    if failed:
+        return Result("warn", f"{len(failed)} CI check(s) failed; not yet compared against known flaky tests",
+                      _run_rows(failed) + _run_rows(cancelled, 10),
+                      action="Explain each failure on the PR or the ticket (pre-existing, flaky, or caused by this patch).")
+    rows = [ev(f"{len(cancelled)} check(s) cancelled, not counted")] + _run_rows(cancelled, 10) if cancelled else []
+    return Result("pass", f"No failed checks among {len(runs)} completed", rows)
+
+
 @check("ci.failures", "CI failures", "ci", "ci", blocking=False, owner="reviewer")
 def failures(bundle, ctx):
+    gh = _github(bundle, ctx)
+    if gh is not None:
+        return _github_failures(gh)
     by_branch = _summaries_by_branch(bundle)
     if not by_branch:
         return Result("not-applicable", "No CI summaries")

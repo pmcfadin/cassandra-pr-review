@@ -18,14 +18,15 @@ def norm(path):
 
 
 def params(root, work_dir, run, wt, m2, objects, home, gradle=None):
-    """The -D parameters the profile needs, as an ordered dict. Paths must be absolute and normalized."""
-    prm = {
-        "WT": norm(wt), "M2": norm(m2), "GIT": norm(os.path.join(wt, ".git")), "HOME": norm(home),
+    """The -D parameters the profile needs, as an ordered dict. Paths must be absolute and normalized.
+
+    GRADLE (GRADLE_USER_HOME, writable) defaults to <run>/gradle.
+    """
+    return {
+        "WT": norm(wt), "M2": norm(m2), "GRADLE": norm(gradle or os.path.join(run, "gradle")),
+        "GIT": norm(os.path.join(wt, ".git")), "HOME": norm(home),
         "ROOT": norm(root), "WORK": norm(work_dir), "RUN": norm(run), "OBJECTS": norm(objects),
     }
-    if gradle:  # only the net profile uses it
-        prm["GRADLE"] = norm(gradle)
-    return prm
 
 
 def wrap(argv, prm, profile=PROFILE):

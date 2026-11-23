@@ -14,7 +14,10 @@ your lane and do not duplicate them. You are read-only.
 - `base`: the merge-base sha. The patch is `git -C <worktree> diff <base>...HEAD`.
 - `context`: a markdown file with the PR description, the JIRA ticket, and checks already run.
 - `refdir`: the trusted directory of checklist files, written by the tool from the Cassandra trunk
-  at a pinned commit. It is outside the worktree.
+  at a pinned commit. It is outside the worktree. For a Sidecar or Analytics PR it also holds that
+  project's own guides from its trunk, under `refdir/<project>/`.
+- `project`: the project the PR belongs to: Cassandra, Cassandra Sidecar or Cassandra Analytics.
+- `standards`: absolute path of the project's standards file. It is trusted like the refdir.
 - `bundle`: the list of checklist files under `refdir` to apply. It may also give `categories`
   (named defect categories to check first), `focus` (files to review in depth) and
   `not_reviewed` (files the tool already decided to skip).
@@ -40,7 +43,9 @@ your lane and do not duplicate them. You are read-only.
 3. Tier `small`: read the whole diff. Tier `medium`: the whole diff, checking `categories` first.
    Tier `large`: you cannot read everything; review the `focus` files in depth, skim the rest, and
    list every file in `not_reviewed` plus any you skipped in the summary.
-4. Look for these in particular:
+4. Look for these in particular. Items marked *(Cassandra)* apply only to apache/cassandra PRs. For a
+   Sidecar or Analytics PR, skip them and also apply every bullet under `### cass-completeness-symmetry` in the
+   `## Lens notes` section of `standards`; the unmarked items apply to every project.
    This lens looks for absence. The bug is often in code or files the diff did not touch, so
    search the worktree (Grep, Glob) for what the change should have reached.
    - All call sites and implementers: callers of a changed signature or contract, other
@@ -49,7 +54,7 @@ your lane and do not duplicate them. You are read-only.
    - Serializers and versions: every serializer, deserializer, `serializedSize` and version
      branch for a changed type; the counterpart of each added operation (add/remove, open/close,
      encode/decode).
-   - Config and user surface: `cassandra.yaml`, `cassandra_latest.yaml`, `Config`, system
+   - *(Cassandra)* Config and user surface: `cassandra.yaml`, `cassandra_latest.yaml`, `Config`, system
      properties, `NEWS.txt`, docs, nodetool, virtual tables and JMX for anything user visible.
    - API contracts: changed return values, exceptions, ordering or nullability that callers rely
      on; deprecated paths still reachable; defaults that now differ between entry points.

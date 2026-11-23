@@ -22,10 +22,14 @@ def tokens_style():
         return "<style>\n" + f.read() + "</style>"
 
 
-def load_docs(directory=DOCS_DIR, aspects=ASPECTS):
+def load_docs(directory=DOCS_DIR, aspects=ASPECTS, project=None):
+    """{aspect: markdown}. A project with a `docs_dir` uses its own document for an aspect when there is one there."""
     docs = {}
+    own = os.path.join(directory, project.docs_dir) if project is not None and project.docs_dir else None
     for aspect in aspects:
         path = os.path.join(directory, f"{aspect}.md")
+        if own and os.path.exists(os.path.join(own, f"{aspect}.md")):
+            path = os.path.join(own, f"{aspect}.md")
         if not os.path.exists(path):
             raise RenderError(f"missing aspect document: {path}")
         with open(path) as f:

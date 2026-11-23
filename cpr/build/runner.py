@@ -4,6 +4,9 @@ Only dependency resolution at the merge-base (the base branch's build file) uses
 outside the sandbox. Everything that executes the PR's code goes through `sandbox.wrap`. All processes
 start through a `Shell`, so unit tests pass a fake one and never build anything.
 
+`Build` is apache/cassandra's Ant build; `cpr.build.gradle.GradleBuild` overrides its steps for a Gradle project.
+`build` picks one from the project's `build.tool`.
+
 status values (research 5.1): pass, build-failed, tests-failed, timeout, unknown, not-built.
 """
 
@@ -16,12 +19,14 @@ import shutil
 import time
 import xml.etree.ElementTree as ET
 
+from cpr import project as project_mod
 from cpr.build import coverage, run_dir, sandbox, select
 from cpr.staticanalysis.run import execute
 
 Proc = collections.namedtuple("Proc", "rc out err seconds timed_out")
 JAVAC_ERROR = re.compile(r"^\s*(?:\[javac\]\s+)?(\S+\.java):(\d+): error: (.*)$", re.M)
 HARNESS = re.compile(r"Unsupported JDK version|Unable to create javax script engine|must be set when building from java")
+OFFLINE_DEPS = re.compile(r"No cached version of \S+ available for offline mode|Could not resolve all (?:files|dependencies|artifacts)")
 NETWORK = re.compile(r"UnknownHostException|Could not transfer|Unable to download|Connection refused|Failed to resolve|"
                      r"Unable to resolve|Operation not permitted|Network is unreachable")
 ACCORD_MISSING = re.compile(r"cassandra-accord[^\n]*(?:not found|Could not find|Unable to resolve|missing|does not exist)|"
@@ -57,18 +62,26 @@ def expand(path):
     return os.path.expanduser(path)
 
 
+def jdk_home(cfg, major, why, exists=os.path.isdir):
+    """(home, label) of the first configured JDK `major` that exists, or Stop(unknown) naming the install command."""
+    major = str(major)
+    home = next((expand(h) for h in cfg["jdk_homes"].get(major, []) if exists(expand(h))), None)
+    if home is None:
+        cmd = cfg["sdk_install"].get(major, f"install a JDK {major}")
+        raise Stop("unknown", f"JDK {major} is missing for {why}: run `{cmd}`")
+    name = os.path.basename(home)
+    m = re.search(r"/openjdk@(\d+)/", home + "/")
+    label = ("Temurin " + name[:-4]) if name.endswith("-tem") else f"OpenJDK {m[1]} (Homebrew)" if m else name
+    return home, label
+
+
 def jdk_for(cfg, branch, exists=os.path.isdir):
     """{home, major, label, env} for the base branch, or Stop(unknown) naming the sdk command when missing."""
     b = cfg["branches"].get(branch)
     if b is None:
         raise Stop("unknown", f"no JDK mapping for base branch {branch}")
     major = str(b["jdk"])
-    home = next((expand(h) for h in cfg["jdk_homes"].get(major, []) if exists(expand(h))), None)
-    if home is None:
-        cmd = cfg["sdk_install"].get(major, f"install a JDK {major}")
-        raise Stop("unknown", f"JDK {major} is missing for {branch}: run `{cmd}`")
-    name = os.path.basename(home)
-    label = ("Temurin " + name[:-4]) if name.endswith("-tem") else name
+    home, label = jdk_home(cfg, major, branch, exists)
     env = dict(b.get("env") or {})
     if env:
         label += " (" + " ".join(f"{k}={v}" for k, v in env.items()) + ")"
@@ -145,6 +158,9 @@ def map_status(build, tests, ran_tests, cov_ok, wall_timeout, test_rc):
             return "unknown", "the accord artifact was not found in the run's Maven repo after the accord pre-step; see build.log"
         if HARNESS.search(build["text"]):
             return "unknown", "harness: the build refused this JDK or flag; see build.log"
+        if OFFLINE_DEPS.search(build["text"]):
+            return "unknown", ("a dependency the head needs is not among those resolved at the merge-base (did the PR "
+                               "add or change one?); offline builds cannot fetch it; see build.log")
         if NETWORK.search(build["text"]):
             return "unknown", "network or sandbox: a build step could not reach a resource; see build.log"
         return "unknown", "the build failed without a compile error; see build.log"
@@ -257,17 +273,17 @@ def keep_classpath(wt, rd):
 
 
 def prune_classpaths(work_dir, keep=KEEP_RUNS):
-    """Delete the kept classpath of every run but the `keep` newest (all PRs); mark their status.json. -> pruned dirs."""
+    """Delete the kept classpath of every run but the `keep` newest (all projects and PRs); mark their status.json.
+
+    -> pruned dirs. Runs live at build-runs/<slug>/<N>/<head>.
+    """
     runs = []
-    base = os.path.join(work_dir, "build-runs")
-    for pr in sorted(os.listdir(base)) if os.path.isdir(base) else []:
-        for head in sorted(os.listdir(os.path.join(base, pr))) if os.path.isdir(os.path.join(base, pr)) else []:
-            rd = os.path.join(base, pr, head)
-            if os.path.isdir(os.path.join(rd, "classpath")):
-                try:
-                    runs.append((os.path.getmtime(os.path.join(rd, "status.json")), rd))
-                except OSError:
-                    runs.append((0, rd))
+    for rd in sorted(glob.glob(os.path.join(work_dir, "build-runs", "*", "*", "*"))):
+        if os.path.isdir(os.path.join(rd, "classpath")):
+            try:
+                runs.append((os.path.getmtime(os.path.join(rd, "status.json")), rd))
+            except OSError:
+                runs.append((0, rd))
     runs.sort(reverse=True)
     out = []
     for _, rd in runs[keep:]:
@@ -286,12 +302,12 @@ def prune_classpaths(work_dir, keep=KEEP_RUNS):
 def not_built(bundle, work_dir, decision):
     st = base_status(bundle, decision)
     st["status"], st["reason"] = "not-built", decision["reason"]
-    return write_status(run_dir(work_dir, bundle["pr"]["number"], bundle["pr"]["head_sha"]), st), st
+    return write_status(run_dir(work_dir, project_mod.of(bundle).slug, bundle["pr"]["number"], bundle["pr"]["head_sha"]), st), st
 
 
-def load_status(work_dir, number, head):
+def load_status(work_dir, slug, number, head):
     try:
-        with open(os.path.join(run_dir(work_dir, number, head), "status.json")) as f:
+        with open(os.path.join(run_dir(work_dir, slug, number, head), "status.json")) as f:
             return json.load(f)
     except (OSError, ValueError):
         return None
@@ -306,7 +322,7 @@ class Build:
         self.select_fn, self.cov_fn, self.home, self.clock = select_fn, cov_fn, home, clock
         self.head, self.mb = self.pr["head_sha"], bundle["git"]["merge_base"]
         self.fetch_clone = bundle["git"]["clone"]
-        self.rd = run_dir(work_dir, self.pr["number"], self.head)
+        self.rd = run_dir(work_dir, project_mod.of(bundle).slug, self.pr["number"], self.head)
         self.wt, self.m2 = os.path.join(self.rd, "buildclone"), os.path.join(self.rd, "m2")
         self.start = clock()
         self.deadline = self.start + cfg["caps"]["wall_seconds"]
@@ -394,16 +410,16 @@ class Build:
                             f"-Dmaven.repo.local={self.m2}", "resolver-dist-lib"], env=env, cwd=self.wt, timeout=min(self.left(), self.cfg["caps"]["resolve_seconds"]))
         self.timings["resolve_trusted"] = self.timings.pop("resolve")
 
-    def seed_gradle(self):
+    def seed_gradle(self, log="accord_fetch", who="accord"):
         """<run>/gradle as GRADLE_USER_HOME, seeded with an APFS clone of the wrapper distributions (once)."""
         if os.path.isdir(self.gradle):
             return
         os.makedirs(self.gradle)
         seed = os.path.join(self.home, ".gradle", "wrapper")
         if os.path.isdir(seed):  # ~/.gradle itself is never written
-            p = self.sh("accord_fetch", ["cp", "-cR", seed, os.path.join(self.gradle, "wrapper")], check=False)
+            p = self.sh(log, ["cp", "-cR", seed, os.path.join(self.gradle, "wrapper")], check=False)
             if p.rc != 0:
-                self.status["notes"].append("accord: the Gradle wrapper seed could not be copied; the run downloads it")
+                self.status["notes"].append(f"{who}: the Gradle wrapper seed could not be copied; the run downloads it")
 
     def accord_pin(self):
         """The sha the head tree pins for the accord submodule, or None when there is no gitlink there."""
@@ -626,6 +642,9 @@ class Build:
             self.finish(before, tests, ran)
         return st
 
+    def keep_classpath(self):
+        return keep_classpath(self.wt, self.rd)
+
     def finish(self, before, tests, ran):
         st = self.status
         changes = sandbox.clone_changes(before, sandbox.clone_state(self.fetch_clone))
@@ -634,7 +653,7 @@ class Build:
             st["reason"] = "WARNING: the build changed the shared fetch clone: " + "; ".join(changes)
             st["notes"].append(st["reason"])
         try:
-            st["classpath"] = keep_classpath(self.wt, self.rd)
+            st["classpath"] = self.keep_classpath()
         except OSError as e:
             st["classpath"] = None
             st["notes"].append(f"The compiled classes could not be kept: {e}")
@@ -662,7 +681,14 @@ def build(bundle, work_dir, cfg, decision, shell=None, root=None, offline=False,
           select_fn=select.select, cov_fn=coverage.changed_coverage, home=None, clock=time.monotonic):
     """Run the build for an allowed PR. Returns (status.json path, status dict)."""
     root = root or os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    b = Build(bundle, work_dir, cfg, shell or Shell(), decision, root, offline, log, select_fn, cov_fn,
-              home or os.path.expanduser("~"), clock)
+    proj = project_mod.of(bundle)
+    if proj.build.get("tool") == "gradle":
+        from cpr.build.gradle import GradleBuild
+        b = GradleBuild(bundle, work_dir, cfg, shell or Shell(), decision, root, offline, log,
+                        None if select_fn is select.select else select_fn, cov_fn,
+                        home or os.path.expanduser("~"), clock, proj)
+    else:
+        b = Build(bundle, work_dir, cfg, shell or Shell(), decision, root, offline, log, select_fn, cov_fn,
+                  home or os.path.expanduser("~"), clock)
     st = b.execute()
     return os.path.join(b.rd, "status.json"), st

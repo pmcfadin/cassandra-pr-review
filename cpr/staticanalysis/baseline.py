@@ -2,7 +2,8 @@
 
 A rule that fires in at least `house_style_share` of the branch's files is "house style differs": the code
 itself does not follow it, so a PR that breaks it is not news. The baseline scores the base branch's whole
-`src/java` once and is cached under `<work>/static-cache/` by branch, tip sha, PMD id and ruleset hash.
+`src/java` once and is cached under `<work>/static-cache/baselines/<repo>/` by branch, tip sha, PMD id and
+ruleset hash.
 
 Order of use: the exact cached baseline; else a baseline for the same branch built less than seven days ago
 (the tip moved; logged); else build one within its own time cap; else the density in the base versions of the
@@ -62,14 +63,19 @@ def newest_recent(cache_dir, branch, pmd_id, ruleset_sha, now=None, max_age_days
     return best
 
 
-def archive_sources(repo, ref, dest, exclude=()):
-    """Write the *.java files under src/java at `ref` into dest. Returns (file count, non-blank lines). No checkout needed."""
+def archive_sources(repo, ref, dest, exclude=(), roots=("src/java",), include=()):
+    """Write the main *.java files at `ref` into dest. Returns (file count, non-blank lines). No checkout needed.
+
+    `roots` are the trees to archive (empty: the whole tree) and `include` regexes a file's path must match
+    (empty: every file); apache/cassandra is `src/java` with no filter, the Gradle projects the whole tree
+    filtered to `<module>/src/main/`.
+    """
     shutil.rmtree(dest, ignore_errors=True)
     os.makedirs(dest)
-    proc = subprocess.Popen(["git", "-C", repo, "archive", "--format=tar", ref, "src/java"],
+    proc = subprocess.Popen(["git", "-C", repo, "archive", "--format=tar", ref, *roots],
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
-        n, loc = _extract(proc, dest, exclude)
+        n, loc = _extract(proc, dest, exclude, [re.compile(r) for r in include])
     except BaseException:
         proc.kill()
         raise
@@ -83,12 +89,14 @@ def archive_sources(repo, ref, dest, exclude=()):
     return n, loc
 
 
-def _extract(proc, dest, exclude):
+def _extract(proc, dest, exclude, include=()):
     n = loc = 0
     with tarfile.open(fileobj=proc.stdout, mode="r|") as tar:
         for m in tar:
             name = m.name
             if not m.isfile() or not name.endswith(".java") or name.startswith(tuple(exclude)) or ".." in name.split("/"):
+                continue
+            if include and not any(r.search(name) for r in include):
                 continue
             target = os.path.join(dest, name)
             os.makedirs(os.path.dirname(target), exist_ok=True)
@@ -100,14 +108,15 @@ def _extract(proc, dest, exclude):
     return n, loc
 
 
-def build(repo, ref, branch, tip, pmd_bin, env, ruleset_text, pmd_id, ruleset_sha, scratch, timeout, threads, exclude=()):
+def build(repo, ref, branch, tip, pmd_bin, env, ruleset_text, pmd_id, ruleset_sha, scratch, timeout, threads, exclude=(),
+          roots=("src/java",), include=()):
     """Score the whole branch. (baseline dict, None) or (None, problem). Removes its scratch files."""
     start = time.monotonic()
     root = os.path.join(scratch, "tree")
     try:
-        n, loc = archive_sources(repo, ref, root, exclude)
+        n, loc = archive_sources(repo, ref, root, exclude, roots, include)
         if not n:
-            return None, f"no Java sources under src/java at {branch}"
+            return None, f"no Java sources under {', '.join(roots) or 'the main source directories'} at {branch}"
         rules = os.path.join(scratch, "ruleset.xml")
         with open(rules, "w") as f:
             f.write(baseline_ruleset(ruleset_text))
@@ -144,7 +153,7 @@ def shares(data):
 
 
 def obtain(cache_dir, repo, ref, branch, tip, pmd_bin, env, ruleset_text, pmd_id, ruleset_sha, timeout, threads,
-           exclude=(), log=print, now=None):
+           exclude=(), log=print, now=None, roots=("src/java",), include=()):
     """(baseline dict, source, note). source: cached | reused | built | None with the reason in note."""
     os.makedirs(cache_dir, exist_ok=True)
     exact = _load(os.path.join(cache_dir, file_name(branch, tip, pmd_id, ruleset_sha)))
@@ -158,7 +167,7 @@ def obtain(cache_dir, repo, ref, branch, tip, pmd_bin, env, ruleset_text, pmd_id
     log(f"  pmd baseline: scoring all of {branch} at {tip[:12]} (cap {timeout:.0f} s)")
     scratch = os.path.join(cache_dir, f"pmd-baseline-scratch-{os.getpid()}")
     data, problem = build(repo, ref, branch, tip, pmd_bin, env, ruleset_text, pmd_id, ruleset_sha, scratch, timeout,
-                          threads, exclude)
+                          threads, exclude, roots, include)
     if not data:
         return None, None, problem
     with open(os.path.join(cache_dir, file_name(branch, tip, pmd_id, ruleset_sha)), "w") as f:

@@ -1,5 +1,7 @@
 #!/bin/sh
-# Merge local reports/ into the published GitHub Pages site and push the gh-pages branch.
+# Merge local reports/<project>/ into the published GitHub Pages site and push the gh-pages branch.
+# Reports go to <project>/pr/<N>/; Cassandra reports from before projects existed move from pr/<N>/,
+# which then redirects.
 # The site branch holds only generated files; main never contains reports.
 #
 # The scheduled workflow also publishes reports for many PRs, so this starts from the current
@@ -23,14 +25,14 @@ fi
 PYTHONPATH="$ROOT" python3 - "$ROOT/reports" "$SITE" <<'PY'
 import sys
 from cpr import site
-rows, actions = site.merge(sys.argv[1], sys.argv[2])
-for n, a in sorted(actions.items()):
-    print(f"#{n}: {a}")
+rows, actions = site.merge(sys.argv[1], sys.argv[2], log=print)
+for (slug, n), a in sorted(actions.items()):
+    print(f"{slug}#{n}: {a}")
 print(f"{len(rows)} report(s) on the site")
 PY
 
 # Never publish local paths (home directory or this checkout).
-if grep -rlF -e "$HOME/" -e "$ROOT/" "$SITE/pr" "$SITE/index.html" 2>/dev/null; then
+if grep -rlF --include=index.html -e "$HOME/" -e "$ROOT/" "$SITE" 2>/dev/null; then
   echo "refusing to publish: the files above contain local paths" >&2
   git -C "$ROOT" worktree remove --force "$SITE"
   exit 1

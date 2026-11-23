@@ -8,7 +8,8 @@ import unittest
 
 from cpr import lenses
 from cpr.ingest import clone as clone_mod
-from tests.helpers import bundle, with_files
+from cpr import project as project_mod
+from tests.helpers import bundle, sidecar_bundle, with_files
 
 CFG = lenses.load_config()
 INDEX = """# Categories index
@@ -226,6 +227,100 @@ class Prepare(unittest.TestCase):
             self.assertTrue(os.path.exists(os.path.join(sd, "refdir", "manifest.json")))
             plan = cli.prepare_lenses(b, sd, True, lambda m: None)  # offline reuses origin/trunk
             self.assertEqual(plan["checklists"]["sha"], git(upstream, "rev-parse", "HEAD"))
+
+
+INJVM = ".claude/skills/cassandra-injvm-dtest/SKILL.md"
+SIDECAR_PROD = "server/src/main/java/org/apache/cassandra/sidecar/routes/FooHandler.java"
+
+
+def make_sidecar_trunk(repo, skip=()):
+    """A sidecar-like repo whose trunk has the profile's guides, except `skip`."""
+    os.makedirs(repo)
+    git(repo, "init", "-q", "-b", "trunk")
+    git(repo, "config", "user.email", "t@t")
+    git(repo, "config", "user.name", "t")
+    for p in project_mod.load("sidecar").lens_guides:
+        if p in skip:
+            continue
+        os.makedirs(os.path.dirname(os.path.join(repo, p)), exist_ok=True)
+        with open(os.path.join(repo, p), "w") as f:
+            f.write(f"SIDECAR {p}\n")
+    git(repo, "add", ".")
+    git(repo, "commit", "-qm", "trunk")
+    return git(repo, "rev-parse", "HEAD")
+
+
+class SubprojectPlan(unittest.TestCase):
+    """sibling-lenses: Cassandra checklists, the subproject's own guides, the in-JVM dtest guide dropped."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        d = self.tmp.name
+        make_trunk(os.path.join(d, "up", "cassandra"))
+        self.side_sha = make_sidecar_trunk(os.path.join(d, "up", "sidecar"), skip=("OPENAPI.md",))
+        self.cass, self.side = os.path.join(d, "clones", "cassandra"), os.path.join(d, "clones", "sidecar")
+        for name in ("cassandra", "sidecar"):
+            git(d, "clone", "-q", os.path.join(d, "up", name), os.path.join(d, "clones", name))
+        self.proj = project_mod.load("sidecar")
+        self.b = with_files(sidecar_bundle(), [(SIDECAR_PROD, ["a"] * 20, False)])
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def prepare(self):
+        d = os.path.join(self.tmp.name, "sha")
+        os.makedirs(d, exist_ok=True)
+        return lenses.prepare(self.proj, self.b, d, self.cass, self.side, offline=True), d
+
+    def test_guides_from_the_subproject_trunk(self):
+        plan, d = self.prepare()
+        g = plan["checklists"]["guides"]
+        self.assertEqual((g["repo"], g["sha"], g["missing"]), ("apache/cassandra-sidecar", self.side_sha, ["OPENAPI.md"]))
+        refdir = plan["checklists"]["refdir"]
+        with open(os.path.join(refdir, "sidecar", "CONTRIBUTING.md")) as f:
+            self.assertEqual(f.read(), "SIDECAR CONTRIBUTING.md\n")
+        with open(os.path.join(refdir, "manifest.json")) as f:
+            self.assertEqual(json.load(f)["guides"]["sha"], self.side_sha)
+        std = plan["lenses"]["cassandra-standards"]
+        self.assertEqual(std["status"], "ok")
+        self.assertEqual([os.path.relpath(p, refdir) for p in std["files"]],
+                         ["sidecar/CONTRIBUTING.md", "sidecar/TESTING.md"])
+        self.assertIn("OPENAPI.md is unavailable", " ".join(plan["notes"]))  # a missing guide is a note only
+        self.assertEqual(plan["lenses"]["cass-persistence-compat"]["status"], "ok")
+
+    def test_injvm_dtest_guide_dropped(self):
+        plan, _ = self.prepare()
+        tr = plan["lenses"]["cass-test-regime"]
+        self.assertEqual(tr["status"], "ok")
+        self.assertFalse(any(p.endswith(INJVM) for p in tr["files"]))
+        self.assertTrue(any(p.endswith("sidecar/TESTING.md") for p in tr["files"]))
+        logic = plan["lenses"]["cass-logic-boundary"]["files"]
+        self.assertTrue(logic and all("/.claude/skills/" in p for p in logic))  # checklists, no sidecar guide
+
+    def test_cassandra_plan_unchanged(self):
+        m = lenses.extract(self.cass, lenses.resolve(self.cass), os.path.join(self.tmp.name, "r"), CFG)
+        p = planned([(PROD, ["a"] * 20, False)], m)
+        self.assertTrue(p["lenses"]["cass-test-regime"]["files"][0].endswith(INJVM))
+        self.assertEqual(p["notes"], [])
+
+    def test_checklist_clone(self):
+        self.assertEqual(lenses.checklist_clone("/nowhere", self.cass, project_mod.load("cassandra")), self.cass)
+        work = os.path.join(self.tmp.name, "work")
+        with self.assertRaises(clone_mod.CloneError):
+            lenses.checklist_clone(work, self.side, self.proj, offline=True)
+        self.assertEqual(lenses.checklist_clone(os.path.join(self.tmp.name, "clones"), self.side, self.proj,
+                                                offline=True), self.cass)
+
+    def test_inputs(self):
+        i = lenses.inputs(self.proj)
+        self.assertEqual(i["project_name"], "Cassandra Sidecar")
+        self.assertTrue(i["standards"].endswith("docs/research/sidecar-standards.md"))
+        self.assertTrue(i["testing_doc"].endswith("docs/report/subprojects/testing.md"))
+        for slug in project_mod.slugs():
+            p = project_mod.load(slug)
+            self.assertTrue(os.path.exists(os.path.join(lenses.ROOT, p.lens_testing_doc)), slug)
+            for guide, names in p.lens_guides.items():
+                self.assertTrue(set(names) <= set(CFG["lenses"]), f"{slug} {guide} names an unknown lens")
 
 
 REAL = os.environ.get("CPR_CASSANDRA_CLONE") or next(

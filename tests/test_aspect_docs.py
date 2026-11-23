@@ -62,5 +62,32 @@ class AspectDocsTest(unittest.TestCase):
         self.assertEqual(problems, [])
 
 
+class ProjectDocsTest(unittest.TestCase):
+    """A project's own docs (`docs_dir` in its profile) follow the same rules as the shared ones."""
+
+    def test_project_docs(self):
+        from cpr import project
+        problems = []
+        for d in sorted({project.load(s).docs_dir for s in project.slugs()} - {None}):
+            directory = os.path.join(DOCS_DIR, d)
+            self.assertTrue(os.path.isdir(directory), directory)
+            for name in sorted(os.listdir(directory)):
+                aspect = name[:-3]
+                if not name.endswith(".md"):
+                    continue
+                if aspect not in ASPECTS:
+                    problems.append(f"{d}/{name}: not a report aspect")
+                    continue
+                with open(os.path.join(directory, name), encoding="utf-8") as f:
+                    text = f.read()
+                headings = [h for h in h2_headings(text) if h in REQUIRED_HEADINGS]
+                if not text.startswith("# ") or headings != list(REQUIRED_HEADINGS) or "TODO" in text:
+                    problems.append(f"{d}/{name}: outline (title, {', '.join(REQUIRED_HEADINGS)}) or TODO")
+                for check_id, a in registered_ids():
+                    if a == aspect and f"### `{check_id}`" not in text:
+                        problems.append(f"{d}/{name}: no '### `{check_id}`' entry")
+        self.assertEqual(problems, [])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -68,9 +68,9 @@ class Select(unittest.TestCase):
 class Refresh(unittest.TestCase):
     def test_refresh_merges_and_survives_failures(self):
         with tempfile.TemporaryDirectory() as d:
-            make_report(os.path.join(d, "pr", "5000", "index.html"), number=5000)
+            make_report(site.report_path(d, "cassandra", 5000), number=5000)
 
-            def review(n, out):
+            def review(slug, n, out):
                 if n == 5201:
                     raise RuntimeError("boom")
                 if n == 5202:
@@ -79,22 +79,54 @@ class Refresh(unittest.TestCase):
                 return 0
 
             logs = []
-            res = poll.refresh([{"number": n} for n in (5198, 5201, 5202)], d, review, log=logs.append)
-            self.assertEqual(res[5198], "added")
-            self.assertTrue(res[5201].startswith("failed (RuntimeError"))
-            self.assertEqual(res[5202], "failed (exit 1)")
-            self.assertEqual(sorted(site.published_heads(d)), [5000, 5198])
-            self.assertEqual(len(logs), 3)
+            res = poll.refresh([{"project": "cassandra", "number": n} for n in (5198, 5201, 5202)], d, review,
+                               log=logs.append)
+            self.assertEqual(res[("cassandra", 5198)], "added")
+            self.assertTrue(res[("cassandra", 5201)].startswith("failed (RuntimeError"))
+            self.assertEqual(res[("cassandra", 5202)], "failed (exit 1)")
+            self.assertEqual(sorted(site.published_heads(d)), [("cassandra", 5000), ("cassandra", 5198)])
+            self.assertEqual(logs[0], "cassandra#5198: added")
 
     def test_refresh_keeps_richer_report_for_same_head(self):
         with tempfile.TemporaryDirectory() as d:
-            make_report(os.path.join(d, "pr", "5198", "index.html"), review=True)
+            make_report(site.report_path(d, "cassandra", 5198), review=True)
 
-            def review(n, out):
+            def review(slug, n, out):
                 make_report(out)
                 return 0
 
-            self.assertEqual(poll.refresh([{"number": 5198}], d, review, log=lambda m: None), {5198: "kept"})
+            self.assertEqual(poll.refresh([{"project": "cassandra", "number": 5198}], d, review, log=lambda m: None),
+                             {("cassandra", 5198): "kept"})
+
+
+class Heads(unittest.TestCase):
+    def test_site_paths(self):
+        self.assertEqual(poll._site_path("pr/5198/index.html"), ("cassandra", 5198))
+        self.assertEqual(poll._site_path("sidecar/pr/397/index.html"), ("sidecar", 397))
+        self.assertEqual(poll._site_path("cassandra/pr/5198/index.html"), ("cassandra", 5198))
+        for name in ("index.html", "nope/pr/1/index.html", "sidecar/pr/x/index.html", "pr/1/other.html"):
+            self.assertIsNone(poll._site_path(name), name)
+
+    def test_heads_for(self):
+        heads = {("cassandra", 1): "a", ("sidecar", 1): "b", ("sidecar", 2): "c"}
+        self.assertEqual(poll.heads_for(heads, "sidecar"), {1: "b", 2: "c"})
+
+    def test_heads_from_git_reads_both_layouts(self):
+        import subprocess
+        with tempfile.TemporaryDirectory() as d:
+            up, repo = os.path.join(d, "up"), os.path.join(d, "repo")
+            os.makedirs(up)
+            g = lambda c, *a: subprocess.run(["git", "-C", c, *a], check=True, capture_output=True)  # noqa: E731
+            g(up, "init", "-q", "-b", "gh-pages")
+            make_report(os.path.join(up, "pr", "5000", "index.html"), number=5000, head="a" * 40)
+            make_report(site.report_path(up, "cassandra", 5198), head="b" * 40)
+            os.makedirs(os.path.join(up, "pr", "5198"))
+            with open(os.path.join(up, "pr", "5198", "index.html"), "w") as f:  # a migrated redirect
+                f.write(site.redirect_html("../../cassandra/pr/5198/"))
+            g(up, "add", ".")
+            g(up, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "site")
+            subprocess.run(["git", "clone", "-q", up, repo], check=True, capture_output=True)
+            self.assertEqual(poll.heads_from_git(repo), {("cassandra", 5000): "a" * 40, ("cassandra", 5198): "b" * 40})
 
 
 class Cli(unittest.TestCase):
@@ -107,16 +139,43 @@ class Cli(unittest.TestCase):
             make_report(argv[argv.index("--out") + 1], number=int(argv[1]))
             return 0
 
-        with tempfile.TemporaryDirectory() as d, mock.patch.object(poll, "fetch_open", return_value=open_prs()):
+        def fetch_open(recorder=None, repo=None):
+            return open_prs() if repo == "apache/cassandra" else []
+
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(poll, "fetch_open", side_effect=fetch_open), \
+                mock.patch.object(poll.time, "time", return_value=NOW):
             s = os.path.join(d, "site")
             os.makedirs(s)
+            make_report(os.path.join(s, "pr", "5000", "index.html"), number=5000)  # pre-project layout
             self.assertEqual(real_main(["poll", "--site", s, "--limit", "2"]), 0)
-            self.assertEqual(site.published_heads(s), {})  # a dry run writes nothing
+            self.assertEqual(site.published_heads(s), {})  # a dry run writes nothing, not even the migration
             self.assertEqual(real_main(["poll", "--run"]), 2)  # --run needs --site
-            with mock.patch.object(cli, "main", side_effect=fake_main):
+            seen = []
+            with mock.patch.object(cli, "main", side_effect=lambda argv: seen.append(argv) or fake_main(argv)):
                 self.assertEqual(real_main(["poll", "--run", "--site", s, "--limit", "2", "--work-dir", d]), 0)
-            self.assertEqual(sorted(site.published_heads(s)), [5234, 5238])
+            self.assertEqual(sorted(site.published_heads(s)), [("cassandra", 5000), ("cassandra", 5234), ("cassandra", 5238)])
+            self.assertEqual([a[1:4] for a in seen], [["5234", "--project", "cassandra"], ["5238", "--project", "cassandra"]])
             self.assertTrue(os.path.exists(os.path.join(s, "index.html")))
+
+    def test_project_option_and_per_project_picks(self):
+        calls = []
+
+        def fetch_open(recorder=None, repo=None):
+            calls.append(repo)
+            return open_prs()
+
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(poll, "fetch_open", side_effect=fetch_open), \
+                mock.patch.object(poll.time, "time", return_value=NOW), mock.patch("sys.stdout") as out:
+            s = os.path.join(d, "site")
+            os.makedirs(s)
+            self.assertEqual(cli.main(["poll", "--site", s, "--project", "sidecar"]), 0)
+            self.assertEqual(calls, ["apache/cassandra-sidecar"])
+            calls.clear()
+            self.assertEqual(cli.main(["poll", "--site", s, "--limit", "1"]), 0)
+            self.assertEqual(calls, ["apache/cassandra", "apache/cassandra-analytics", "apache/cassandra-sidecar"])
+            printed = "".join(c.args[0] for c in out.write.call_args_list)
+            for name in ("Cassandra: 1 PR(s)", "Cassandra Sidecar: 1 PR(s)", "Cassandra Analytics: 1 PR(s)"):
+                self.assertIn(name, printed)
 
 
 class Workflow(unittest.TestCase):
@@ -144,7 +203,9 @@ class Workflow(unittest.TestCase):
         self.assertIn('java-version: "21"', self.text)
 
     def test_cache_token_and_publish(self):
-        self.assertIn("path: .work/cassandra", self.text)
+        self.assertIn("path: .work/cassandra\n", self.text)
+        self.assertIn("path: .work/cassandra-sidecar\n", self.text)
+        self.assertIn("path: .work/cassandra-analytics\n", self.text)
         self.assertIn("%G-W%V", self.text)
         self.assertIn("GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}", self.text)
         self.assertNotIn("secrets.", self.text.replace("secrets.GITHUB_TOKEN", ""))

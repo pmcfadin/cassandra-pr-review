@@ -1,4 +1,8 @@
-"""Changed-line coverage: JaCoCo report.xml joined with the lines a PR adds under src/java."""
+"""Changed-line coverage: JaCoCo report XML joined with the lines a PR adds to production sources.
+
+apache/cassandra's production sources are src/java (one report); a Gradle project's are <module>/src/main/java
+(one report per module, merged).
+"""
 
 import re
 import subprocess
@@ -6,11 +10,13 @@ import xml.etree.ElementTree as ET
 
 HUNK = re.compile(r"@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@")
 SRC = re.compile(r"src/(?:java|gen-java)/(.*)$")
+GRADLE_SRC = re.compile(r"(?:^|/)src/main/java/(.*)$")
+GRADLE_PATHSPEC = (":(glob)**/src/main/java/**", ":(glob)src/main/java/**")
 
 
-def added_lines(wt, base, head):
-    """{path: [new-file line numbers]} for added lines of src/java/*.java between base and head."""
-    out = subprocess.run(["git", "-C", wt, "diff", "-U0", "--no-renames", base, head, "--", "src/java"],
+def added_lines(wt, base, head, pathspec=("src/java",)):
+    """{path: [new-file line numbers]} for added lines of the production .java files between base and head."""
+    out = subprocess.run(["git", "-C", wt, "diff", "-U0", "--no-renames", base, head, "--", *pathspec],
                          capture_output=True, text=True, check=True).stdout
     res, cur = {}, None
     for ln in out.splitlines():
@@ -57,14 +63,20 @@ def classify(added, cov):
     return r
 
 
-def changed_coverage(wt, base, head, report):
-    """{files: {path: {...lists, in_report}}, total: {covered, partial, missed, nonexec, executable, pct_executed}}."""
+def changed_coverage(wt, base, head, report, pathspec=("src/java",), src=SRC):
+    """{files: {path: {...lists, in_report}}, total: {covered, partial, missed, nonexec, executable, pct_executed}}.
+
+    `report` is one JaCoCo XML path or a list of them (a source file in several reports keeps the first).
+    """
     byrel = {}
-    for path, nrs in added_lines(wt, base, head).items():
-        m = SRC.match(path)
+    for path, nrs in added_lines(wt, base, head, pathspec).items():
+        m = src.search(path)
         if m:
             byrel[m[1]] = (path, nrs)
-    cov = jacoco_lines(report, set(byrel))
+    cov = {}
+    for r in [report] if isinstance(report, str) else report:
+        for rel, lines in jacoco_lines(r, set(byrel)).items():
+            cov.setdefault(rel, lines)
     files, tot = {}, {"covered": 0, "partial": 0, "missed": 0, "nonexec": 0}
     for rel, (path, nrs) in byrel.items():
         files[path] = classify(nrs, cov.get(rel))

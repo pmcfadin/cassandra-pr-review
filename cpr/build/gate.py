@@ -4,6 +4,7 @@ import json
 import os
 import time
 
+from cpr import project as project_mod
 from cpr.build import runs_dir
 
 
@@ -15,22 +16,22 @@ def author_is_committer(bundle):
     return bool(cid)
 
 
-def approvals_path(work_dir, number):
-    return os.path.join(runs_dir(work_dir, number), "approved.json")
+def approvals_path(work_dir, slug, number):
+    return os.path.join(runs_dir(work_dir, slug, number), "approved.json")
 
 
-def read_approval(work_dir, number):
+def read_approval(work_dir, slug, number):
     try:
-        with open(approvals_path(work_dir, number)) as f:
+        with open(approvals_path(work_dir, slug, number)) as f:
             data = json.load(f)
     except (OSError, ValueError):
         return None
     return data if isinstance(data, dict) else None
 
 
-def record_approval(work_dir, number, head, now=None):
+def record_approval(work_dir, slug, number, head, now=None):
     """Remember the owner's approval of this exact head sha (a new push needs a new approval)."""
-    path = approvals_path(work_dir, number)
+    path = approvals_path(work_dir, slug, number)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     rec = {"head": head, "approved_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now or time.time()))}
     with open(path, "w") as f:
@@ -41,11 +42,11 @@ def record_approval(work_dir, number, head, now=None):
 def decide(bundle, work_dir, approve=False, now=None):
     """{allowed, approved, author_is_committer, reason}. `approve` records approval for the bundle's head."""
     pr = bundle["pr"]
-    number, head = pr["number"], pr["head_sha"]
+    number, head, slug = pr["number"], pr["head_sha"], project_mod.of(bundle).slug
     committer = author_is_committer(bundle)
     if approve:
-        record_approval(work_dir, number, head, now)
-    saved = read_approval(work_dir, number)
+        record_approval(work_dir, slug, number, head, now)
+    saved = read_approval(work_dir, slug, number)
     approved = bool(saved and saved.get("head") == head)
     if committer:
         reason = f"author {pr['author']} is a committer"

@@ -15,7 +15,6 @@ import xml.etree.ElementTree as ET
 
 from cpr.ingest.clone import show
 
-CHECKSTYLE_FILES = (".build/checkstyle.xml", ".build/checkstyle_suppressions.xml", ".build/checkstyle_test.xml")
 _QUOTED = re.compile(r"'([^']+)'")
 _SCORE = re.compile(r"of (\d+)")
 COMPLEXITY_RULES = ("CognitiveComplexity", "CyclomaticComplexity", "NPathComplexity")
@@ -60,24 +59,27 @@ def _write_list(path, root, rels):
 
 # ---- checkstyle ---------------------------------------------------------------------------------
 
-def fetch_configs(clone, base_ref, dest):
-    """Copy the base branch's checkstyle configs into dest. None when the branch has no checkstyle.xml."""
-    texts = {n: show(clone, base_ref, n) for n in CHECKSTYLE_FILES}
-    if texts[CHECKSTYLE_FILES[0]] is None or texts[CHECKSTYLE_FILES[1]] is None:
+def fetch_configs(clone, base_ref, dest, spec):
+    """Copy the base branch's checkstyle files (`spec["files"]`, repo paths) into dest, keeping their basenames
+    side by side so relative references between them work. {repo path: copy}, or None when a required file is
+    missing on the branch. `spec` is the project's `static.checkstyle`."""
+    texts = {n: show(clone, base_ref, n) for n in spec["files"]}
+    if any(texts.get(n) is None for n in spec["required"]):
         return None
     os.makedirs(dest, exist_ok=True)
     cfgs = {}
     for name, text in texts.items():
         if text is not None:
-            cfgs[os.path.basename(name)] = os.path.join(dest, os.path.basename(name))
-            with open(cfgs[os.path.basename(name)], "w") as f:
+            cfgs[name] = os.path.join(dest, os.path.basename(name))
+            with open(cfgs[name], "w") as f:
                 f.write(text)
     return cfgs
 
 
 def checkstyle_scope(rel):
-    """Which config applies: ant checks src/java with checkstyle.xml and test/ with checkstyle_test.xml."""
-    return "main" if rel.startswith("src/java/") else "test" if rel.startswith("test/") else None
+    """apache/cassandra's scopes: ant checks src/java with checkstyle.xml and test/ with checkstyle_test.xml."""
+    from cpr import project
+    return project.load(project.DEFAULT).static_kind(rel)
 
 
 def parse_checkstyle(xml_text, root):
@@ -105,13 +107,23 @@ def attach_text(errors, root, rel):
         e["text"] = lines[e["line"] - 1].strip() if 0 < e["line"] <= len(lines) else ""
 
 
-def run_checkstyle(java, jar, cfgs, root, rels, scratch, label, timeout):
-    """Checkstyle over rels (relative to root). {files: {rel: [errors]}, missing: [rel], problem, seconds}."""
+def run_checkstyle(java, jar, cfgs, root, rels, scratch, label, timeout, spec=None, scope_of=None):
+    """Checkstyle over rels (relative to root). {files: {rel: [errors]}, missing: [rel], problem, seconds}.
+
+    `spec` is the project's `static.checkstyle` (default apache/cassandra's) and `scope_of(rel)` says whether a
+    file is "main" or "test" code (default apache/cassandra's scopes). Property values may name {logdir} and
+    {config_dir}, the directory the configs were copied to.
+    """
+    if spec is None:
+        from cpr import project
+        p = project.load(project.DEFAULT)
+        spec, scope_of = p.static["checkstyle"], p.static_kind
     files, seconds, problem = {}, 0.0, None
-    for scope, cfg_name in (("main", "checkstyle.xml"), ("test", "checkstyle_test.xml")):
-        group = [r for r in rels if checkstyle_scope(r) == scope]
+    for scope in ("main", "test"):
+        group = [r for r in rels if scope_of(r) == scope]
         if not group:
             continue
+        cfg_name = spec["configs"][scope]
         if cfg_name not in cfgs:
             problem = problem or f"no {cfg_name} on the base branch"
             continue
@@ -119,8 +131,10 @@ def run_checkstyle(java, jar, cfgs, root, rels, scratch, label, timeout):
         logdir = os.path.join(scratch, f"{tag}-log")
         os.makedirs(logdir, exist_ok=True)
         props, out_xml = os.path.join(scratch, f"{tag}.properties"), os.path.join(scratch, f"{tag}.xml")
+        config_dir = os.path.dirname(cfgs[cfg_name])
         with open(props, "w") as f:
-            f.write(f"checkstyle.log.dir={logdir}\ncheckstyle.suppressions={cfgs['checkstyle_suppressions.xml']}\n")
+            f.write("".join(f"{k}={v.format(logdir=logdir, config_dir=config_dir)}\n"
+                            for k, v in spec.get("properties", {}).items()))
         cmd = [java, "-jar", jar, "-c", cfgs[cfg_name], "-p", props, "-f", "xml", "-o", out_xml] + \
               [os.path.join(root, r) for r in group]
         rc, _, err, secs = execute(cmd, None, timeout)
@@ -135,7 +149,7 @@ def run_checkstyle(java, jar, cfgs, root, rels, scratch, label, timeout):
             problem = problem or f"checkstyle failed: {first_line(err)}"
     for rel in files:
         attach_text(files[rel], root, rel)
-    missing = [r for r in rels if checkstyle_scope(r) and r not in files]
+    missing = [r for r in rels if scope_of(r) and r not in files]
     return {"files": files, "missing": missing, "problem": problem, "seconds": round(seconds, 2)}
 
 

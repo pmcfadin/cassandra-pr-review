@@ -1,0 +1,357 @@
+{
+ "status": "ran",
+ "complete": true,
+ "approved": false,
+ "counts": {
+  "blocker": 0,
+  "major": 1,
+  "minor": 7,
+  "nit": 0
+ },
+ "issues": [
+  {
+   "id": "issue-1",
+   "severity": "major",
+   "severity_spread": [
+    "major",
+    "minor",
+    "minor",
+    "minor"
+   ],
+   "lenses": [
+    "cass-logic-boundary",
+    "cass-concurrency-lifecycle",
+    "cass-persistence-compat",
+    "cass-completeness-symmetry"
+   ],
+   "rule": "State machine: a branch omits a side-effect that other branches perform (checklist 23, 19)",
+   "problem": "The new guard `if (statusTracker.shouldContinue()) position = filePointer` skips the update whenever readSection calls requestTermination(). The only termination path that now sets position itself is LEGACY_END_OF_SEGMENT_MARKER (line 447). Other paths also terminate and leave position stale: the 'Not enough bytes left for another mutation in this CommitLog section' early return (line ~436), which is the normal fewer-than-4-bytes tail case, and the tolerated-error branches that call requestTermination. In these cases the loop breaks, and the post-loop `shouldContinue()` block is also skipped. Position stays at the previous section end (or at 0, or at the start marker). Result.isFullyRead() (log.completed() && marker.position >= maxOffset) stays false for a completed log, and the listener is handed a stale marker. This is the same symptom as the bug being fixed: CdcScannerBuilder never moves past that log. Before the patch, position was always updated to the file pointer after each section.",
+   "fix": "Handle termination explicitly. Set position to reader.getFilePointer() for benign terminations such as the short tail, or set position to log.maxOffset() when a normal end-of-data termination is reached on a completed log. Keep the position unchanged only for real error terminations. Add a test with a segment whose last section ends fewer than 4 bytes from the end.",
+   "location": "cassandra-four-zero-bridge/src/main/java/org/apache/cassandra/db/commitlog/BufferingCommitLogReader.java:304",
+   "locations": [
+    "cassandra-four-zero-bridge/src/main/java/org/apache/cassandra/db/commitlog/BufferingCommitLogReader.java:304",
+    "cassandra-four-zero-bridge/src/main/java/org/apache/cassandra/db/commitlog/BufferingCommitLogReader.java:301"
+   ],
+   "also_fixes": [
+    {
+     "lens": "cass-logic-boundary",
+     "fix": "In the `< 4` bytes branch, set `this.position = (int) reader.getFilePointer()`, or `log.maxOffset()` when this is the last section, before `requestTermination()`. Alternatively, track clean end-of-section separately from the error flag and update position in both cases."
+    },
+    {
+     "lens": "cass-persistence-compat",
+     "fix": "On that short-tail branch, set `this.position = (int) reader.getFilePointer()` (or the section end) before requestTermination(), or make the guard distinguish benign termination from error termination."
+    },
+    {
+     "lens": "cass-completeness-symmetry",
+     "fix": "Set this.position = (int) reader.getFilePointer() (or log.maxOffset() when end of the segment is reached) in the 'not enough bytes left' branch before requestTermination(). Alternatively, advance position after readSection unless an error was actually raised, rather than keying on shouldContinue()."
+    }
+   ],
+   "members": [
+    {
+     "lens": "cass-concurrency-lifecycle",
+     "id": "cl-1"
+    },
+    {
+     "lens": "cass-logic-boundary",
+     "id": "lb-1"
+    },
+    {
+     "lens": "cass-persistence-compat",
+     "id": "pc-1"
+    },
+    {
+     "lens": "cass-completeness-symmetry",
+     "id": "cs-1"
+    }
+   ],
+   "impact": "hang",
+   "confidence": "medium",
+   "title": "Advance position on every section-termination path, not only the 0-marker one"
+  },
+  {
+   "id": "issue-2",
+   "severity": "minor",
+   "severity_spread": [
+    "minor",
+    "minor"
+   ],
+   "lenses": [
+    "cassandra-standards",
+    "cass-concurrency-lifecycle"
+   ],
+   "rule": "Ticket scope: fix isFullyRead for fully written segments; avoid side effects on logs still being written",
+   "problem": "On LEGACY_END_OF_SEGMENT_MARKER the reader sets position to log.maxOffset() whatever the log's state. If a zero size is read inside a section of a log that is not yet completed(), the high-water marker returned through markerAt(segmentId, position) becomes maxOffset. Data synced after that point could then be skipped on the next read. isFullyRead itself is guarded by log.completed(), but the persisted marker is not. I did not trace whether a zero size can appear before the live end of an active segment, so this is speculative.",
+   "fix": "Set position to maxOffset only when log.completed() is true. Otherwise keep position at reader.getFilePointer() minus 4, as before.",
+   "location": "cassandra-four-zero-bridge/src/main/java/org/apache/cassandra/db/commitlog/BufferingCommitLogReader.java:447",
+   "locations": [
+    "cassandra-four-zero-bridge/src/main/java/org/apache/cassandra/db/commitlog/BufferingCommitLogReader.java:447",
+    "cassandra-four-zero-bridge/src/main/java/org/apache/cassandra/db/commitlog/BufferingCommitLogReader.java:325"
+   ],
+   "also_fixes": [
+    {
+     "lens": "cass-concurrency-lifecycle",
+     "fix": "Set position to the actual reader.getFilePointer() or the last fully consumed section end. Raise it to maxOffset only when log.completed() is true and the whole file was consumed."
+    }
+   ],
+   "members": [
+    {
+     "lens": "cassandra-standards",
+     "id": "cs-2"
+    },
+    {
+     "lens": "cass-concurrency-lifecycle",
+     "id": "cl-2"
+    }
+   ],
+   "impact": "silent-wrong-result",
+   "confidence": "low",
+   "title": "Do not jump position to maxOffset on a zero marker in an incomplete log"
+  },
+  {
+   "id": "issue-3",
+   "severity": "minor",
+   "severity_spread": [
+    "minor"
+   ],
+   "lenses": [
+    "cassandra-standards"
+   ],
+   "rule": "Analytics standards: CHANGES.txt records user-facing fixes with the ticket id; sibling bug fixes (CASSANALYTICS-116, -107) each have an entry",
+   "problem": "This is a user-visible CDC bug fix (commit log reading stalls after restart or on zero-padded segments), but the diff does not touch CHANGES.txt. The 0.3.0 section lists comparable fixes.",
+   "fix": "Add ' * Fix CommitLogReader.isFullyRead so CDC commit log reading progresses after restart and on padded segments (CASSANALYTICS-124)' under 0.3.0.",
+   "location": "CHANGES.txt:2",
+   "locations": [
+    "CHANGES.txt:2"
+   ],
+   "also_fixes": [],
+   "members": [
+    {
+     "lens": "cassandra-standards",
+     "id": "cs-1"
+    }
+   ],
+   "impact": null,
+   "confidence": null,
+   "title": "Add a CHANGES.txt entry for CASSANALYTICS-124"
+  },
+  {
+   "id": "issue-4",
+   "severity": "minor",
+   "severity_spread": [
+    "minor"
+   ],
+   "lenses": [
+    "cass-test-regime"
+   ],
+   "rule": "Coverage of the change: new branches and error paths exercised",
+   "problem": "The new `if (statusTracker.shouldContinue())` guards (after readSection and after the loop) exist so that an error or mutation-limit stop leaves position at the last valid offset and isFullyRead() stays false. No test hits that branch. testReaderSeek only reads complete, valid logs, so it asserts position == maxOffset. If the guard were removed or inverted, a reader stopped early by a mutation limit would report fully read and CdcScannerBuilder would skip the rest of the segment. No test would fail.",
+   "fix": "Add a test that reads with a mutation limit or a corrupt segment and asserts reader.position() < logFile.maxOffset() and result.isFullyRead() is false.",
+   "location": "cassandra-four-zero-bridge/src/main/java/org/apache/cassandra/db/commitlog/BufferingCommitLogReader.java:324",
+   "locations": [
+    "cassandra-four-zero-bridge/src/main/java/org/apache/cassandra/db/commitlog/BufferingCommitLogReader.java:324"
+   ],
+   "also_fixes": [],
+   "members": [
+    {
+     "lens": "cass-test-regime",
+     "id": "tr-1"
+    }
+   ],
+   "impact": null,
+   "confidence": null,
+   "title": "Test the early-termination path that must not set position to maxOffset"
+  }
+ ],
+ "issue_counts": {
+  "blocker": 0,
+  "major": 1,
+  "minor": 3,
+  "nit": 0
+ },
+ "must_fix": 1,
+ "checklists": {
+  "sha": "66d056b803d5928bd5725e8291013914906390f1"
+ },
+ "about": {
+  "models": [
+   "sonnet"
+  ],
+  "ran_at": "2026-11-20 17:17 UTC",
+  "tier": "small",
+  "lines": 24
+ },
+ "lenses": [
+  {
+   "name": "cassandra-standards",
+   "agent": "cassandra-standards-reviewer",
+   "focus": "patch vs its JIRA ticket, Cassandra contribution standards, security (self-gating), edits to .claude/ or AGENTS.md",
+   "status": "ran",
+   "approve": true,
+   "summary": "The patch fixes the two causes named in CASSANALYTICS-124, both in the four-zero BufferingCommitLogReader. It sets position to startMarker.position() when seeking past the start of a segment. It also sets position to log.maxOffset() when the segment loop ends normally or an end-of-segment marker is hit, and stops the per-section update from overwriting that value after early termination. The test change adds assertions that position equals maxOffset and isFullyRead() is true. The patch matches the ticket and stays within scope. The only unrelated-looking edit is the test rewrite that wraps the first log in a LocalCommitLog whose completed() returns true. That edit is needed to exercise isFullyRead. The standards gaps are the missing CHANGES.txt entry and one residual risk in the end-of-segment path. The PR description is empty, so I judged against the JIRA ticket. No security surface touched. The PR changes nothing under .claude/, AGENTS.md or CLAUDE.md, and I found no review-steering text.",
+   "spec_conformance": "full",
+   "tests_ran": "none",
+   "tests_detail": "not run: review-only lens",
+   "findings": [
+    {
+     "id": "cs-1",
+     "severity": "minor",
+     "location": "CHANGES.txt:2",
+     "rule": "Analytics standards: CHANGES.txt records user-facing fixes with the ticket id; sibling bug fixes (CASSANALYTICS-116, -107) each have an entry",
+     "problem": "This is a user-visible CDC bug fix (commit log reading stalls after restart or on zero-padded segments), but the diff does not touch CHANGES.txt. The 0.3.0 section lists comparable fixes.",
+     "fix": "Add ' * Fix CommitLogReader.isFullyRead so CDC commit log reading progresses after restart and on padded segments (CASSANALYTICS-124)' under 0.3.0.",
+     "title": "Add a CHANGES.txt entry for CASSANALYTICS-124"
+    },
+    {
+     "id": "cs-2",
+     "severity": "minor",
+     "impact": "silent-wrong-result",
+     "confidence": "low",
+     "location": "cassandra-four-zero-bridge/src/main/java/org/apache/cassandra/db/commitlog/BufferingCommitLogReader.java:447",
+     "rule": "Ticket scope: fix isFullyRead for fully written segments; avoid side effects on logs still being written",
+     "problem": "On LEGACY_END_OF_SEGMENT_MARKER the reader sets position to log.maxOffset() whatever the log's state. If a zero size is read inside a section of a log that is not yet completed(), the high-water marker returned through markerAt(segmentId, position) becomes maxOffset. Data synced after that point could then be skipped on the next read. isFullyRead itself is guarded by log.completed(), but the persisted marker is not. I did not trace whether a zero size can appear before the live end of an active segment, so this is speculative.",
+     "fix": "Set position to maxOffset only when log.completed() is true. Otherwise keep position at reader.getFilePointer() minus 4, as before.",
+     "title": "Do not jump position to maxOffset on a zero marker in an incomplete log"
+    }
+   ],
+   "error": null
+  },
+  {
+   "name": "cass-logic-boundary",
+   "agent": "cass-logic-boundary",
+   "focus": "conditions, boundaries and numbers, null and type safety, input validation",
+   "status": "ran",
+   "approve": true,
+   "summary": "Small patch in BufferingCommitLogReader (four-zero bridge) plus a test change. It sets `position` to `startMarker.position()` after the seek, only advances `position` from the file pointer when `statusTracker.shouldContinue()`, sets `position = log.maxOffset()` after the segment loop ends normally, and also sets it when the legacy end-of-segment marker is hit. I read the whole diff and the surrounding reader and `CommitLogReader.Result.isFullyRead` (`log.completed() && marker.position >= log.maxOffset()`). I applied the logic.md and boundary.md checklists from the bundle plus the analytics `### cass-logic-boundary` lens notes (they cover option lookup, CL/DC, token ranges and RF parsing and do not apply to this patch). The main fix paths hold up: the start-offset case, the zero-padding case via the end marker or loop exhaustion, and the `int` narrowing of `maxOffset`, which fits for commitlog segments. One minor regression is reported below. Not reviewed: nothing.",
+   "spec_conformance": "full",
+   "tests_ran": "none",
+   "tests_detail": "not run: review-only lens",
+   "findings": [
+    {
+     "id": "lb-1",
+     "severity": "minor",
+     "impact": "silent-wrong-result",
+     "confidence": "low",
+     "location": "cassandra-four-zero-bridge/src/main/java/org/apache/cassandra/db/commitlog/BufferingCommitLogReader.java:304",
+     "rule": "Conditions/boundaries: guard on shouldContinue() skips the position update on non-end-marker early terminations",
+     "problem": "The new guard `if (statusTracker.shouldContinue()) position = reader.getFilePointer()` skips the update on every early termination, but only the LEGACY_END_OF_SEGMENT_MARKER branch (line ~447) now sets position itself. The `end - reader.getFilePointer() < 4` branch in readSection (around line 432) calls `requestTermination()` with no position update. This is the case where the last mutation ends less than 4 bytes before the section end. In that case `error` is set, the section loop breaks, and the post-loop `maxOffset` assignment is also skipped. `position` therefore stays at the previous section's end (or 0 or the start marker). The listener is handed a marker at that stale position, and `isFullyRead()` stays false. Before the patch the file pointer was recorded in this case, so this is a regression, although the trigger is rare (the code comment ties it to 2.1-era logs).",
+     "fix": "In the `< 4` bytes branch, set `this.position = (int) reader.getFilePointer()`, or `log.maxOffset()` when this is the last section, before `requestTermination()`. Alternatively, track clean end-of-section separately from the error flag and update position in both cases.",
+     "title": "Advance position when a section ends with fewer than 4 bytes left"
+    }
+   ],
+   "error": null
+  },
+  {
+   "name": "cass-concurrency-lifecycle",
+   "agent": "cass-concurrency-lifecycle",
+   "focus": "races, locking, lifecycle and ordering, resource cleanup",
+   "status": "ran",
+   "approve": false,
+   "summary": "PR #176 (CASSANALYTICS-124) changes BufferingCommitLogReader so that `position` is seeded from startMarker.position() on restart, is advanced only when the section read normally, is set to log.maxOffset() on LEGACY_END_OF_SEGMENT_MARKER, and is set to maxOffset after the segment iterator is exhausted. It also adds test assertions in BufferingCommitLogReaderTests. Applied checklist: refdir shallow-review/references/general/specialists/concurrency.md, plus the lifecycle/ordering and state-update checks from the lens. The `### cass-concurrency-lifecycle` lens notes in the analytics standards file were not located by my search, so I applied only the unmarked items. The reader is single-threaded per instance, so there are no race or lock findings. The findings concern position-state updates across termination paths. Not reviewed: nothing (small tier, whole diff read).",
+   "spec_conformance": "partial",
+   "tests_ran": "none",
+   "tests_detail": "not run: review-only lens",
+   "findings": [
+    {
+     "id": "cl-1",
+     "severity": "major",
+     "impact": "hang",
+     "confidence": "medium",
+     "location": "cassandra-four-zero-bridge/src/main/java/org/apache/cassandra/db/commitlog/BufferingCommitLogReader.java:304",
+     "rule": "State machine: a branch omits a side-effect that other branches perform (checklist 23, 19)",
+     "problem": "The new guard `if (statusTracker.shouldContinue()) position = filePointer` skips the update whenever readSection calls requestTermination(). The only termination path that now sets position itself is LEGACY_END_OF_SEGMENT_MARKER (line 447). Other paths also terminate and leave position stale: the 'Not enough bytes left for another mutation in this CommitLog section' early return (line ~436), which is the normal fewer-than-4-bytes tail case, and the tolerated-error branches that call requestTermination. In these cases the loop breaks, and the post-loop `shouldContinue()` block is also skipped. Position stays at the previous section end (or at 0, or at the start marker). Result.isFullyRead() (log.completed() && marker.position >= maxOffset) stays false for a completed log, and the listener is handed a stale marker. This is the same symptom as the bug being fixed: CdcScannerBuilder never moves past that log. Before the patch, position was always updated to the file pointer after each section.",
+     "fix": "Handle termination explicitly. Set position to reader.getFilePointer() for benign terminations such as the short tail, or set position to log.maxOffset() when a normal end-of-data termination is reached on a completed log. Keep the position unchanged only for real error terminations. Add a test with a segment whose last section ends fewer than 4 bytes from the end.",
+     "title": "Advance position on every section-termination path, not only the 0-marker one"
+    },
+    {
+     "id": "cl-2",
+     "severity": "minor",
+     "impact": "data-loss",
+     "confidence": "low",
+     "location": "cassandra-four-zero-bridge/src/main/java/org/apache/cassandra/db/commitlog/BufferingCommitLogReader.java:325",
+     "rule": "State read twice / ordering: derived state assumes a stable view (checklist 9, 19)",
+     "problem": "After the segment iterator is exhausted, position is set unconditionally to log.maxOffset() instead of the offset actually reached. For an in-progress (not completed) segment, the iterator can stop early on an unsynced or partially written trailing section. Position then jumps past bytes that were never read, and the marker handed to the caller or persisted CDC state skips them. On resume those mutations are never read. maxOffset is also read at a different time than the data, so it can differ from what was actually consumed.",
+     "fix": "Set position to the actual reader.getFilePointer() or the last fully consumed section end. Raise it to maxOffset only when log.completed() is true and the whole file was consumed.",
+     "title": "Do not jump position to maxOffset when the iterator ends before it",
+     "severity_corrected": {
+      "from": "major",
+      "to": "minor"
+     }
+    }
+   ],
+   "error": null
+  },
+  {
+   "name": "cass-persistence-compat",
+   "agent": "cass-persistence-compat",
+   "focus": "serialization and versioning, mixed-version clusters, IO and crash safety, logging and metrics",
+   "status": "ran",
+   "approve": true,
+   "summary": "The patch fixes CDC commit log reading stalling after restart or on zero-padded segments. It does this by setting BufferingCommitLogReader.position to the start marker when resuming, to log.maxOffset() on LEGACY_END_OF_SEGMENT_MARKER, and to log.maxOffset() when the section loop finishes normally. It also stops overwriting position after an early termination. Checklists applied: shallow-review specialists/resources.md and analytics/DEV-README.md (both under refdir), plus the cass-persistence-compat lens notes in analytics-standards.md. I checked Marker, CdcState, Kryo and Avro (no serialized form or version change), IO and crash safety, and logging and metrics (no new failure path or metric). Result.isFullyRead() is still gated on log.completed(), so jumping position to maxOffset on a live segment cannot advance to the next log early. There is only one BufferingCommitLogReader copy (four-zero bridge), so no copy-forward bridge is missed. One low-confidence concern remains: the short-tail termination path. Files not reviewed: nothing. Tests were not run.",
+   "spec_conformance": "full",
+   "tests_ran": "none",
+   "tests_detail": "not run: review-only lens",
+   "findings": [
+    {
+     "id": "pc-1",
+     "severity": "minor",
+     "impact": "hang",
+     "confidence": "low",
+     "location": "cassandra-four-zero-bridge/src/main/java/org/apache/cassandra/db/commitlog/BufferingCommitLogReader.java:301",
+     "rule": "Persisted CDC resume position and crash-safe progress (CdcState/Marker resume)",
+     "problem": "The new guard `if (statusTracker.shouldContinue())` skips updating position whenever readSection called requestTermination(). That is correct for the end-of-segment marker, which now sets maxOffset itself. The other benign termination, `end - reader.getFilePointer() < 4` at about line 436, sets no position. If a section ends with fewer than 4 trailing bytes (the 2.1-era case the code comment describes), the mutations of that section are emitted but position stays at the previous value. The listener emits the stale marker and the loop breaks, so later sections are never read. Result.isFullyRead() stays false and the next microbatch re-reads the same section. This is the same stall the ticket describes and produces duplicate mutations. Before the patch, position still advanced to reader.getFilePointer() on this path.",
+     "fix": "On that short-tail branch, set `this.position = (int) reader.getFilePointer()` (or the section end) before requestTermination(), or make the guard distinguish benign termination from error termination.",
+     "title": "Advance position when a section ends via the short-tail termination"
+    }
+   ],
+   "error": null
+  },
+  {
+   "name": "cass-completeness-symmetry",
+   "agent": "cass-completeness-symmetry",
+   "focus": "missing counterpart changes, API contracts, refactor aftermath",
+   "status": "ran",
+   "approve": true,
+   "summary": "CASSANALYTICS-124 fixes BufferingCommitLogReader.position so CommitLogReader.Result.isFullyRead() can become true: it sets position to startMarker.position() on seek, to log.maxOffset() on the end-of-segment marker and after the section loop finishes naturally, and only advances position per section when statusTracker.shouldContinue(). The test change makes the first log 'completed' and asserts position == maxOffset and isFullyRead(). Applied bundle checklists: refdir .../shallow-review/references/general/specialists/absence.md and completeness.md, and analytics/DEV-README.md, plus the cass-completeness-symmetry notes in analytics-standards.md. BufferingCommitLogReader exists only in cassandra-four-zero-bridge, so there are no other bridge copies to keep in sync. The only isFullyRead() consumer is CdcScannerBuilder, which the fix serves. Not reviewed: nothing. One low-confidence regression concern in the refactor aftermath of the position-update guard.",
+   "spec_conformance": "full",
+   "tests_ran": "none",
+   "tests_detail": "not run: review-only lens",
+   "findings": [
+    {
+     "id": "cs-1",
+     "severity": "minor",
+     "impact": "silent-wrong-result",
+     "confidence": "low",
+     "location": "cassandra-four-zero-bridge/src/main/java/org/apache/cassandra/db/commitlog/BufferingCommitLogReader.java:304",
+     "rule": "refactor aftermath: all termination paths of readSection must leave position correct",
+     "problem": "The new guard 'if (statusTracker.shouldContinue()) position = reader.getFilePointer()' skips the update for every requestTermination() path, not just the end-of-segment marker. The 'end - reader.getFilePointer() < 4' branch (around line 436) calls requestTermination() after the section's mutations were fully read, and the patch adds no position update there. Trigger: a legacy section whose last mutation ends fewer than 4 bytes before the section end. Mutations in that section are handed to the caller, but position (and the listener marker and Result marker) stays at the previous section's end. The next read then re-emits those mutations, and isFullyRead() stays false for a completed log. Before the patch, position was advanced after readSection on this path. Only the end-of-segment branch was patched.",
+     "fix": "Set this.position = (int) reader.getFilePointer() (or log.maxOffset() when end of the segment is reached) in the 'not enough bytes left' branch before requestTermination(). Alternatively, advance position after readSection unless an error was actually raised, rather than keying on shouldContinue().",
+     "title": "Advance position when a section ends via the <4 bytes left termination"
+    }
+   ],
+   "error": null
+  },
+  {
+   "name": "cass-test-regime",
+   "agent": "cass-test-regime",
+   "focus": "right test suite, regression test fails without the fix, repeated runs",
+   "status": "ran",
+   "approve": true,
+   "summary": "PR #176 (CASSANALYTICS-124) fixes BufferingCommitLogReader.position so CommitLogReader.Result.isFullyRead() turns true. It sets position to the start marker on a seek, to log.maxOffset() on the LEGACY_END_OF_SEGMENT_MARKER (zero-padding) path, and to maxOffset after the segment loop ends normally. The test change is in BufferingCommitLogReaderTests#testReaderSeek. The commit log under test now reports completed()==true. readLog now asserts reader.position()==maxOffset and result.isFullyRead() for both the full read and every re-read from a watermark marker. The class lives only in cassandra-four-zero-bridge, and the test is in the cdc module with a single CassandraBridgeImplementation, so no other bridge is affected. The completed() override is not a mock of the fixed method, because isFullyRead = log.completed() && marker.position >= maxOffset, and the fix targets only the position half. The new assertions would fail on base: a re-read from a marker leaves position at 0, and the padded end-of-segment path leaves it short of maxOffset. Checklists applied: analytics-standards.md '### cass-test-regime' bullets and the DEV-README.md bundle file. Nothing was left unreviewed (tier small).",
+   "spec_conformance": "full",
+   "tests_ran": "none",
+   "tests_detail": "not run: review-only lens",
+   "findings": [
+    {
+     "id": "tr-1",
+     "severity": "minor",
+     "location": "cassandra-four-zero-bridge/src/main/java/org/apache/cassandra/db/commitlog/BufferingCommitLogReader.java:324",
+     "rule": "Coverage of the change: new branches and error paths exercised",
+     "problem": "The new `if (statusTracker.shouldContinue())` guards (after readSection and after the loop) exist so that an error or mutation-limit stop leaves position at the last valid offset and isFullyRead() stays false. No test hits that branch. testReaderSeek only reads complete, valid logs, so it asserts position == maxOffset. If the guard were removed or inverted, a reader stopped early by a mutation limit would report fully read and CdcScannerBuilder would skip the rest of the segment. No test would fail.",
+     "fix": "Add a test that reads with a mutation limit or a corrupt segment and asserts reader.position() < logFile.maxOffset() and result.isFullyRead() is false.",
+     "title": "Test the early-termination path that must not set position to maxOffset"
+    }
+   ],
+   "error": null
+  }
+ ]
+}

@@ -381,7 +381,7 @@ body.no-data #no-data { display: block; }
   <div class="navcol">
     <nav id="nav" aria-label="Report sections">
       <div class="nav-head">
-        <div class="eyebrow">Cassandra PR review</div>
+        <div class="eyebrow" id="nav-eyebrow">Cassandra PR review</div>
         <span id="nav-pr"></span>
         <span id="nav-pill"></span>
         <button type="button" id="nav-toggle" aria-expanded="false" aria-controls="nav-body">Sections</button>
@@ -722,6 +722,8 @@ body.no-data #no-data { display: block; }
   }
   var V = M.view || {};
   var pr = M.pr || {};
+  // Reports rendered before project profiles have no `project`: they are apache/cassandra.
+  var project = M.project || { slug: "cassandra", repo: "apache/cassandra", name: "Cassandra", suite_labels: {} };
   var checks = Array.isArray(M.checks) ? M.checks : [];
   var checkById = {};
   checks.forEach(function (c) { checkById[c.id] = c; });
@@ -730,17 +732,11 @@ body.no-data #no-data { display: block; }
   var words = V.words || {};
   function checkWord(c) { return words[c.id] || STATUS_WORD[c.status] || "Unknown"; }
 
-  var TEST_SUITES = [
-    ["test/unit/", "Unit (test/unit)"], ["test/distributed/", "In-JVM dtest (test/distributed)"],
-    ["test/burn/", "Burn (test/burn)"], ["test/long/", "Long (test/long)"],
-    ["test/microbench/", "Microbench (test/microbench)"], ["test/simulator/", "Simulator (test/simulator)"],
-    ["test/harry/", "Harry (test/harry)"], ["test/memory/", "Memory (test/memory)"],
-    ["test/anttasks/", "Ant tasks (test/anttasks)"], ["pylib/cqlshlib/test/", "cqlsh (pylib/cqlshlib/test)"]
-  ];
-  function isTest(p) { return p.indexOf("test/") === 0 || p.indexOf("/test/") !== -1; }
-  function testSuite(p) {
-    for (var i = 0; i < TEST_SUITES.length; i++) if (p.indexOf(TEST_SUITES[i][0]) === 0) return TEST_SUITES[i][1];
-    return isTest(p) ? "Other tests" : null;
+  // Each file's suite is classified by the tool with the project's layout; the labels come from the project too.
+  function testSuite(f) {
+    if (!f.suite) return null;
+    var labels = project.suite_labels || {};
+    return Object.prototype.hasOwnProperty.call(labels, f.suite) ? labels[f.suite] : (f.suite === "other" ? "Other tests" : f.suite);
   }
   function fileLines(f) { return (Number(f.additions) || 0) + (Number(f.deletions) || 0); }
   function prCommitUrl(sha) {
@@ -888,6 +884,7 @@ body.no-data #no-data { display: block; }
 
   function extraCi() {
     var out = [];
+    var githubCi = project.ci_provider === "github-checks";  // CI from the head's GitHub check-runs, not JIRA
     var rows = (M.branches || []).map(function (b) {
       var ci = b.ci;
       var ciCells;
@@ -905,7 +902,7 @@ body.no-data #no-data { display: block; }
               h("div", "d-body", list(fails, function (f) { return h("span", "mono", typeof f === "string" ? f : JSON.stringify(f)); }))]) : h("span", "muted", "none") }
         ];
       } else {
-        ciCells = [{ node: chip("fail", "no CI attached") }, "", "", "", "", "", ""];
+        ciCells = [{ node: chip("fail", githubCi ? "no CI run" : "no CI attached") }, "", "", "", "", "", ""];
       }
       return {
         cls: b.is_self ? "self" : null,
@@ -917,6 +914,7 @@ body.no-data #no-data { display: block; }
     });
     out.push(gblock("Target branches", [rows.length ? table(["Branch", "PR", "State", "Head", "CI summary", "CI sha", "Passed", "Failed", "Total", "Upgrade tests", "Failures"], rows)
       : empty("No sibling PRs found for this ticket.", "Backport PRs for the other branches would be listed here once the ticket links them.")], rows.length));
+    if (githubCi) return out;  // the groups below are about summaries attached to JIRA
     var un = M.ci_unmapped || [];
     out.push(gblock("CI summaries not matched to a branch", [un.length ? table(["Summary", "Parse", "Ref", "Problem"], un.map(function (u) {
       return { cells: [{ node: link(u.url, u.attachment || "attachment") }, u.parse_status || "?",
@@ -934,7 +932,7 @@ body.no-data #no-data { display: block; }
     var files = M.files || [];
     var groups = {}, order = [], prodLines = 0, testLines = 0, prodFiles = 0;
     files.forEach(function (f) {
-      var s = testSuite(f.path || "");
+      var s = testSuite(f);
       if (s) {
         testLines += fileLines(f);
         if (!groups[s]) { groups[s] = []; order.push(s); }
@@ -1028,10 +1026,10 @@ body.no-data #no-data { display: block; }
     }
     var pct = Math.round((pm.threshold || 0.25) * 100);
     var kids = [h("p", "muted", "Violations this PR introduces against PMD's " + pm.rules_run + " Java rules, grouped by how serious the category is. A rule the base branch breaks in at least " +
-      pct + "% of its own files is house style. A rule whose count here is no higher than the base branch's own rate for this many added lines is usual for Cassandra. Both are counted separately below and do not drive the check.")];
+      pct + "% of its own files is house style. A rule whose count here is no higher than the base branch's own rate for this many added lines is usual for " + project.name + ". Both are counted separately below and do not drive the check.")];
     kids.push(h("div", "pm-cats", pm.categories.map(function (c) {
       var d = h("div", "pm-cat s-" + PM_KIND[c.band] + (c.introduced ? "" : " zero"), [h("b", null, String(c.introduced)), h("span", null, c.label)]);
-      d.title = PM_BAND_WORD[c.band] + (c.house ? "; " + c.house + " more in house-style rules" : "") + (c.usual ? "; " + c.usual + " more in rules usual for Cassandra" : "");
+      d.title = PM_BAND_WORD[c.band] + (c.house ? "; " + c.house + " more in house-style rules" : "") + (c.usual ? "; " + c.usual + " more in rules usual for " + project.name : "");
       return d;
     })));
     var b = pm.baseline || {};
@@ -1039,7 +1037,7 @@ body.no-data #no-data { display: block; }
       "House style is judged from all " + (b.files || 0).toLocaleString("en-US") + " source files on " + (b.branch || "the base branch") + " (" + short(b.tip, 10) + (b.source === "reused" ? ", reused from an earlier tip" : "") + ").";
     var rate = pm.rate || {};
     var rateNote = rate.available ? "The usual rate is that branch's " + (rate.loc || 0).toLocaleString("en-US") + " lines against this PR's " + (rate.added_loc || 0).toLocaleString("en-US") + " added production lines." :
-      "No usual-for-Cassandra rate: the branch baseline has no line count.";
+      "No usual-for-" + project.name + " rate: the branch baseline has no line count.";
     kids.push(h("p", "pm-base", [base + " ", b.note ? b.note + " " : "", rateNote + " ",
       pm.type_info ? "Type info was used." : "Without type info: " + String(pm.type_note || "").replace(/^.*without type info: /, "") +
         (pm.untyped_rules ? " " + plural(pm.untyped_rules, "rule") + " that need compiled classes are greyed and not counted." : "")]));
@@ -1075,7 +1073,7 @@ body.no-data #no-data { display: block; }
           { node: String(r.production), num: true }, { node: String(r.expected), num: true },
           { node: r.url ? link(r.url, "PMD docs") : "" }] };
       });
-      kids.push(h("div", "pm-usual", details("Usual for Cassandra: " + plural(pm.usual.length, "rule") + ", " + pm.introduced_usual + " violations",
+      kids.push(h("div", "pm-usual", details("Usual for " + project.name + ": " + plural(pm.usual.length, "rule") + ", " + pm.introduced_usual + " violations",
         [h("p", "muted", "In production code, each rule's count is no higher than the base branch's own rate predicts for this PR's added lines (one-sided Poisson test, p of at least " + (pm.usual_p || 0.01) + "). A rule the branch never breaks is never listed here."),
           table(["Rule", "Category", "Observed", "Expected", "Docs"], urows, { cls: "pm-table" })])));
     }
@@ -1146,7 +1144,7 @@ body.no-data #no-data { display: block; }
       var tot = b.changed_total || {};
       out.push(gblock("Changed-line coverage", [
         h("p", null, tot.executable ? (tot.covered + (tot.partial || 0)) + " of " + plural(tot.executable, "added executable line") + " ran under the selected tests."
-          : "No added executable lines under src/java."),
+          : "No added executable lines in the production sources."),
         files.length ? table(["File", "Covered", "Missed lines"], rows, { cls: "build-cov" }) : null], files.length));
     } else {
       out.push(gblock("Changed-line coverage", [empty("Coverage was not measured for this run.", "A build run with coverage turned on would fill this.")]));
@@ -1175,7 +1173,7 @@ body.no-data #no-data { display: block; }
     var wrap = document.getElementById("header");
     var facts = h("div", "facts");
     append(facts, link(pr.url, "#" + pr.number));
-    append(facts, h("span", null, ["into ", link(ghTree("apache/cassandra", pr.base), pr.base || "?", "mono")]));
+    append(facts, h("span", null, ["into ", link(ghTree(project.repo, pr.base), pr.base || "?", "mono")]));
     append(facts, h("span", null, ["by ", link(ghUser(pr.author), pr.author || "unknown"),
       (V.header && V.header.first_time_contributor) ? " (first-time contributor)" :
         (pr.author_association ? " (" + String(pr.author_association).toLowerCase().replace(/_/g, " ") + ")" : "")]));
@@ -1866,7 +1864,9 @@ body.no-data #no-data { display: block; }
   // -------------------------------------------------------------------------
   // Build the page
   // -------------------------------------------------------------------------
-  document.title = "PR #" + pr.number + ": " + (pr.title || "") + " — Cassandra PR review";
+  document.title = "PR #" + pr.number + ": " + (pr.title || "") + " — " + project.name + " PR review";
+  var eyebrow = document.getElementById("nav-eyebrow");
+  if (eyebrow) eyebrow.textContent = project.name + " PR review";
   append(document.getElementById("nav-pr"), (function () { var a = link(pr.url, "PR #" + pr.number, "nav-pr"); return a; })());
   append(document.getElementById("nav-pill"), h("span", "chip pill s-" + vKind, verdict.headline));
 

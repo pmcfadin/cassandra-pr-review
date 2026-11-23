@@ -50,11 +50,14 @@ def late_ticket():
 
 
 class CaseFiles(unittest.TestCase):
-    def test_all_six_research_cases_load(self):
+    def test_all_research_cases_load(self):
+        from cpr import project as project_mod
         cases = bench.load_cases()
-        self.assertEqual([c["id"].split("-")[0] for c in cases], ["B1", "B2", "B3", "B4", "B5", "B6"])
+        self.assertEqual([c["id"].split("-")[0] for c in cases], ["A1", "B1", "B2", "B3", "B4", "B5", "B6", "S1"])
+        repos = {"A": "apache/cassandra-analytics", "B": "apache/cassandra", "S": "apache/cassandra-sidecar"}
         for c in cases:
-            self.assertEqual(c["repo"], "apache/cassandra")
+            self.assertEqual(c["repo"], repos[c["id"][0]])
+            project_mod.by_repo(c["repo"])
             for issue in c["known_issues"]:
                 self.assertTrue(issue["source"].startswith("https://"), (c["id"], issue["id"]))
                 self.assertTrue(issue["match_terms"], (c["id"], issue["id"]))
@@ -75,7 +78,7 @@ class CaseFiles(unittest.TestCase):
                 self.assertTrue(c[k] is None or len(c[k]) == 40, (c["id"], k))
 
     def test_find_cases_by_short_id_and_all(self):
-        self.assertEqual(len(bench.find_cases("all")), 6)
+        self.assertEqual(len(bench.find_cases("all")), 8)
         self.assertEqual(bench.find_cases("B1")[0]["id"], "B1-19987")
         with self.assertRaises(bench.CaseError):
             bench.find_cases("B9")

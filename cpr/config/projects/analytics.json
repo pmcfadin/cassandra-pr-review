@@ -1,0 +1,190 @@
+{
+ "_comment": "apache/cassandra-analytics: Gradle multi-module (cassandra-analytics-core, cassandra-bridge, cassandra-*-zero bridges, ...); variant source dirs such as src/main/scala-2.13-spark-4 hold Java too.",
+ "slug": "analytics",
+ "repo": "apache/cassandra-analytics",
+ "name": "Cassandra Analytics",
+ "jira_keys": [
+  "CASSANALYTICS"
+ ],
+ "key_digits": 1,
+ "bare_number_branch_key": false,
+ "paths": {
+  "prod": [
+   "(^|/)src/main/"
+  ],
+  "test": [
+   "(^|/)src/(test|testFixtures)[^/]*/",
+   "^cassandra-analytics-integration-(tests|framework)/"
+  ],
+  "test_resources": [
+   "(^|/)src/(test|testFixtures)[^/]*/resources/"
+  ],
+  "generated": [
+   "(^|/)build/generated/",
+   "\\.(db|bin)$"
+  ],
+  "doc": [
+   "^docs/",
+   "^(?!(.*/)?src/).*\\.(adoc|md)$"
+  ],
+  "build": [
+   "^\\.github/",
+   "^\\.circleci/",
+   "^gradle/",
+   "^scripts/",
+   "^githooks/",
+   "^profiles/",
+   "(^|/)build\\.gradle$",
+   "^settings\\.gradle$",
+   "^gradle\\.properties$",
+   "^gradlew(\\.bat)?$"
+  ],
+  "suites": [
+   [
+    "^cassandra-analytics-integration-tests/",
+    "integration",
+    "Integration (cassandra-analytics-integration-tests)"
+   ],
+   [
+    "^cassandra-analytics-integration-framework/",
+    "fixtures",
+    "Integration framework"
+   ],
+   [
+    "(^|/)src/testFixtures[^/]*/",
+    "fixtures",
+    "Test fixtures (src/testFixtures)"
+   ],
+   [
+    "(^|/)src/test[^/]*/",
+    "unit",
+    "Unit (src/test)"
+   ]
+  ],
+  "subsystem": {
+   "kind": "module"
+  }
+ },
+ "ci_provider": "github-checks",
+ "disabled_checks": [
+  "compat.config-pairing",
+  "compat.system-properties",
+  "compat.nodetool-help",
+  "ci.profile",
+  "commit.perf-structure",
+  "static.deprecated-since",
+  "static.protected-paths"
+ ],
+ "labplan": false,
+ "docs_dir": "subprojects",
+ "commit_subject_key": "allowed",
+ "commands": {
+  "check": "`./gradlew codeCheckTasks`",
+  "checkstyle": "`./gradlew checkstyleMain checkstyleTest`",
+  "checkstyle_main": "`./gradlew checkstyleMain`",
+  "rat": "`./gradlew rat` runs the RAT licence check",
+  "ai_trailer_source": "the ASF Generative Tooling Guidance; apache/cassandra's AGENTS.md uses `Assisted-by: <agent>:<model>`",
+  "test_advice": "Add a test that fails without this change: a unit test under the module's src/test, or a test in cassandra-analytics-integration-tests for behaviour against a running cluster (see DEV-README.md). If no test is possible, explain why on the ticket."
+ },
+ "static": {
+  "main": [
+   "(^|/)src/main/[^/]+/"
+  ],
+  "test": [
+   "(^|/)src/(test|testFixtures)[^/]*/"
+  ],
+  "exclude": [],
+  "baseline_roots": [],
+  "license_exempt": [
+   "(^|/)src/[^/]+/resources/"
+  ],
+  "protected": [],
+  "grammar": [],
+  "checkstyle": {
+   "tool": "checkstyle-9.3",
+   "files": [
+    "config/checkstyle/checkstyle.xml",
+    "config/checkstyle/suppressions.xml"
+   ],
+   "required": [
+    "config/checkstyle/checkstyle.xml"
+   ],
+   "configs": {
+    "main": "config/checkstyle/checkstyle.xml",
+    "test": "config/checkstyle/checkstyle.xml"
+   },
+   "properties": {
+    "config_loc": "{config_dir}"
+   }
+  }
+ },
+ "compat_surfaces": [
+  [
+   "Cassandra version bridges",
+   "^cassandra-(bridge|three-zero|four-zero|five-zero|six-zero)[^/]*/src/main/"
+  ],
+  [
+   "CDC Avro schemas",
+   "/src/main/resources/.*\\.avsc$"
+  ],
+  [
+   "Spark converters",
+   "^(cassandra-analytics-spark[^/]*-converter|cassandra-[a-z-]*avro-converter)/src/main/"
+  ],
+  [
+   "bulk writer and reader options",
+   "^cassandra-analytics-core/src/main/java/org/apache/cassandra/spark/(bulkwriter/(BulkSparkConf|BulkWriterConfig|WriterOptions)|data/ClientConfig)\\.java$"
+  ],
+  [
+   "CDC API",
+   "^cassandra-analytics-common/src/main/java/org/apache/cassandra/cdc/api/"
+  ],
+  [
+   "supported Cassandra versions",
+   "^(gradle\\.properties|scripts/build-dtest-jars\\.sh|scripts/build-dependencies\\.sh)$"
+  ],
+  [
+   "bundled Sidecar client",
+   "^analytics-sidecar-"
+  ],
+  [
+   "dependencies",
+   "^(gradle/|build\\.gradle|[^/]+/build\\.gradle|profiles/)"
+  ]
+ ],
+ "triage": {
+  "concurrency_paths": [
+   "cassandra-analytics-core/src/main/java/org/apache/cassandra/spark/bulkwriter/",
+   "cassandra-analytics-cdc/src/main/java/org/apache/cassandra/cdc/",
+   "cassandra-analytics-cdc-sidecar/src/main/java/"
+  ],
+  "hard_surfaces": [
+   "Cassandra version bridges",
+   "CDC Avro schemas",
+   "supported Cassandra versions"
+  ]
+ },
+ "not_checked": [
+  "Analytics's own Gradle checks (`codeCheckTasks`: checkstyle, RAT, SpotBugs where configured) were not run here; checkstyle ran on the changed files only, and SpotBugs results come in through the CI checks.",
+  "Tests are built and run only for committers' PRs (or a PR the owner approved) and only a selection of unit tests; integration, container and in-JVM dtest suites are not run.",
+  "CI evidence is the GitHub Actions check-runs of the PR head; failures are counted, not compared against known flaky tests.",
+  "Code review lenses read the diff; they do not build or run tests."
+ ],
+ "ci_branches": [
+  "trunk"
+ ],
+ "build": {
+  "tool": "gradle",
+  "jdk": 17,
+  "test_task": "test",
+  "skip_modules": ["cassandra-analytics-integration-tests", "cassandra-analytics-integration-framework", "cassandra-analytics-core-example"]
+ },
+ "lenses": {
+  "standards": "docs/research/analytics-standards.md",
+  "testing_doc": "docs/report/subprojects/testing.md",
+  "guides": {
+   "DEV-README.md": ["cassandra-standards", "cass-persistence-compat", "cass-completeness-symmetry", "cass-test-regime"]
+  },
+  "drop": [".claude/skills/cassandra-injvm-dtest/SKILL.md"]
+ }
+}

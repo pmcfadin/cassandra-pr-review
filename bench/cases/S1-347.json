@@ -1,0 +1,38 @@
+{
+  "id": "S1-347",
+  "title": "CASSSIDECAR-347 Improve FilteringMetricRegistry implementation",
+  "repo": "apache/cassandra-sidecar",
+  "pr": 261,
+  "base_sha": "fed08b5bb7474f3fb4caecce4acb0838c9b15371",
+  "head_sha": "f12f3e6fd99b0920e9c3b23a4e51ac5f75fee0b8",
+  "ticket": "CASSSIDECAR-347",
+  "cutoff": "2025-09-27",
+  "notes": "First Sidecar case (4 files, +293/-17; medium tier). Head is the landed trunk commit (squash of PR #261). The hard issue is from CASSSIDECAR-349 (created 2025-09-29, two days after the case landed), whose description says the race was introduced in CASSSIDECAR-347, and its fix commit 56e2bb0f: addExcludedMetricIfNotExists nulls the cached allMetrics inside the computeIfAbsent mapping function, before the new metric is in excludedMetrics, so a concurrent getMetrics() can rebuild and cache allMetrics without it; the metric then stays missing from getMetrics() until the next invalidation. Lines are at the head: FilteringMetricRegistry.java:284-293 (the invalidation) against getMetrics at 164-195. A concurrency lens finding is the expected catch. Training contamination: the fix post-dates the case head but pre-dates mid-2026 model cut-offs, so a model may have seen it. The Sidecar lens notes in docs/research/sidecar-standards.md cite review comments from PRs merged after the cut-off (for example #390 on check-then-act cache invalidation); they describe the defect class, not this bug, but recheck if the notes are edited to name it. First panel run (2026-11-20, Sonnet): found by five of six lenses.",
+  "known_issues": [
+    {
+      "id": "K1",
+      "source": "https://issues.apache.org/jira/browse/CASSSIDECAR-349",
+      "severity": "major",
+      "hard": true,
+      "files": [
+        "server/src/main/java/org/apache/cassandra/sidecar/metrics/FilteringMetricRegistry.java"
+      ],
+      "lines": [
+        284,
+        293
+      ],
+      "match_terms": [
+        "allmetrics"
+      ],
+      "match_any": [
+        "race",
+        "concurren",
+        "stale",
+        "before",
+        "missing",
+        "order"
+      ],
+      "summary": "allMetrics is nulled inside computeIfAbsent before the excluded metric is added, so a concurrent getMetrics() caches a map without it"
+    }
+  ]
+}

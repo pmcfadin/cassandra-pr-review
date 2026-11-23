@@ -1,6 +1,6 @@
-# Refresh reports for open apache/cassandra PRs with the cheap pipeline only: ingest, requirement
-# checks, static analysis, triage, lab plan. No AI lenses, no builds, no PR comments. Publishes to
-# the gh-pages branch with the default token.
+# Refresh reports for open apache/cassandra, apache/cassandra-sidecar and apache/cassandra-analytics PRs
+# with the cheap pipeline only: ingest, requirement checks, static analysis, triage, lab plan. No AI
+# lenses, no builds, no PR comments. Publishes to the gh-pages branch with the default token.
 name: poll
 
 on:
@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       limit:
-        description: "Most PRs to refresh in this run"
+        description: "Most PRs to refresh in this run, per project"
         required: false
         default: "25"
 
@@ -45,7 +45,7 @@ jobs:
         id: week
         run: echo "iso=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
 
-      # A cache miss is fine: cpr makes the clone itself.
+      # A cache miss is fine: cpr makes the clones itself. One cache per project, so each refreshes on its own.
       - uses: actions/cache@v4
         with:
           path: .work/cassandra
@@ -54,10 +54,22 @@ jobs:
 
       - uses: actions/cache@v4
         with:
+          path: .work/cassandra-sidecar
+          key: cassandra-sidecar-clone-${{ steps.week.outputs.iso }}
+          restore-keys: cassandra-sidecar-clone-
+
+      - uses: actions/cache@v4
+        with:
+          path: .work/cassandra-analytics
+          key: cassandra-analytics-clone-${{ steps.week.outputs.iso }}
+          restore-keys: cassandra-analytics-clone-
+
+      - uses: actions/cache@v4
+        with:
           path: .work/tools
           key: cpr-tools-${{ hashFiles('cpr/config/static.json') }}
 
-      # The PMD baseline scores a whole branch (minutes on a cold cache); the per-file base results sit beside it.
+      # The PMD baselines score a whole branch per project (minutes on a cold cache); the per-file base results sit beside them.
       - uses: actions/cache@v4
         with:
           path: .work/static-cache

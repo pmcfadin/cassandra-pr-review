@@ -39,8 +39,11 @@ def tool_dir(work_dir, tool_id):
     return os.path.join(tools_dir(work_dir), tool_id)
 
 
-def checkstyle_id(cfg, base_branch):
-    """The pinned checkstyle tool id for a base branch family, or None (cassandra-4.0 and older have none)."""
+def checkstyle_id(cfg, base_branch, tool=None):
+    """The pinned checkstyle tool id: the project's fixed `tool` when it has one (its Gradle build pins one version),
+    else by apache/cassandra base branch family, or None (cassandra-4.0 and older have none)."""
+    if tool:
+        return tool
     known = cfg["checkstyle_by_branch"]
     if base_branch in known:
         return known[base_branch]

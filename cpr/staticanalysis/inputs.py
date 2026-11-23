@@ -16,8 +16,11 @@ def is_excluded(path, exclude):
     return path.startswith(tuple(exclude))
 
 
-def changed_java(clone, base, head, exclude=()):
-    """[{path, base_path, status A|M|R|D, test}] for changed .java files (rename map from `git diff -M`)."""
+def changed_java(clone, base, head, exclude=(), scope_of=None):
+    """[{path, base_path, status A|M|R|D, test}] for changed .java files (rename map from `git diff -M`).
+
+    `scope_of(path)` is the project's static scope ("main", "test", None); default: test means under test/.
+    """
     raw = _git(clone, "diff", "-M", "-z", "--name-status", base, head, "--", "*.java")
     parts, out, i = raw.split("\0"), [], 0
     while i < len(parts) and parts[i]:
@@ -32,7 +35,8 @@ def changed_java(clone, base, head, exclude=()):
             status, base_path = code[0], (None if code[0] == "A" else new)
         if status not in "AMRD" or is_excluded(new, exclude):
             continue
-        out.append({"path": new, "base_path": base_path, "status": status, "test": new.startswith("test/")})
+        out.append({"path": new, "base_path": base_path, "status": status,
+                    "test": (scope_of(new) == "test") if scope_of else new.startswith("test/")})
     return sorted(out, key=lambda c: c["path"])
 
 

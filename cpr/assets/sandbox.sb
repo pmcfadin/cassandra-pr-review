@@ -1,7 +1,8 @@
 (version 1)
-;; Profile for every step that runs a PR's code (ant, javac, JUnit). Parameters are absolute, normalized paths:
-;; WT build clone, M2 Maven repository copy, GIT the build clone's repository dir, HOME, ROOT this tool's checkout,
-;; WORK the work directory, RUN this run's directory, OBJECTS the fetch clone's object store (alternates).
+;; Profile for every step that runs a PR's code (ant, gradle, javac, JUnit). Parameters are absolute, normalized paths:
+;; WT build clone, M2 Maven repository copy, GRADLE the run's GRADLE_USER_HOME, GIT the build clone's repository dir,
+;; HOME, ROOT this tool's checkout, WORK the work directory, RUN this run's directory, OBJECTS the fetch clone's
+;; object store (alternates).
 (allow default)
 (deny network*)
 (allow network-bind)
@@ -12,6 +13,7 @@
 (allow file-write*
   (subpath (param "WT"))
   (subpath (param "M2"))
+  (subpath (param "GRADLE"))
   (subpath (param "GIT"))
   (subpath "/private/tmp")
   (subpath "/private/var/folders")

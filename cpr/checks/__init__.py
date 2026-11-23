@@ -58,13 +58,16 @@ def run_all(bundle, ctx=None):
     ctx = ctx or Context(bundle)
     results = []
     for spec in REGISTRY:
-        try:
-            r = spec["fn"](bundle, ctx)
-        except Exception as e:  # a broken check must never pass silently
-            r = Result("unknown", f"check crashed: {type(e).__name__}: {e}")
+        if spec["id"] in ctx.project.disabled_checks:
+            r = Result("not-applicable", f"Not part of {ctx.project.name}'s process")
+        else:
+            try:
+                r = spec["fn"](bundle, ctx)
+            except Exception as e:  # a broken check must never pass silently
+                r = Result("unknown", f"check crashed: {type(e).__name__}: {e}")
         results.append({
             "id": spec["id"],
-            "title": spec["title"],
+            "title": spec["title"].format(key=ctx.project.jira_keys[0]),
             "category": spec["category"],
             "aspect": spec["aspect"],
             "blocking": spec["blocking"] if r.blocking is None else r.blocking,
@@ -87,8 +90,10 @@ class Context:
     """Derived views of the bundle shared by several checks."""
 
     def __init__(self, bundle):
-        from cpr import diffparse
+        from cpr import diffparse, project
         self.bundle = bundle
+        self.project = project.of(bundle)
+        self.classify = self.project.paths  # path classifier; `paths` below is the list of changed paths
         self.files = bundle.get("files", [])
         self.paths = [f["path"] for f in self.files]
         self.added = diffparse.parse(bundle.get("diff", ""))

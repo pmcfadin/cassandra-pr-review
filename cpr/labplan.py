@@ -6,7 +6,7 @@ import json
 import os
 import re
 
-from cpr import VERSION, paths
+from cpr import VERSION, paths, project as project_mod
 from cpr.checks import Context
 from cpr.checks.ci import upgrade_sensitive_files
 from cpr.checks.compat import touched_surfaces
@@ -373,6 +373,9 @@ def objective(c, chosen_cfg, chosen):
 def build_plan(bundle, cfg=None):
     """Return the lab plan for a PR: {status: "plan"|"none", reason, scenarios, dropped, markdown, filename, ...}."""
     cfg = cfg or load_config()
+    proj = project_mod.of(bundle)
+    if not proj.labplan:
+        return _none(f"no lab plan for {proj.name}: the plans build and load a Cassandra server cluster")
     reason = no_plan_reason(bundle, cfg)
     if reason:
         return _none(reason)

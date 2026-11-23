@@ -233,7 +233,7 @@ def classify_rules(changed, base_files, head_files, head_lines, cap=LOCATION_CAP
                                                      "locations": []})
             if intro:
                 e["introduced"] += 1
-                e["in_tests"] += hp.startswith("test/")
+                e["in_tests"] += bool(c.get("test"))
                 if len(e["locations"]) < cap:
                     e["locations"].append([hp, begin, msg])
             else:

@@ -19,21 +19,22 @@ def load_config(path=CONFIG):
         return json.load(f)
 
 
-def _file_priority(files):
+def _file_priority(files, classify=None):
     """Changed-line counts by path, production code first, then largest first."""
     size = {f["path"]: f["additions"] + f["deletions"] for f in files}
-    return lambda p: (0 if paths.is_prod(p) else 1, -size.get(p, 0), p)
+    is_prod = (classify or paths).is_prod
+    return lambda p: (0 if is_prod(p) else 1, -size.get(p, 0), p)
 
 
-def select_hunks(hunks, files, max_hunks):
-    order = _file_priority(files)
+def select_hunks(hunks, files, max_hunks, classify=None):
+    order = _file_priority(files, classify)
     ranked = sorted(hunks, key=lambda h: (order(h["new_path"] or h["path"]), h["start"]))
     return ranked[:max_hunks], max(0, len(ranked) - max_hunks)
 
 
-def select_files(files, max_files):
+def select_files(files, max_files, classify=None):
     existing = [f for f in files if f["status"] != "A" and not f.get("binary")]
-    order = _file_priority(files)
+    order = _file_priority(files, classify)
     ranked = sorted(existing, key=lambda f: order(f["path"]))
     return ranked[:max_files], max(0, len(ranked) - max_files)
 
@@ -54,10 +55,12 @@ def history_ref(clone_path, merge_base, path):
     return merge_base, "merge base"
 
 
-def gather(clone_path, merge_base, diff_text, files, cfg=None):
+def gather(clone_path, merge_base, diff_text, files, cfg=None, project=None):
+    """`project` (default apache/cassandra) gives the path layout and the ticket key prefixes."""
     cfg = cfg or load_config()
+    classify, keys = (project.paths, project.jira_keys) if project else (None, credits.CASSANDRA)
     hunks = diffparse.old_side_hunks(diff_text, cfg["context_lines"])
-    chosen, hunks_skipped = select_hunks(hunks, files, cfg["max_hunks"])
+    chosen, hunks_skipped = select_hunks(hunks, files, cfg["max_hunks"], classify)
 
     by_path = {}
     for h in chosen:
@@ -71,7 +74,7 @@ def gather(clone_path, merge_base, diff_text, files, cfg=None):
 
     commits = {c["sha"]: _trim(c) for c in clone.show_commits(clone_path, sorted({b["sha"] for b in blame}))}
 
-    logged, files_skipped = select_files(files, cfg["max_files"])
+    logged, files_skipped = select_files(files, cfg["max_files"], classify)
     file_logs, log_refs = {}, {}
     for f in logged:
         path = f.get("previous_path") or f["path"]
@@ -80,7 +83,7 @@ def gather(clone_path, merge_base, diff_text, files, cfg=None):
         file_logs[f["path"]] = [_trim(c) for c in log[:cfg["max_log_per_file"]]]
         log_refs[f["path"]] = label
 
-    keys = sorted({k for c in commits.values() if not c["merge"] for k in [credits.primary_key(c["message"])] if k})
+    keys = sorted({k for c in commits.values() if not c["merge"] for k in [credits.primary_key(c["message"], keys)] if k})
     return {
         "hunks_total": len(hunks), "hunks_blamed": len(chosen), "hunks_skipped": hunks_skipped,
         "files_total": len([f for f in files if f["status"] != "A"]), "files_logged": len(logged),

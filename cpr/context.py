@@ -6,7 +6,7 @@ ASF roster. See openspec change reviewer-context for the rules.
 
 import datetime
 
-from cpr import credits
+from cpr import credits, project as project_mod
 from cpr.ingest.history import load_config
 
 
@@ -21,13 +21,13 @@ def _subject(message):
     return (message or "").splitlines()[0][:160] if message else ""
 
 
-def related_tickets(history):
+def related_tickets(history, keys=credits.CASSANDRA):
     tickets, untracked = {}, {}
     for b in history.get("blame", []):
         c = history["commits"].get(b["sha"])
         if not c or c.get("merge"):
             continue
-        key = credits.primary_key(c["message"])
+        key = credits.primary_key(c["message"], keys)
         if key:
             t = tickets.setdefault(key, {"key": key, "lines": 0, "commits": {}, "files": set()})
             t["lines"] += b["lines"]
@@ -50,15 +50,15 @@ def related_tickets(history):
     return out, sorted(untracked.values(), key=lambda u: -u["lines"])
 
 
-def _credits_for(commit):
-    parsed = credits.parse(commit["message"])
+def _credits_for(commit, keys=credits.CASSANDRA):
+    parsed = credits.parse(commit["message"], keys)
     if parsed["authors"]:
         return [(n, None, "author") for n in parsed["authors"]] + [(n, None, "reviewer") for n in parsed["reviewers"]]
     # No credit line: the git author is the patch author.
     return [(commit["author_name"], commit["author_email"], "author")]
 
 
-def experts(history, resolver, today, cfg):
+def experts(history, resolver, today, cfg, keys=credits.CASSANDRA):
     per_file, totals = {}, {}
     for path, log in (history.get("file_logs") or {}).items():
         people = {}
@@ -70,7 +70,7 @@ def experts(history, resolver, today, cfg):
             if age > cfg["window_years"]:
                 continue
             decay = 0.5 ** (age / cfg["half_life_years"])
-            for name, email, role in _credits_for(c):
+            for name, email, role in _credits_for(c, keys):
                 pkey, display, asf = resolver.resolve(name, email)
                 p = people.setdefault(pkey, {"person": pkey, "name": display, "asf_id": asf, "score": 0.0,
                                              "patches": 0, "reviews": 0, "latest": c["date"]})
@@ -135,8 +135,9 @@ def build(bundle, cfg=None, today=None):
     roster = ((bundle.get("roster") or {}).get("roster")) or {}
     resolver = credits.Resolver(roster)
     today = today or _date(bundle["meta"]["fetched_at"]) or datetime.date.today()
-    tickets, untracked = related_tickets(history)
-    per_file, totals = experts(history, resolver, today, cfg)
+    keys = project_mod.of(bundle).jira_keys
+    tickets, untracked = related_tickets(history, keys)
+    per_file, totals = experts(history, resolver, today, cfg, keys)
     suggested, already = suggest(totals, bundle, resolver, cfg)
     ticket = (bundle.get("jira") or {}).get("ticket") or {}
     own_key = (bundle.get("jira_key") or {}).get("key")

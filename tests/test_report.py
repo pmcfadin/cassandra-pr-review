@@ -164,7 +164,7 @@ class Cli(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             b = bundle()
             bundle_mod.save(b, d)
-            out = os.path.join(d, "reports", "5198", "index.html")
+            out = os.path.join(d, "reports", "cassandra", "5198", "index.html")
             with mock.patch.object(cli, "ROOT", d):
                 rc = cli.main(["review", "5198", "--offline", "--work-dir", d, "--quiet"])
             self.assertEqual(rc, 0)
@@ -184,7 +184,7 @@ class Cli(unittest.TestCase):
                     mock.patch.object(bundle_mod, "ingest", side_effect=PRNotFound("#999999 is not a pull request")):
                 rc = cli.main(["review", "999999", "--work-dir", d, "--quiet"])
             self.assertEqual(rc, 2)
-            self.assertFalse(os.path.exists(os.path.join(d, "reports", "999999")))
+            self.assertFalse(os.path.exists(os.path.join(d, "reports", "cassandra", "999999")))
 
 
 if __name__ == "__main__":

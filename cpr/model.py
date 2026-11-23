@@ -3,9 +3,10 @@
 import re
 import time
 
-from cpr import VERSION, buildresult, labplan, paths
+from cpr import VERSION, buildresult, labplan, paths, project as project_mod
 from cpr.checks import STATUSES
 from cpr.checks.compat import touched_surfaces
+from cpr.ingest import gh_checks
 from cpr.merge import issues_of
 from cpr.recommend import VERDICTS, recommend
 
@@ -33,13 +34,7 @@ SECTIONS = [
 ]
 ASPECTS = sorted({a for _, _, docs, _ in SECTIONS for a in docs})
 
-NOT_CHECKED = [
-    "`ant check` (checkstyle and RAT) was not run; the static checks here approximate it from the diff.",
-    "Tests are built and run only for committers' PRs (or a PR the owner approved) and only a selection of unit "
-    "tests; otherwise CI evidence comes only from summaries attached to JIRA.",
-    "CI failures are counted, not compared against known flaky tests (Butler) yet.",
-    "Code review lenses read the diff; they do not build or run tests.",
-]
+# What the report does not check comes from the project profile (`not_checked`).
 HUMAN_ONLY = [
     "Whether the design and approach are acceptable.",
     "Backport scope: which branches should get the fix.",
@@ -50,18 +45,18 @@ HUMAN_ONLY = [
 _RANK = {"fail": 0, "unknown": 1, "warn": 2, "pass": 3}
 
 
-def _file_kind(path):
-    if paths.is_test_resource(path):
+def _file_kind(path, classify=paths):
+    if classify.is_test_resource(path):
         return "test-resource"
-    if paths.is_test(path):
+    if classify.is_test(path):
         return "test"
-    if paths.is_generated(path):
+    if classify.is_generated(path):
         return "generated"
-    if paths.is_prod(path):
+    if classify.is_prod(path):
         return "production"
-    if paths.is_doc(path):
+    if classify.is_doc(path):
         return "doc"
-    if paths.is_build(path):
+    if classify.is_build(path):
         return "build"
     return "other"
 
@@ -75,6 +70,19 @@ def section_status(checks):
     if not statuses:
         return "info"
     return min(statuses, key=lambda s: _RANK[s])
+
+
+def _github_row(gh, head):
+    """The branch row's CI cell from the head's GitHub check-runs (None when no check ran)."""
+    c = gh_checks.summary(gh)
+    if gh.get("status") != "ok" or not c["total"]:
+        return None
+    overall = "running" if c["pending"] else "failed" if c["failed"] else "passed"
+    wf = (gh.get("workflow_runs") or [{}])[0]
+    return {"attachment": f"GitHub Actions ({c['total']} checks)", "url": wf.get("url"), "created": None,
+            "sha": head, "sha_matches": True, "passed": c["passed"], "failed": c["failed"], "skipped": c["skipped"],
+            "total": c["total"], "overall": overall, "has_upgrade_tests": None,
+            "failures": [r["name"] for r in gh["check_runs"] if r.get("conclusion") in gh_checks.FAILED][:50]}
 
 
 def _branch_rows(bundle):
@@ -101,6 +109,11 @@ def _branch_rows(bundle):
         })
     rows.sort(key=lambda r: ["cassandra-4.0", "cassandra-4.1", "cassandra-5.0", "cassandra-6.0", "trunk"].index(r["branch"])
               if r["branch"] in ("cassandra-4.0", "cassandra-4.1", "cassandra-5.0", "cassandra-6.0", "trunk") else 99)
+    gh = bundle["ci"].get("github")
+    if gh is not None:
+        for r in rows:
+            if r["is_self"]:
+                r["ci"] = _github_row(gh, r["head_sha"])
     unmapped = [{"attachment": s["attachment"], "url": s.get("url"), "parse_status": s.get("parse_status"),
                  "error": s.get("error"), "ref": s.get("ref")}
                 for s in bundle["ci"]["summaries"] if s.get("parse_status") != "ok" or not s.get("target_branch")]
@@ -112,6 +125,7 @@ COMPLEXITY_DARK = 30  # top ~1% of trunk methods
 
 
 def complexity_table(bundle):
+    is_test = lambda p: project_mod.of(bundle).static_kind(str(p or "")) == "test"  # noqa: E731
     """Changed methods with a cognitive complexity score after the patch, most complex first.
 
     Each row: score, base (None for a new method), change (new/worse/same/better), method, class, file, test,
@@ -131,7 +145,7 @@ def complexity_table(bundle):
         h, b = m["head"], m.get("base")
         change = "new" if b is None else "worse" if h > b else "same" if h == b else "better"
         rows.append({"score": h, "base": b, "change": change, "method": m.get("method_sig"), "class": m.get("class"),
-                     "file": m.get("file"), "test": str(m.get("file") or "").startswith("test/"),
+                     "file": m.get("file"), "test": is_test(m.get("file")),
                      "band": ("darkred" if h >= COMPLEXITY_DARK else "red" if h >= thr
                               else "yellow" if h >= COMPLEXITY_YELLOW else "green")})
     rows.sort(key=lambda r: (r["change"] not in ("new", "worse"), -r["score"], r["test"], str(r["file"]), str(r["method"])))
@@ -154,6 +168,7 @@ def pmd_rule_url(version, category, rule):
 
 
 def pmd_rules_block(bundle):
+    is_test = lambda p: project_mod.of(bundle).static_kind(str(p or "")) == "test"  # noqa: E731
     """The PMD rules block: introduced violations per rule, coloured by category.
 
     rows: rules outside house style and not usual for Cassandra, red then yellow then green, most introduced first,
@@ -192,8 +207,8 @@ def pmd_rules_block(bundle):
             if not row["in_tests"]:
                 continue
             row["introduced"] = row["in_tests"]  # the production part is usual; the test-file part is still counted
-            locations = [x for x in locations if str(x[0]).startswith("test/")]
-        locs = [{"file": f, "line": ln, "message": m, "test": str(f).startswith("test/")}
+            locations = [x for x in locations if is_test(x[0])]
+        locs = [{"file": f, "line": ln, "message": m, "test": is_test(f)}
                 for f, ln, m in locations[:min(PMD_LOCATIONS_PER_RULE, left)]]
         left -= len(locs)
         rows.append({**row, "locations": locs, "more": row["introduced"] - len(locs),
@@ -232,6 +247,7 @@ def _panel_summary():
 def build(bundle, checks, triage, docs, diffview, review=None, context=None):
     """Assemble the report model. `review` is None until review lenses exist."""
     pr = bundle["pr"]
+    proj = project_mod.of(bundle)
     ticket = (bundle.get("jira") or {}).get("ticket")
     rec = recommend(pr, checks, review)
     branches, unmapped = _branch_rows(bundle)
@@ -279,6 +295,7 @@ def build(bundle, checks, triage, docs, diffview, review=None, context=None):
         "schema": MODEL_SCHEMA,
         "generated_at": time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime()),
         "tool": {"name": "cassandra-pr-review", "version": VERSION},
+        "project": proj.summary(),
         "pr": {k: pr.get(k) for k in ("number", "url", "title", "body", "author", "author_association", "base",
                                       "head_ref", "head_repo", "head_sha", "draft", "state", "labels",
                                       "created_at", "updated_at", "additions", "deletions", "changed_files")},
@@ -301,9 +318,9 @@ def build(bundle, checks, triage, docs, diffview, review=None, context=None):
                      "login": c["login"], "trailers": c["trailers"],
                      "url": f"{pr['url']}/commits/{c['sha']}" if pr.get("url") else None} for c in bundle["commits"]],
         "files": [{**{k: f.get(k) for k in ("path", "previous_path", "status", "additions", "deletions", "binary")},
-                   "kind": _file_kind(f["path"]), "suite": paths.test_suite(f["path"])}
+                   "kind": _file_kind(f["path"], proj.paths), "suite": proj.paths.test_suite(f["path"])}
                   for f in bundle["files"]],
-        "compat_surfaces": touched_surfaces([f["path"] for f in bundle["files"]]),
+        "compat_surfaces": touched_surfaces([f["path"] for f in bundle["files"]], proj),
         "complexity": complexity_table(bundle),
         "pmd_rules": pmd_rules_block(bundle),
         "checks": checks,
@@ -319,7 +336,7 @@ def build(bundle, checks, triage, docs, diffview, review=None, context=None):
         "docs": docs,
         "diffview": diffview,
         "about": {
-            "not_checked": NOT_CHECKED,
+            "not_checked": proj.not_checked,
             "human_only": HUMAN_ONLY,
             "inputs": {
                 "fetched_at": bundle["meta"]["fetched_at"],
@@ -348,6 +365,10 @@ def validate(model):
     need(isinstance(pr.get("number"), int), "pr.number")
     need(isinstance(pr.get("title"), str), "pr.title")
     need(isinstance(pr.get("head_sha"), str) and len(pr["head_sha"]) == 40, "pr.head_sha")
+    proj = model.get("project")  # optional: models from before project profiles have none
+    need(proj is None or (isinstance(proj, dict) and isinstance(proj.get("slug"), str)
+                          and isinstance(proj.get("repo"), str) and isinstance(proj.get("name"), str)
+                          and isinstance(proj.get("suite_labels"), dict)), "project")
     for i, c in enumerate(model.get("checks", [])):
         need(c.get("status") in STATUSES, f"checks[{i}].status")
         need(isinstance(c.get("id"), str), f"checks[{i}].id")

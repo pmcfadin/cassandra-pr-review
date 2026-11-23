@@ -16,20 +16,20 @@ class Site(unittest.TestCase):
             b = bundle()
             b["pr"]["title"] = "<script>alert(1)</script> Fix things"
             m = model.build(b, checks.run_all(b), triage(b), render.load_docs(), diffview.unavailable("x"))
-            render.write(m, os.path.join(d, "reports", "5198", "index.html"))
-            os.makedirs(os.path.join(d, "reports", "junk"))
-            with open(os.path.join(d, "reports", "junk", "index.html"), "w") as f:
+            render.write(m, os.path.join(d, "reports", "cassandra", "5198", "index.html"))
+            os.makedirs(os.path.join(d, "reports", "cassandra", "junk"))
+            with open(os.path.join(d, "reports", "cassandra", "junk", "index.html"), "w") as f:
                 f.write("not a report")
             out = os.path.join(d, "site")
             os.makedirs(out)
             rows = site.build(os.path.join(d, "reports"), out)
             self.assertEqual([r["number"] for r in rows], [5198])
-            self.assertTrue(os.path.exists(os.path.join(out, "pr", "5198", "index.html")))
+            self.assertTrue(os.path.exists(os.path.join(out, "cassandra", "pr", "5198", "index.html")))
             self.assertTrue(os.path.exists(os.path.join(out, ".nojekyll")))
             with open(os.path.join(out, "index.html")) as f:
                 page = f.read()
             self.assertTrue(page.startswith("<!doctype html>"))
-            self.assertIn('href="pr/5198/"', page)
+            self.assertIn('href="cassandra/pr/5198/"', page)
             self.assertNotIn("<script>alert(1)", page)
             self.assertIn("Not reviewed yet", page)  # the report's headline words, not the long label
         self.assertNotIn("Requirements met", page)
@@ -107,11 +107,11 @@ class IndexGroups(unittest.TestCase):
         self.assertLess(page.index("Waiting on reviewers"), page.index("Waiting on the contributor"))
         self.assertLess(page.index("Waiting on the contributor"), page.index("Drafts"))
         for key, count in (("draft", 1), ("contributor", 2), ("reviewers", 1)):
-            sec = page[page.index(f'id="g-{key}"'):]
+            sec = page[page.index(f'id="g-cassandra-{key}"'):]
             sec = sec[:sec.index("</section>")]
             self.assertEqual(sec.count('<li class="item"'), count, key)
             self.assertIn(f'<span class="count">{count}</span>', sec)
-        self.assertNotIn('id="g-ready"', page)  # empty groups are left out
+        self.assertNotIn('id="g-cassandra-ready"', page)  # empty groups are left out
 
     def test_row_uses_the_reports_derived_view(self):
         r = row_for(None)
@@ -156,53 +156,108 @@ class Merge(unittest.TestCase):
         os.makedirs(self.site)
 
     def local(self, number=5198, **kw):
-        path = make_report(os.path.join(self.d, "reports", str(number), "index.html"), number=number, **kw)
-        return os.path.dirname(os.path.dirname(path))
+        path = make_report(os.path.join(self.d, "reports", "cassandra", str(number), "index.html"), number=number, **kw)
+        return os.path.dirname(os.path.dirname(os.path.dirname(path)))
+
+    def sidecar_report(self, number=5198):
+        from tests.helpers import sidecar_bundle
+        b = sidecar_bundle()
+        b["pr"]["number"] = number
+        m = model.build(b, checks.run_all(b), triage(b), render.load_docs(), diffview.unavailable("x"))
+        return render.write(m, os.path.join(self.d, "reports", "sidecar", str(number), "index.html"))
+
+    def test_projects_side_by_side_with_the_same_number(self):
+        self.sidecar_report(5198)
+        rows, actions = site.merge(self.local(5198), self.site)
+        self.assertEqual(actions, {("cassandra", 5198): "added", ("sidecar", 5198): "added"})
+        self.assertEqual(sorted((r["project"], r["number"]) for r in rows), [("cassandra", 5198), ("sidecar", 5198)])
+        self.assertEqual(site.model_slug(site.read_model(os.path.join(self.site, "sidecar", "pr", "5198", "index.html"))),
+                         "sidecar")
+        with open(os.path.join(self.site, "index.html")) as f:
+            page = f.read()
+        self.assertIn('href="sidecar/pr/5198/"', page)
+        self.assertIn('href="cassandra/pr/5198/"', page)
+        self.assertLess(page.index('id="p-cassandra"'), page.index('id="p-sidecar"'))
+        self.assertIn('id="g-sidecar-', page)
+        self.assertIn('href="https://github.com/apache/cassandra-sidecar/pulls"', page)
+        self.assertIn('href="#p-sidecar"', page)  # project jump links when more than one project has reports
+
+    def test_one_project_has_no_jump_links(self):
+        site.merge(self.local(5198), self.site)
+        with open(os.path.join(self.site, "index.html")) as f:
+            self.assertNotIn('href="#p-cassandra"', f.read())
+
+    def legacy(self, number, **kw):
+        return make_report(os.path.join(self.site, "pr", str(number), "index.html"), number=number, **kw)
+
+    def test_migrates_legacy_layout_with_redirects(self):
+        self.legacy(5000, review=True)
+        self.legacy(5001)
+        rows, actions = site.merge(self.local(5198), self.site)
+        self.assertEqual(sorted(r["number"] for r in rows), [5000, 5001, 5198])
+        self.assertEqual(self.published(5000)["review"]["status"], "ran")
+        with open(os.path.join(self.site, "pr", "5000", "index.html")) as f:
+            stub = f.read()
+        self.assertIsNone(site._MODEL_RE.search(stub))
+        self.assertIn('url=../../cassandra/pr/5000/', stub)
+        self.assertIn('location.replace("../../cassandra/pr/5000/" + location.hash)', stub)
+        before = {n: open(os.path.join(self.site, *p)).read() for n, p in
+                  ((5000, ("pr", "5000", "index.html")), (5001, ("cassandra", "pr", "5001", "index.html")))}
+        self.assertEqual(site.migrate(self.site), [])  # idempotent: redirects carry no model
+        for n, p in ((5000, ("pr", "5000", "index.html")), (5001, ("cassandra", "pr", "5001", "index.html"))):
+            with open(os.path.join(self.site, *p)) as f:
+                self.assertEqual(f.read(), before[n])
+
+    def test_migration_keeps_a_richer_report_already_moved(self):
+        self.put(5000, review=True)
+        self.legacy(5000)
+        self.assertEqual(site.migrate(self.site), [5000])
+        self.assertEqual(self.published(5000)["review"]["status"], "ran")
 
     def put(self, number=5198, **kw):
-        make_report(os.path.join(self.site, "pr", str(number), "index.html"), number=number, **kw)
+        make_report(site.report_path(self.site, "cassandra", number), number=number, **kw)
 
     def published(self, number=5198):
-        return site.read_model(os.path.join(self.site, "pr", str(number), "index.html"))
+        return site.read_model(site.report_path(self.site, "cassandra", number))
 
     def test_never_deletes_published_reports_not_local(self):
         self.put(5000)
         rows, actions = site.merge(self.local(5198), self.site)
-        self.assertEqual(actions, {5198: "added"})
+        self.assertEqual(actions, {("cassandra", 5198): "added"})
         self.assertEqual([r["number"] for r in rows], [5198, 5000])
-        self.assertTrue(os.path.exists(os.path.join(self.site, "pr", "5000", "index.html")))
+        self.assertTrue(os.path.exists(site.report_path(self.site, "cassandra", 5000)))
         with open(os.path.join(self.site, "index.html")) as f:
-            self.assertIn('href="pr/5000/"', f.read())
+            self.assertIn('href="cassandra/pr/5000/"', f.read())
 
     def test_richer_published_report_kept_for_same_head(self):
         self.put(review=True)
         _, actions = site.merge(self.local(), self.site)
-        self.assertEqual(actions, {5198: "kept"})
+        self.assertEqual(actions, {("cassandra", 5198): "kept"})
         self.assertEqual(self.published()["review"]["status"], "ran")
 
     def test_published_build_result_counts_as_richer(self):
         self.put(build=True)
-        self.assertEqual(site.merge(self.local(), self.site)[1], {5198: "kept"})
+        self.assertEqual(site.merge(self.local(), self.site)[1], {("cassandra", 5198): "kept"})
 
     def test_new_head_replaces_richer_report(self):
         self.put(review=True)
         _, actions = site.merge(self.local(head="c" * 40), self.site)
-        self.assertEqual(actions, {5198: "replaced"})
+        self.assertEqual(actions, {("cassandra", 5198): "replaced"})
         self.assertEqual(self.published()["pr"]["head_sha"], "c" * 40)
         self.assertEqual(self.published()["review"]["status"], "not-run")
 
     def test_same_head_local_at_least_as_rich_replaces(self):
         self.put(review=True)
-        self.assertEqual(site.merge(self.local(review=True), self.site)[1], {5198: "replaced"})
+        self.assertEqual(site.merge(self.local(review=True), self.site)[1], {("cassandra", 5198): "replaced"})
 
     def test_local_with_build_replaces_plain_published(self):
         self.put()
-        self.assertEqual(site.merge(self.local(build=True), self.site)[1], {5198: "replaced"})
+        self.assertEqual(site.merge(self.local(build=True), self.site)[1], {("cassandra", 5198): "replaced"})
         self.assertEqual(self.published()["build"]["status"], "pass")
 
     def test_same_head_plain_replaces_plain(self):
         self.put()
-        self.assertEqual(site.merge(self.local(), self.site)[1], {5198: "replaced"})
+        self.assertEqual(site.merge(self.local(), self.site)[1], {("cassandra", 5198): "replaced"})
 
     def test_index_shows_review_and_build(self):
         self.put(review=True, build=True)
@@ -215,7 +270,7 @@ class Merge(unittest.TestCase):
 
     def test_published_heads(self):
         self.put(head="d" * 40)
-        self.assertEqual(site.published_heads(self.site), {5198: "d" * 40})
+        self.assertEqual(site.published_heads(self.site), {("cassandra", 5198): "d" * 40})
 
 
 if __name__ == "__main__":

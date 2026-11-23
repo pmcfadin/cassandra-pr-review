@@ -1,4 +1,4 @@
-"""A full clone of apache/cassandra, used for diffs, blame context, and base-branch files.
+"""A full clone of a project's repository (apache/cassandra, apache/cassandra-sidecar, ...), used for diffs, blame context, and base-branch files.
 
 A blobless partial clone is far smaller, but `git blame` then fetches historical blobs one at a
 time over the network: one blame of DatabaseDescriptor.java took over 8 minutes. A full clone
@@ -9,9 +9,6 @@ import os
 import re
 import subprocess
 
-from cpr import REPO
-
-REMOTE = f"https://github.com/{REPO}.git"
 
 
 class CloneError(Exception):
@@ -33,13 +30,17 @@ def base_ref(branch):
     return f"refs/remotes/origin/{branch}"
 
 
-def ensure(path, runner=subprocess.run):
-    """Create the clone on first use. Returns True when a new clone was made."""
+def remote(repo):
+    return f"https://github.com/{repo}.git"
+
+
+def ensure(path, repo="apache/cassandra", runner=subprocess.run):
+    """Create the clone of `repo` on first use. Returns True when a new clone was made."""
     if os.path.isdir(os.path.join(path, ".git")):
         return False
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     proc = runner(
-        ["git", "clone", "--no-checkout", REMOTE, path],
+        ["git", "clone", "--no-checkout", remote(repo), path],
         capture_output=True, text=True,
     )
     if proc.returncode != 0:

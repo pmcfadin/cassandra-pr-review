@@ -7,10 +7,27 @@ patch is ready to merge, what is missing and who has to act, and how hard it wil
 ## Usage
 
 ```
-bin/cpr review 5201              # fetch, check, and write reports/5201/index.html
+bin/cpr review 5201              # fetch, check, and write reports/cassandra/5201/index.html
 bin/cpr review 5201 --offline    # re-render from the cached ingest, no network
 bin/cpr review 5201 --model-out model.json   # also write the report model
 ```
+
+A PR of [apache/cassandra-sidecar](https://github.com/apache/cassandra-sidecar) or
+[apache/cassandra-analytics](https://github.com/apache/cassandra-analytics) is named `sidecar#397` or
+`analytics#260` (or `apache/cassandra-sidecar#397`, a PR URL, or `397 --project sidecar`). Their
+reports apply each project's own rules: the Gradle module layout, CASSSIDECAR and CASSANALYTICS keys,
+CI from the PR head's GitHub Actions checks (a first-time contributor's runs waiting for approval read
+"awaiting approval", not failed), checkstyle with the project's own config and version (sidecar 7.8.1,
+analytics 9.3), and the project's compatibility surfaces. Checks that are not part of their process
+(yaml pairing, nodetool, the upgrade-test CI profile, the lab plan, ...) read not-applicable.
+`/review-pr sidecar#397` runs the same six code review lenses with the Cassandra checklists, the
+project's own contributor guides from its trunk, and its standards file
+(`docs/research/{sidecar,analytics}-standards.md`). `cpr build sidecar#397` runs the project's Gradle build
+(resolved at the merge-base, then offline in the sandbox; Sidecar's in-JVM dtest jar is built from the Cassandra sha
+its own script pins) and the selected unit tests with JaCoCo. The published site,
+polling and `cpr comment` cover all three projects. Each project keeps its own data under
+`.work/pr/<project>/`, `.work/build-runs/<project>/` and `reports/<project>/`; data from before projects
+existed is moved there on the first run.
 
 For a full report with AI code review and build results, run `/review-pr 5201` in Claude Code from
 this repo. It runs `cpr prepare`, starts `cpr build` in the background when the author is a
@@ -26,7 +43,8 @@ bin/cpr tools install            # download and verify the pinned checkstyle and
 ```
 
 Requirements: Python 3.11+ (standard library only), `git`, and `gh` logged in. Builds need `ant`, a
-JDK, and macOS (`sandbox-exec`). The diff view comes from the rustyrazorblade `dev-skills` plugin
+JDK (11 and 17; Sidecar builds on 11, Analytics on 17), and macOS (`sandbox-exec`); Gradle comes from each
+project's own wrapper. The diff view comes from the rustyrazorblade `dev-skills` plugin
 (`/plugin install dev-skills@rustyrazorblade-plugins`); without it, the report shows a plain file
 list instead. Set `CPR_IDE_EXPLAIN` to point at a specific `generate-explain.py`.
 
@@ -43,14 +61,17 @@ build, and for a non-committer a new approval.
 ## Published reports
 
 Reports are published at <https://pmcfadin.github.io/cassandra-pr-review/>, with an index of every
-reviewed PR. To publish after reviewing:
+reviewed PR grouped by project. Each report is at `<project>/pr/<N>/` (`cassandra/pr/5201/`,
+`sidecar/pr/397/`, `analytics/pr/262/`); the older `pr/<N>/` links of Cassandra reports redirect to
+`cassandra/pr/<N>/`. To publish after reviewing:
 
 ```
-bin/publish-pages    # merges reports/ into the published site and pushes the gh-pages branch
+bin/publish-pages    # merges reports/<project>/ into the published site and pushes the gh-pages branch
 ```
 
 `bin/publish-pages` starts from the current `gh-pages` contents, so it never removes reports it does
-not have locally. For a PR in both places, a local report replaces the published one when the head
+not have locally. On a site from before projects existed it first moves `pr/<N>/` to `cassandra/pr/<N>/`
+and leaves a redirect in its place. For a PR in both places, a local report replaces the published one when the head
 differs, or when the head is the same and the local report is at least as rich (it has code review or
 build results, or the published one has neither). `main` never contains reports; the `gh-pages` branch
 holds only the generated site. It refuses to push a page that contains a local path.
@@ -60,23 +81,27 @@ To link a published report from the PR:
 ```
 bin/cpr comment 5201             # print the comment that would be posted
 bin/cpr comment 5201 --post      # post it as your gh account, or edit our earlier comment
+bin/cpr comment sidecar#397      # the same for a subproject PR, posted to its own repository
 ```
 
-`--post` asks for confirmation unless `--yes` is given.
+`--post` asks for confirmation unless `--yes` is given. The link points at the Pages site of this
+checkout's `origin` (set `CPR_PAGES_BASE` to the site root to override).
 
 ### Automatic refresh
 
 `.github/workflows/poll.yml` runs every six hours (and on manual dispatch, with a `limit` input). It
-lists open apache/cassandra PRs, picks those with no published report or a new head (newest first;
-drafts untouched for 30 days are skipped; 25 per run), runs the cheap pipeline for each (requirement
+lists the open PRs of apache/cassandra, apache/cassandra-sidecar and apache/cassandra-analytics, picks
+those with no published report or a new head (newest first; drafts untouched for 30 days are skipped;
+25 per project per run), runs the cheap pipeline for each (requirement
 checks, triage, static analysis, context, lab plan), and pushes the result to `gh-pages` with the
 default `GITHUB_TOKEN`. It runs no AI code review and no builds and posts no comments, so those
 sections read "not run" for a PR until you run `/review-pr` and `cpr build` and publish. A published
 report with code review or build results for the current head is never replaced by a plainer one; a
 new head replaces it. The index shows when each report was generated and whether code review ran.
 
-Locally, `cpr poll` prints what a run would pick (reading `origin/gh-pages`); `cpr poll --run --site DIR`
-refreshes a checkout of `gh-pages` the same way the workflow does.
+Locally, `cpr poll` prints what a run would pick for each project (reading `origin/gh-pages`;
+`--project sidecar` for one); `cpr poll --run --site DIR` refreshes a checkout of `gh-pages` the same way
+the workflow does.
 
 ## What the report checks
 
@@ -89,8 +114,8 @@ refreshes a checkout of `gh-pages` the same way the workflow does.
 | Code style | checkstyle-banned APIs (read from the base branch), licence headers, generated or bundled files, `@Deprecated(since=)` |
 | Static analysis | the project's checkstyle, PMD cognitive complexity, the full PMD rule catalog, and CPD duplicate code on changed Java files, split into introduced by the PR and already there |
 | Compatibility | both yaml files updated together, system properties, nodetool help fixtures, touched compatibility surfaces |
-| Build & coverage | the PR head compiles, selected unit tests pass, and which added `src/java` lines those tests ran (JaCoCo) |
-| Code review | six AI review lenses (standards and ticket, logic and boundaries, concurrency and lifecycle, persistence and compatibility, completeness, test regime), each applying checklists from apache/cassandra trunk |
+| Build & coverage | the PR head compiles, selected unit tests pass, and which added production lines those tests ran (JaCoCo; Ant for Cassandra, Gradle for the subprojects) |
+| Code review | six AI review lenses (standards and ticket, logic and boundaries, concurrency and lifecycle, persistence and compatibility, completeness, test regime), each applying checklists from apache/cassandra trunk (plus a subproject's own guides and standards) |
 | Reviews & votes | two committer +1s, matched against the public ASF roster |
 | Triage | informational: how hard the PR is to review (easy, moderate, hard) |
 | Context | informational: tickets that last changed this code (`git blame`), linked issues, and the people most experienced with each file |

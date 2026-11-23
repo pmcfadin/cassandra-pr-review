@@ -456,22 +456,33 @@ test("report and index share the design tokens and fonts", async ({ page }) => {
   expect(a.every(Boolean)).toBe(true);
 });
 
-test("index groups PRs by who acts next, with a count per group and chips only when something ran", async ({ page }) => {
+test("index has a section per project, groups PRs by who acts next, with a count per group and chips only when something ran", async ({ page }) => {
   const f = fixtures();
-  const titles = { reviewers: "Waiting on reviewers", contributor: "Waiting on the contributor", unknown: "Cannot tell yet", draft: "Drafts" };
+  const titles = { reviewers: "Waiting on reviewers", contributor: "Waiting on the contributor", unknown: "Cannot tell yet", draft: "Drafts", ready: "Ready for a committer" };
+  const names = { cassandra: "Cassandra", sidecar: "Cassandra Sidecar" };
+  expect(Object.keys(f.index_groups), "the fixture index has two projects").toEqual(["cassandra", "sidecar"]);
+  expect(Object.keys(f.index_groups.cassandra).length, "the fixture index has reports").toBeGreaterThan(1);
   for (const [width, height] of [[1280, 900], [390, 844]]) {
     await page.setViewportSize({ width, height });
     await page.goto(fileUrl(f.index));
-    for (const [key, n] of Object.entries(f.index_groups)) {
-      const sec = page.locator(`#g-${key}`);
-      await expect(sec.locator("h2")).toHaveText(titles[key]);
-      await expect(sec.locator(".group-head .count")).toHaveText(String(n));
-      await expect(sec.locator("li.item")).toHaveCount(n);
-      await expect(page.locator(`.stat[href="#g-${key}"] .count`)).toHaveText(String(n));
+    let groups = 0, total = 0;
+    for (const [slug, counts] of Object.entries(f.index_groups)) {
+      const proj = page.locator(`#p-${slug}`);
+      await expect(proj.locator(".project-head h2")).toHaveText(names[slug]);
+      const n = Object.values(counts).reduce((x, y) => x + y, 0);
+      await expect(page.locator(`.stat[href="#p-${slug}"] .count`)).toHaveText(String(n));
+      for (const [key, c] of Object.entries(counts)) {
+        const sec = proj.locator(`#g-${slug}-${key}`);
+        await expect(sec.locator("h3")).toHaveText(titles[key]);
+        await expect(sec.locator(".group-head .count")).toHaveText(String(c));
+        await expect(sec.locator("li.item")).toHaveCount(c);
+        await expect(proj.locator(`.stat[href="#g-${slug}-${key}"] .count`)).toHaveText(String(c));
+      }
+      groups += Object.keys(counts).length;
+      total += n;
     }
-    await expect(page.locator("section.group")).toHaveCount(Object.keys(f.index_groups).length);
+    await expect(page.locator("section.group")).toHaveCount(groups);
     // The recorded bundles have no code review and no build: each row carries the verdict pill and nothing else.
-    const total = Object.values(f.index_groups).reduce((x, y) => x + y, 0);
     await expect(page.locator("li.item")).toHaveCount(total);
     await expect(page.locator("li.item .chip")).toHaveCount(total);
     const row = page.locator('li.item[data-pr="5238"]');
@@ -481,7 +492,8 @@ test("index groups PRs by who acts next, with a count per group and chips only w
     await expect(page.locator('li.item[data-pr="5212"]')).toContainText("Next: Contributor");
     const over = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(over, `index overflow at ${width}`).toBeLessThanOrEqual(0);
-    await expect(page.locator('li.item[data-pr="5238"] a.main')).toHaveAttribute("href", "pr/5238/");
+    await expect(page.locator('li.item[data-pr="5238"] a.main')).toHaveAttribute("href", "cassandra/pr/5238/");
+    await expect(page.locator('#p-sidecar li.item[data-project="sidecar"] a.main')).toHaveAttribute("href", /^sidecar\/pr\/\d+\/$/);
   }
 });
 
@@ -560,4 +572,17 @@ test("PMD rules block says so when the catalog did not run", async ({ page }) =>
   await page.locator("#toggle-all").click();
   const blk = page.locator("#sec-static .blk", { has: page.locator("h3", { hasText: "PMD rules" }) });
   await expect(blk.locator(".empty")).toContainText("did not run");
+});
+
+test("a Sidecar report names its project and shows CI from the GitHub checks", async ({ page }) => {
+  await page.goto(fileUrl(fixtures().sidecar));
+  await expect(page).toHaveTitle(/— Cassandra Sidecar PR review$/);
+  await expect(page.locator("#nav-eyebrow")).toHaveText("Cassandra Sidecar PR review");
+  await head(page, "ci").click();
+  const ci = group(page, "ci");
+  await expect(ci.locator("tr.self")).toContainText("GitHub Actions (21 checks)");
+  await expect(ci).not.toContainText("CI summaries not matched to a branch");
+  await expect(ci).not.toContainText("Result archives");
+  await head(page, "testing").click();
+  await expect(group(page, "testing")).toContainText("Unit (src/test)");
 });

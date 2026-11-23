@@ -1,0 +1,220 @@
+{
+ "_comment": "apache/cassandra-sidecar: Gradle multi-module (server, client, client-common, adapters/*, ...), tests in src/{test,integrationTest,containerTest,testFixtures}. CASSANDRASC is the project's former JIRA key.",
+ "slug": "sidecar",
+ "repo": "apache/cassandra-sidecar",
+ "name": "Cassandra Sidecar",
+ "jira_keys": [
+  "CASSSIDECAR",
+  "CASSANDRASC"
+ ],
+ "key_digits": 1,
+ "bare_number_branch_key": false,
+ "paths": {
+  "prod": [
+   "(^|/)src/main/"
+  ],
+  "test": [
+   "(^|/)src/(test|integrationTest|containerTest|testFixtures)/",
+   "^(integration-tests|integration-framework|test-common)/"
+  ],
+  "test_resources": [
+   "(^|/)src/(test|integrationTest|containerTest|testFixtures)/resources/"
+  ],
+  "generated": [
+   "(^|/)build/generated/",
+   "\\.(db|bin)$"
+  ],
+  "doc": [
+   "^docs/",
+   "^(?!(.*/)?src/).*\\.(adoc|md)$"
+  ],
+  "build": [
+   "^\\.github/",
+   "^\\.circleci/",
+   "^gradle/",
+   "^scripts/",
+   "^githooks/",
+   "(^|/)build\\.gradle$",
+   "^settings\\.gradle$",
+   "^gradle\\.properties$",
+   "^gradlew(\\.bat)?$"
+  ],
+  "suites": [
+   [
+    "^integration-tests/",
+    "integration",
+    "Integration (integration-tests)"
+   ],
+   [
+    "(^|/)src/integrationTest/",
+    "integration",
+    "Integration (src/integrationTest)"
+   ],
+   [
+    "(^|/)src/test/integration/",
+    "integration",
+    "Integration (src/test/integration)"
+   ],
+   [
+    "(^|/)src/test/containerTest/",
+    "container",
+    "Container (src/test/containerTest)"
+   ],
+   [
+    "(^|/)src/containerTest/",
+    "container",
+    "Container (src/containerTest)"
+   ],
+   [
+    "(^|/)src/testFixtures/",
+    "fixtures",
+    "Test fixtures (src/testFixtures)"
+   ],
+   [
+    "(^|/)src/test/",
+    "unit",
+    "Unit (src/test)"
+   ]
+  ],
+  "subsystem": {
+   "kind": "module"
+  }
+ },
+ "ci_provider": "github-checks",
+ "disabled_checks": [
+  "compat.config-pairing",
+  "compat.system-properties",
+  "compat.nodetool-help",
+  "ci.profile",
+  "commit.perf-structure",
+  "static.deprecated-since",
+  "static.protected-paths"
+ ],
+ "labplan": false,
+ "docs_dir": "subprojects",
+ "commit_subject_key": "allowed",
+ "commands": {
+  "check": "`./gradlew codeCheckTasks`",
+  "checkstyle": "`./gradlew checkstyleMain checkstyleTest`",
+  "checkstyle_main": "`./gradlew checkstyleMain`",
+  "rat": "`./gradlew rat` runs the RAT licence check",
+  "ai_trailer_source": "the ASF Generative Tooling Guidance; apache/cassandra's AGENTS.md uses `Assisted-by: <agent>:<model>`",
+  "test_advice": "Add a test that fails without this change: a unit test under the module's src/test, or an integration test under src/integrationTest (see TESTING.md) for behaviour against a running Cassandra. If no test is possible, explain why on the ticket."
+ },
+ "static": {
+  "main": [
+   "(^|/)src/main/java/"
+  ],
+  "test": [
+   "(^|/)src/(test|integrationTest|containerTest|testFixtures)/java/"
+  ],
+  "exclude": [],
+  "baseline_roots": [],
+  "license_exempt": [
+   "(^|/)src/[^/]+/resources/"
+  ],
+  "protected": [],
+  "grammar": [],
+  "checkstyle": {
+   "tool": "checkstyle-7.8.1",
+   "files": [
+    "checkstyle.xml"
+   ],
+   "required": [
+    "checkstyle.xml"
+   ],
+   "configs": {
+    "main": "checkstyle.xml",
+    "test": "checkstyle.xml"
+   },
+   "properties": {}
+  }
+ },
+ "compat_surfaces": [
+  [
+   "REST API",
+   "^client-common/src/main/java/org/apache/cassandra/sidecar/common/(ApiEndpointsV\\d+\\.java|request/|response/|data/)"
+  ],
+  [
+   "configuration",
+   "^(conf/sidecar[^/]*\\.yaml|server/src/main/java/org/apache/cassandra/sidecar/config/)"
+  ],
+  [
+   "sidecar schema",
+   "^server/src/main/java/org/apache/cassandra/sidecar/db/schema/"
+  ],
+  [
+   "Cassandra adapters",
+   "^adapters/"
+  ],
+  [
+   "client (Java 8)",
+   "^(client|client-common|vertx-client|vertx-client-shaded)/src/main/"
+  ],
+  [
+   "authentication and authorization",
+   "^(vertx-auth-mtls/src/main/|server/src/main/java/org/apache/cassandra/sidecar/acl/)"
+  ],
+  [
+   "metrics",
+   "^server/src/main/java/org/apache/cassandra/sidecar/metrics/"
+  ],
+  [
+   "packaging",
+   "^(docker/|scripts/|server/src/main/dist/)"
+  ],
+  [
+   "dependencies",
+   "^(gradle\\.properties|gradle/.*|build\\.gradle|[^/]+/build\\.gradle|adapters/[^/]+/build\\.gradle)$"
+  ]
+ ],
+ "triage": {
+  "concurrency_paths": [
+   "server/src/main/java/org/apache/cassandra/sidecar/concurrent/",
+   "server/src/main/java/org/apache/cassandra/sidecar/coordination/",
+   "server/src/main/java/org/apache/cassandra/sidecar/tasks/",
+   "server/src/main/java/org/apache/cassandra/sidecar/job/",
+   "server/src/main/java/org/apache/cassandra/sidecar/restore/",
+   "server/src/main/java/org/apache/cassandra/sidecar/livemigration/",
+   "server/src/main/java/org/apache/cassandra/sidecar/cdc/"
+  ],
+  "hard_surfaces": [
+   "REST API",
+   "sidecar schema",
+   "client (Java 8)"
+  ]
+ },
+ "not_checked": [
+  "Sidecar's own Gradle checks (`codeCheckTasks`: checkstyle, RAT, SpotBugs where configured) were not run here; checkstyle ran on the changed files only, and SpotBugs results come in through the CI checks.",
+  "Tests are built and run only for committers' PRs (or a PR the owner approved) and only a selection of unit tests; integration, container and in-JVM dtest suites are not run.",
+  "CI evidence is the GitHub Actions check-runs of the PR head; failures are counted, not compared against known flaky tests.",
+  "Code review lenses read the diff; they do not build or run tests."
+ ],
+ "ci_branches": [
+  "trunk"
+ ],
+ "build": {
+  "tool": "gradle",
+  "jdk": 11,
+  "test_task": "test",
+  "skip_modules": ["integration-tests", "integration-framework", "docs"],
+  "dtest_jar": {
+   "declared_in": "test-common/build.gradle",
+   "pins": "scripts/build-dtest-jars.sh",
+   "shade": "scripts/build-shaded-dtest-jar-local.sh",
+   "into": "dtest-jars",
+   "jdk": 11
+  }
+ },
+ "lenses": {
+  "standards": "docs/research/sidecar-standards.md",
+  "testing_doc": "docs/report/subprojects/testing.md",
+  "guides": {
+   "CONTRIBUTING.md": ["cassandra-standards", "cass-concurrency-lifecycle", "cass-persistence-compat", "cass-completeness-symmetry"],
+   "TESTING.md": ["cassandra-standards", "cass-test-regime"],
+   "OPENAPI.md": ["cass-persistence-compat", "cass-completeness-symmetry"],
+   "docs/vertx-threading-model.md": ["cass-concurrency-lifecycle"]
+  },
+  "drop": [".claude/skills/cassandra-injvm-dtest/SKILL.md"]
+ }
+}

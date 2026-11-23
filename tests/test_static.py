@@ -290,7 +290,7 @@ class Runners(unittest.TestCase):
         self.root = os.path.join(self.d.name, "head")
         for rel in (SSTABLE, "src/java/Other.java"):
             write(self.root, rel, "class X {}\n")
-        self.cfgs = {"checkstyle.xml": "c", "checkstyle_suppressions.xml": "s"}
+        self.cfgs = {".build/checkstyle.xml": "cfg/checkstyle.xml", ".build/checkstyle_suppressions.xml": "cfg/checkstyle_suppressions.xml"}
 
     def tearDown(self):
         self.d.cleanup()
@@ -332,7 +332,7 @@ class Runners(unittest.TestCase):
         with open(props) as f:
             text = f.read()
         self.assertIn("checkstyle.log.dir=" + os.path.join(self.d.name, "head-main-log"), text)
-        self.assertIn("checkstyle.suppressions=s", text)
+        self.assertIn("checkstyle.suppressions=cfg/checkstyle_suppressions.xml", text)
         self.assertIn("-f", seen[0])
 
     def test_pmd_exit_codes(self):
@@ -574,7 +574,7 @@ class Analyze(unittest.TestCase):
             with mock.patch.object(inputs, "extract", side_effect=AssertionError("re-ran")):
                 second = sa.analyze(pr_bundle(self.repo, self.base), work, log=lambda m: None)
             self.assertEqual(first, second)
-            self.assertTrue(os.path.exists(os.path.join(work, "pr", "7", "h" * 40, "static", "results.json")))
+            self.assertTrue(os.path.exists(os.path.join(work, "pr", "cassandra", "7", "h" * 40, "static", "results.json")))
 
     def test_base_side_results_are_cached_per_blob(self):
         with tempfile.TemporaryDirectory() as d:
@@ -598,10 +598,10 @@ class Analyze(unittest.TestCase):
             boom = AssertionError("a tool ran during an offline replay")
             with mock.patch.object(run, "execute", side_effect=boom), mock.patch.object(sa, "analyze", side_effect=boom), \
                     mock.patch.object(tools, "install", side_effect=boom):
-                self.assertEqual(bundle_mod.load_cached(work, 9)["static_analysis"], saved)
+                self.assertEqual(bundle_mod.load_cached(work, "cassandra", 9)["static_analysis"], saved)
             old = {"pr": {"number": 10, "head_sha": "d" * 40}}
             bundle_mod.save(old, work)
-            replay = bundle_mod.load_cached(work, 10)["static_analysis"]
+            replay = bundle_mod.load_cached(work, "cassandra", 10)["static_analysis"]
             self.assertEqual(replay["status"], "unavailable")
 
 
@@ -615,7 +615,7 @@ def _smoke_env():
         tools.find_java(8, cfg)
     except tools.ToolError:
         return None
-    if not os.path.exists(bundle_mod.latest_bundle_path(work, 5201)):
+    if not os.path.exists(bundle_mod.latest_bundle_path(work, "cassandra", 5201)):
         return None
     return work
 
@@ -624,7 +624,7 @@ def _smoke_env():
 class RealPr5201(unittest.TestCase):
     def test_delete_is_simpler_and_nothing_is_introduced(self):
         work = _smoke_env()
-        b = bundle_mod.load_cached(work, 5201)
+        b = bundle_mod.load_cached(work, "cassandra", 5201)
         if not os.path.isdir(os.path.join(b["git"]["clone"], ".git")):
             self.skipTest("no clone")
         out = sa.analyze(b, work, log=lambda m: None)

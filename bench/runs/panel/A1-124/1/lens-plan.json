@@ -1,0 +1,87 @@
+{
+ "tier": "small",
+ "lines": 24,
+ "notes": [],
+ "lenses": {
+  "cass-logic-boundary": {
+   "status": "ok",
+   "files": [
+    "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/A1-124/1/refdir/.claude/skills/shallow-review/references/general/specialists/logic.md",
+    "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/A1-124/1/refdir/.claude/skills/shallow-review/references/general/specialists/boundary.md"
+   ],
+   "categories": [],
+   "focus": [],
+   "not_reviewed": [],
+   "missing": [],
+   "error": null
+  },
+  "cass-concurrency-lifecycle": {
+   "status": "ok",
+   "files": [
+    "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/A1-124/1/refdir/.claude/skills/shallow-review/references/general/specialists/concurrency.md"
+   ],
+   "categories": [],
+   "focus": [],
+   "not_reviewed": [],
+   "missing": [],
+   "error": null
+  },
+  "cass-persistence-compat": {
+   "status": "ok",
+   "files": [
+    "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/A1-124/1/refdir/.claude/skills/shallow-review/references/general/specialists/resources.md",
+    "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/A1-124/1/refdir/analytics/DEV-README.md"
+   ],
+   "categories": [],
+   "focus": [],
+   "not_reviewed": [],
+   "missing": [],
+   "error": null
+  },
+  "cass-completeness-symmetry": {
+   "status": "ok",
+   "files": [
+    "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/A1-124/1/refdir/.claude/skills/shallow-review/references/general/specialists/absence.md",
+    "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/A1-124/1/refdir/.claude/skills/shallow-review/references/general/specialists/completeness.md",
+    "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/A1-124/1/refdir/analytics/DEV-README.md"
+   ],
+   "categories": [],
+   "focus": [],
+   "not_reviewed": [],
+   "missing": [],
+   "error": null
+  },
+  "cass-test-regime": {
+   "status": "ok",
+   "files": [
+    "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/A1-124/1/refdir/analytics/DEV-README.md"
+   ],
+   "categories": [],
+   "focus": [],
+   "not_reviewed": [],
+   "missing": [],
+   "error": null
+  },
+  "cassandra-standards": {
+   "status": "ok",
+   "files": [
+    "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/A1-124/1/refdir/analytics/DEV-README.md"
+   ],
+   "categories": [],
+   "focus": [],
+   "not_reviewed": [],
+   "missing": [],
+   "error": null
+  }
+ },
+ "checklists": {
+  "sha": "66d056b803d5928bd5725e8291013914906390f1",
+  "refdir": "/Users/bb31784/dev/cassandra-pr-review/bench/runs/panel/A1-124/1/refdir",
+  "missing": [],
+  "guides": {
+   "repo": "apache/cassandra-analytics",
+   "sha": "55b6e4660150b0819dec72634a4d6af632f3e18a",
+   "missing": []
+  }
+ }
+}

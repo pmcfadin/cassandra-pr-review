@@ -2,9 +2,13 @@
 
 Layout of the output directory:
 
-    index.html            list of reports, newest first (rebuilt from pr/*/index.html)
-    pr/<N>/index.html     each report, copied unchanged
-    .nojekyll             serve files as-is
+    index.html                  list of reports by project (rebuilt from */pr/*/index.html)
+    <project>/pr/<N>/index.html each report, copied unchanged (cassandra, sidecar, analytics)
+    pr/<N>/index.html           redirect to cassandra/pr/<N>/, for links made before projects existed
+    .nojekyll                   serve files as-is
+
+A site from before projects existed kept Cassandra reports at pr/<N>/; `migrate` moves them and leaves
+the redirects.
 """
 
 import glob
@@ -14,7 +18,7 @@ import os
 import re
 import shutil
 
-from cpr import VERSION
+from cpr import VERSION, project as project_mod
 from cpr.model import ROLE_NAMES, derive_view
 from cpr.render import tokens_style
 
@@ -55,30 +59,93 @@ def replaces(published, local):
     return has_results(local) or not has_results(published)
 
 
+def model_slug(model):
+    """The report's project slug; reports rendered before projects existed are apache/cassandra."""
+    return (model.get("project") or {}).get("slug") or project_mod.DEFAULT
+
+
+def report_path(site_dir, slug, number):
+    return os.path.join(site_dir, slug, "pr", str(number), "index.html")
+
+
 def published_reports(site_dir):
-    """{PR number: report model} for every readable pr/<N>/index.html under site_dir."""
+    """{(project slug, PR number): report model} for every readable <project>/pr/<N>/index.html under site_dir."""
     out = {}
-    for path in glob.glob(os.path.join(site_dir, "pr", "*", "index.html")):
-        try:
-            model = read_model(path)
-        except (OSError, ValueError):
-            continue
-        if model:
-            out[model["pr"]["number"]] = model
+    for slug in project_mod.slugs():
+        for path in glob.glob(os.path.join(site_dir, slug, "pr", "*", "index.html")):
+            try:
+                model = read_model(path)
+            except (OSError, ValueError):
+                continue
+            if model and model_slug(model) == slug:
+                out[(slug, model["pr"]["number"])] = model
     return out
 
 
 def published_heads(site_dir):
-    return {n: m["pr"].get("head_sha") for n, m in published_reports(site_dir).items()}
+    return {k: m["pr"].get("head_sha") for k, m in published_reports(site_dir).items()}
 
 
-def merge_report(site_dir, report_path):
-    """Apply one local report to the site. Returns (number, action): added, replaced, kept, or skipped."""
-    local = read_model(report_path)
+def redirect_html(target):
+    """A page that sends the browser on to `target` (relative), keeping any #fragment."""
+    t = html.escape(target, quote=True)
+    js = json.dumps(target)
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Moved</title>
+<meta http-equiv="refresh" content="0; url={t}">
+<link rel="canonical" href="{t}">
+<script>location.replace({js} + location.hash);</script>
+</head>
+<body><p>This report moved to <a href="{t}">{t}</a>.</p></body>
+</html>
+"""
+
+
+def migrate(site_dir, log=lambda m: None):
+    """Move pre-project Cassandra reports from pr/<N>/ to cassandra/pr/<N>/ and leave a redirect. Idempotent.
+
+    A report already at the new place is kept when it is at least as rich (`replaces`). Returns the numbers moved.
+    """
+    moved = []
+    for path in sorted(glob.glob(os.path.join(site_dir, "pr", "*", "index.html"))):
+        number = os.path.basename(os.path.dirname(path))
+        if not number.isdigit():
+            continue
+        try:
+            model = read_model(path)
+        except (OSError, ValueError):
+            model = None
+        if model is None:
+            continue  # already a redirect, or not a report
+        if model_slug(model) != project_mod.DEFAULT:
+            continue
+        dest = report_path(site_dir, project_mod.DEFAULT, number)
+        current = read_model(dest) if os.path.exists(dest) else None
+        if replaces(current, model):
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            shutil.copyfile(path, dest)
+        with open(path, "w") as f:
+            f.write(redirect_html(f"../../{project_mod.DEFAULT}/pr/{number}/"))
+        moved.append(int(number))
+        log(f"moved pr/{number}/ to {project_mod.DEFAULT}/pr/{number}/")
+    return moved
+
+
+def merge_report(site_dir, report_path_):
+    """Apply one local report to the site. Returns ((slug, number), action): added, replaced, kept, or skipped."""
+    local = read_model(report_path_)
     if not local:
         return None, "skipped"
+    slug = model_slug(local)
+    try:
+        project_mod.load(slug)
+    except project_mod.ProjectError:
+        return None, "skipped"
     number = local["pr"]["number"]
-    dest = os.path.join(site_dir, "pr", str(number), "index.html")
+    dest = report_path(site_dir, slug, number)
     published = None
     if os.path.exists(dest):
         try:
@@ -86,16 +153,16 @@ def merge_report(site_dir, report_path):
         except (OSError, ValueError):
             published = None
     if published is not None and not replaces(published, local):
-        return number, "kept"
+        return (slug, number), "kept"
     os.makedirs(os.path.dirname(dest), exist_ok=True)
-    shutil.copyfile(report_path, dest)
-    return number, "added" if published is None else "replaced"
+    shutil.copyfile(report_path_, dest)
+    return (slug, number), "added" if published is None else "replaced"
 
 
 def rebuild_index(site_dir):
-    """Write index.html from every pr/<N>/index.html in the site. Returns the rows."""
+    """Write index.html from every <project>/pr/<N>/index.html in the site. Returns the rows."""
     rows = [summarize(m) for m in published_reports(site_dir).values()]
-    rows.sort(key=lambda r: r["number"], reverse=True)
+    rows.sort(key=lambda r: (r["project"], r["number"]), reverse=True)
     os.makedirs(site_dir, exist_ok=True)
     with open(os.path.join(site_dir, "index.html"), "w") as f:
         f.write(index_html(rows))
@@ -103,16 +170,18 @@ def rebuild_index(site_dir):
     return rows
 
 
-def merge(reports_dir, site_dir):
-    """Merge local reports into an existing site without deleting anything, then rebuild the index.
+def merge(reports_dir, site_dir, log=lambda m: None):
+    """Migrate the site's layout, merge local reports without deleting anything, then rebuild the index.
 
-    Returns (rows, actions) where actions maps PR number to added/replaced/kept.
+    Returns (rows, actions) where actions maps (project slug, PR number) to added/replaced/kept.
     """
+    migrate(site_dir, log)
     actions = {}
-    for path in sorted(glob.glob(os.path.join(reports_dir, "*", "index.html"))):
-        number, action = merge_report(site_dir, path)
-        if number is not None:
-            actions[number] = action
+    for slug in project_mod.slugs():
+        for path in sorted(glob.glob(os.path.join(reports_dir, slug, "*", "index.html"))):
+            key, action = merge_report(site_dir, path)
+            if key is not None:
+                actions[key] = action
     return rebuild_index(site_dir), actions
 
 
@@ -176,7 +245,7 @@ def summarize(model):
     if effort and lines is not None and files is not None:
         effort += f" · {_plural(lines, 'line')} in {_plural(files, 'file')}"
     return {
-        "number": pr["number"], "title": pr["title"], "author": pr["author"], "base": pr["base"],
+        "project": model_slug(model), "number": pr["number"], "title": pr["title"], "author": pr["author"], "base": pr["base"],
         "url": pr["url"], "jira": (model.get("jira_key") or {}).get("key"),
         "verdict": model["recommendation"]["verdict"], "label": verdict["headline"], "kind": CHIP_KIND.get(kind, "unknown"),
         "group": group, "must": todo.get("must_count") or 0, "fixes": todo.get("fix_count") or 0,
@@ -204,29 +273,46 @@ def index_html(rows):
         effort = f'<span class="effort">Review effort: {e(r["effort"])}</span>' if r["effort"] else ""
         chips = "".join(chip(*c) for c in (r["review_chip"], r["build_chip"]) if c)
         return f"""
-      <li class="item" data-pr="{e(r['number'])}">
-        <a class="main" href="pr/{e(r['number'])}/"><span class="num">#{e(r['number'])}</span><span class="title">{e(r['title'])}</span></a>
+      <li class="item" data-project="{e(r['project'])}" data-pr="{e(r['number'])}">
+        <a class="main" href="{e(r['project'])}/pr/{e(r['number'])}/"><span class="num">#{e(r['number'])}</span><span class="title">{e(r['title'])}</span></a>
         <div class="meta">{chip(r['kind'], r['label'])}{need}{acts}{effort}{chips}</div>
         <div class="sub">{e(r['author'])} into <code>{e(r['base'])}</code> · {jira} ·
           <a href="{e(r['url'])}">GitHub PR</a> · Updated {e(str(r['generated_at'])[:10])}</div>
       </li>"""
 
-    by_group = {key: [] for key, _, _ in GROUPS}
-    for r in rows:
-        by_group.setdefault(r["group"], []).append(r)
-    stats, sections = [], []
-    for key, title, hint in GROUPS:
-        items = sorted(by_group.get(key, []), key=lambda r: (str(r["generated_at"]), r["number"]), reverse=True)
-        if not items:
-            continue
-        stats.append(f'<a class="stat" href="#g-{key}"><span class="count">{len(items)}</span> {e(title)}</a>')
-        sections.append(f"""
-  <section class="card group" id="g-{key}" aria-labelledby="h-{key}">
-    <div class="group-head"><h2 id="h-{key}">{e(title)}</h2><span class="count">{len(items)}</span><p class="hint">{e(hint)}</p></div>
-    <ul>{"".join(row_html(r) for r in items)}
-    </ul>
-  </section>""")
-    body = "".join(sections) or '<p class="empty">No reports yet.<span class="why">Run <code>cpr review &lt;PR number&gt;</code> and publish to add one.</span></p>'
+    def project_html(proj, prows):
+        by_group = {key: [] for key, _, _ in GROUPS}
+        for r in prows:
+            by_group.setdefault(r["group"], []).append(r)
+        stats, sections = [], []
+        for key, title, hint in GROUPS:
+            items = sorted(by_group.get(key, []), key=lambda r: (str(r["generated_at"]), r["number"]), reverse=True)
+            if not items:
+                continue
+            gid = f"g-{proj.slug}-{key}"
+            stats.append(f'<a class="stat" href="#{gid}"><span class="count">{len(items)}</span> {e(title)}</a>')
+            sections.append(f"""
+    <section class="card group" id="{gid}" aria-labelledby="h-{gid}">
+      <div class="group-head"><h3 id="h-{gid}">{e(title)}</h3><span class="count">{len(items)}</span><p class="hint">{e(hint)}</p></div>
+      <ul>{"".join(row_html(r) for r in items)}
+      </ul>
+    </section>""")
+        return f"""
+  <section class="project" id="p-{e(proj.slug)}" aria-labelledby="h-p-{e(proj.slug)}">
+    <div class="project-head"><h2 id="h-p-{e(proj.slug)}">{e(proj.name)}</h2><span class="count">{e(_plural(len(prows), 'report'))}</span>
+      <a href="https://github.com/{e(proj.repo)}/pulls">Open PRs on GitHub</a></div>
+    <nav class="stats" aria-label="{e(proj.name)} groups">{"".join(stats)}</nav>{"".join(sections)}
+  </section>"""
+
+    order = [project_mod.DEFAULT] + [s for s in project_mod.slugs() if s != project_mod.DEFAULT]
+    projects = [project_mod.load(s) for s in order]
+    by_project = {p.slug: [r for r in rows if r["project"] == p.slug] for p in projects}
+    shown = [p for p in projects if by_project[p.slug]]
+    jump = "".join(f'<a class="stat" href="#p-{e(p.slug)}"><span class="count">{len(by_project[p.slug])}</span> {e(p.name)}</a>'
+                   for p in shown) if len(shown) > 1 else ""
+    repos = ", ".join(f'<a href="https://github.com/{e(p.repo)}/pulls">{e(p.repo)}</a>' for p in projects)
+    body = "".join(project_html(p, by_project[p.slug]) for p in shown) or \
+        '<p class="empty">No reports yet.<span class="why">Run <code>cpr review &lt;PR&gt;</code> and publish to add one.</span></p>'
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -247,7 +333,11 @@ h1 {{ font-size: var(--fs-h1); font-weight: 600; }}
 .stat {{ display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 12px; background: var(--panel); border: 1px solid var(--rule); border-radius: var(--r-card); color: var(--ink); text-decoration: none; font-size: var(--fs-md); font-weight: 500; }}
 .stat:hover {{ background: var(--hover); }}
 .group-head {{ display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 16px 20px; background: var(--soft); border-bottom: 1px solid var(--rule-2); }}
-.group-head h2 {{ font-size: var(--fs-lg); font-weight: 600; }}
+.group-head h3 {{ font-size: var(--fs-lg); font-weight: 600; }}
+.project {{ display: flex; flex-direction: column; gap: 12px; }}
+.project-head {{ display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-top: 12px; }}
+.project-head h2 {{ font-size: var(--fs-h2); font-weight: 600; }}
+.project-head .count {{ color: var(--ink-3); }}
 .group-head .hint {{ margin: 0; flex: 1 1 280px; color: var(--ink-3); font-size: var(--fs-md); }}
 ul {{ list-style: none; margin: 0; padding: 0; }}
 .item {{ padding: 14px 20px; border-bottom: 1px solid var(--rule-2); display: flex; flex-direction: column; gap: 6px; }}
@@ -274,9 +364,9 @@ footer {{ font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid va
   <header class="top">
     <div class="eyebrow">Cassandra PR review</div>
     <h1>Pull request reviews</h1>
-    <p class="lede">Reports on <a href="https://github.com/apache/cassandra/pulls">apache/cassandra</a> pull requests, grouped by who acts next.
+    <p class="lede">Reports on {repos} pull requests, by project and by who acts next.
       Each report is advisory; committers decide.</p>
-    <nav class="stats" aria-label="Groups">{"".join(stats)}</nav>
+    <nav class="stats" aria-label="Projects">{jump}</nav>
   </header>{body}
   <footer>Generated by <a href="https://github.com/pmcfadin/cassandra-pr-review">cassandra-pr-review</a> {e(VERSION)}.</footer>
 </main>
@@ -286,6 +376,6 @@ footer {{ font-size: var(--fs-sm); color: var(--ink-3); border-top: 1px solid va
 
 
 def build(reports_dir, out_dir):
-    """Write a site into out_dir from reports/<N>/index.html alone. Returns the rows."""
+    """Write a site into out_dir from reports/<project>/<N>/index.html alone. Returns the rows."""
     os.makedirs(out_dir, exist_ok=True)
     return merge(reports_dir, out_dir)[0]

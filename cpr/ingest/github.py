@@ -1,8 +1,7 @@
-"""Read-only GitHub access for apache/cassandra, via `gh api`."""
+"""Read-only GitHub access to a project's repository (`owner/name`), via `gh api`."""
 
 import urllib.parse
 
-from cpr import REPO
 from cpr.net import NetError, gh_json
 
 _TRAILERS = ("co-authored-by", "assisted-by", "generated-by", "signed-off-by")
@@ -25,12 +24,12 @@ def _user(u):
     return (u or {}).get("login")
 
 
-def fetch_pr(number, recorder):
+def fetch_pr(repo, number, recorder):
     try:
-        pr = gh_json(f"repos/{REPO}/pulls/{number}", recorder=recorder)
+        pr = gh_json(f"repos/{repo}/pulls/{number}", recorder=recorder)
     except NetError as e:
         if e.status == 404 or "Not Found" in str(e):
-            raise PRNotFound(f"#{number} is not a pull request on {REPO}") from e
+            raise PRNotFound(f"#{number} is not a pull request on {repo}") from e
         raise
     head = pr.get("head") or {}
     return {
@@ -58,8 +57,8 @@ def fetch_pr(number, recorder):
     }
 
 
-def fetch_commits(number, recorder):
-    raw = gh_json(f"repos/{REPO}/pulls/{number}/commits?per_page=100", recorder=recorder, paginate=True) or []
+def fetch_commits(repo, number, recorder):
+    raw = gh_json(f"repos/{repo}/pulls/{number}/commits?per_page=100", recorder=recorder, paginate=True) or []
     out = []
     for c in raw:
         commit = c.get("commit") or {}
@@ -75,8 +74,8 @@ def fetch_commits(number, recorder):
     return out
 
 
-def fetch_reviews(number, recorder):
-    raw = gh_json(f"repos/{REPO}/pulls/{number}/reviews?per_page=100", recorder=recorder, paginate=True) or []
+def fetch_reviews(repo, number, recorder):
+    raw = gh_json(f"repos/{repo}/pulls/{number}/reviews?per_page=100", recorder=recorder, paginate=True) or []
     return [{
         "user": _user(r.get("user")),
         "state": r.get("state"),
@@ -88,8 +87,8 @@ def fetch_reviews(number, recorder):
     } for r in raw]
 
 
-def fetch_review_comments(number, recorder):
-    raw = gh_json(f"repos/{REPO}/pulls/{number}/comments?per_page=100", recorder=recorder, paginate=True) or []
+def fetch_review_comments(repo, number, recorder):
+    raw = gh_json(f"repos/{repo}/pulls/{number}/comments?per_page=100", recorder=recorder, paginate=True) or []
     return [{
         "user": _user(r.get("user")),
         "association": r.get("author_association"),
@@ -101,8 +100,8 @@ def fetch_review_comments(number, recorder):
     } for r in raw]
 
 
-def fetch_issue_comments(number, recorder):
-    raw = gh_json(f"repos/{REPO}/issues/{number}/comments?per_page=100", recorder=recorder, paginate=True) or []
+def fetch_issue_comments(repo, number, recorder):
+    raw = gh_json(f"repos/{repo}/issues/{number}/comments?per_page=100", recorder=recorder, paginate=True) or []
     return [{
         "user": _user(r.get("user")),
         "association": r.get("author_association"),
@@ -112,17 +111,17 @@ def fetch_issue_comments(number, recorder):
     } for r in raw]
 
 
-def search_pr_numbers(key, recorder):
+def search_pr_numbers(repo, key, recorder):
     """PR numbers whose title or body mention `key` (comments are excluded by `in:title,body`)."""
-    q = urllib.parse.quote(f"repo:{REPO} is:pr {key} in:title,body")
+    q = urllib.parse.quote(f"repo:{repo} is:pr {key} in:title,body")
     pages = gh_json(f"search/issues?q={q}&per_page=50", recorder=recorder) or {}
     return [item["number"] for item in pages.get("items", []) if "pull_request" in item]
 
 
-def commit_emails_for(login, recorder):
-    """Emails on a user's recent commits to apache/cassandra, used to match ASF ids."""
+def commit_emails_for(repo, login, recorder):
+    """Emails on a user's recent commits to `repo`, used to match ASF ids."""
     try:
-        raw = gh_json(f"repos/{REPO}/commits?author={urllib.parse.quote(login)}&per_page=20", recorder=recorder) or []
+        raw = gh_json(f"repos/{repo}/commits?author={urllib.parse.quote(login)}&per_page=20", recorder=recorder) or []
     except NetError:
         return []
     emails = set()

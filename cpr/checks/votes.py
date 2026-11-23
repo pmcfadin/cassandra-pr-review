@@ -2,7 +2,6 @@
 
 import re
 
-from cpr import paths
 from cpr.checks import Result, check, ev
 
 _PLUS_ONE_RE = re.compile(r"(^|[\s(\[])\+1\b(?!\d)")
@@ -67,7 +66,7 @@ def collect_votes(bundle):
 @check("votes.committer-plus-ones", "Two committer +1s", "governance", "votes", blocking=True, owner="reviewer")
 def committer_votes(bundle, ctx):
     counted, others, author_vote = collect_votes(bundle)
-    test_only = bool(ctx.paths) and all(paths.is_test(p) for p in ctx.paths)
+    test_only = bool(ctx.paths) and all(ctx.classify.is_test(p) for p in ctx.paths)
     needed = 1 if test_only else 2
     if author_vote and not test_only:
         counted = {**counted, author_vote[0]: author_vote[1]}

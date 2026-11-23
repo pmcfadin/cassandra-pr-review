@@ -1,0 +1,31 @@
+{
+  "summary": "PR #176 (CASSANALYTICS-124) changes BufferingCommitLogReader so that `position` is seeded from startMarker.position() on restart, is advanced only when the section read normally, is set to log.maxOffset() on LEGACY_END_OF_SEGMENT_MARKER, and is set to maxOffset after the segment iterator is exhausted. It also adds test assertions in BufferingCommitLogReaderTests. Applied checklist: refdir shallow-review/references/general/specialists/concurrency.md, plus the lifecycle/ordering and state-update checks from the lens. The `### cass-concurrency-lifecycle` lens notes in the analytics standards file were not located by my search, so I applied only the unmarked items. The reader is single-threaded per instance, so there are no race or lock findings. The findings concern position-state updates across termination paths. Not reviewed: nothing (small tier, whole diff read).",
+  "spec_conformance": "partial",
+  "tests_ran": "none",
+  "tests_detail": "not run: review-only lens",
+  "findings": [
+    {
+      "id": "cl-1",
+      "severity": "major",
+      "impact": "hang",
+      "confidence": "medium",
+      "location": "cassandra-four-zero-bridge/src/main/java/org/apache/cassandra/db/commitlog/BufferingCommitLogReader.java:304",
+      "title": "Advance position on every section-termination path, not only the 0-marker one",
+      "rule": "State machine: a branch omits a side-effect that other branches perform (checklist 23, 19)",
+      "problem": "The new guard `if (statusTracker.shouldContinue()) position = filePointer` skips the update whenever readSection calls requestTermination(). The only termination path that now sets position itself is LEGACY_END_OF_SEGMENT_MARKER (line 447). Other paths also terminate and leave position stale: the 'Not enough bytes left for another mutation in this CommitLog section' early return (line ~436), which is the normal fewer-than-4-bytes tail case, and the tolerated-error branches that call requestTermination. In these cases the loop breaks, and the post-loop `shouldContinue()` block is also skipped. Position stays at the previous section end (or at 0, or at the start marker). Result.isFullyRead() (log.completed() && marker.position >= maxOffset) stays false for a completed log, and the listener is handed a stale marker. This is the same symptom as the bug being fixed: CdcScannerBuilder never moves past that log. Before the patch, position was always updated to the file pointer after each section.",
+      "fix": "Handle termination explicitly. Set position to reader.getFilePointer() for benign terminations such as the short tail, or set position to log.maxOffset() when a normal end-of-data termination is reached on a completed log. Keep the position unchanged only for real error terminations. Add a test with a segment whose last section ends fewer than 4 bytes from the end."
+    },
+    {
+      "id": "cl-2",
+      "severity": "major",
+      "impact": "data-loss",
+      "confidence": "low",
+      "location": "cassandra-four-zero-bridge/src/main/java/org/apache/cassandra/db/commitlog/BufferingCommitLogReader.java:325",
+      "title": "Do not jump position to maxOffset when the iterator ends before it",
+      "rule": "State read twice / ordering: derived state assumes a stable view (checklist 9, 19)",
+      "problem": "After the segment iterator is exhausted, position is set unconditionally to log.maxOffset() instead of the offset actually reached. For an in-progress (not completed) segment, the iterator can stop early on an unsynced or partially written trailing section. Position then jumps past bytes that were never read, and the marker handed to the caller or persisted CDC state skips them. On resume those mutations are never read. maxOffset is also read at a different time than the data, so it can differ from what was actually consumed.",
+      "fix": "Set position to the actual reader.getFilePointer() or the last fully consumed section end. Raise it to maxOffset only when log.completed() is true and the whole file was consumed."
+    }
+  ],
+  "approve": false
+}

@@ -1,36 +1,43 @@
 ---
 name: review-pr
-description: Full review of an apache/cassandra pull request - merge requirements plus a parallel panel of six Cassandra code review lenses that apply trusted checklists from apache/cassandra trunk - rendered into one HTML report. Use when the user says "review PR N", "/review-pr N", or asks for a code review report of a Cassandra PR.
-argument-hint: <PR number>
+description: Full review of a pull request of apache/cassandra, apache/cassandra-sidecar or apache/cassandra-analytics - merge requirements plus a parallel panel of six code review lenses that apply trusted checklists from apache/cassandra trunk (and the subproject's own guides) - rendered into one HTML report. Use when the user says "review PR N", "/review-pr N", "/review-pr sidecar#N", or asks for a code review report of a Cassandra, Sidecar or Analytics PR.
+argument-hint: <PR: 5201, sidecar#397 or analytics#262>
 ---
 
-# /review-pr <N>
+# /review-pr <PR>
 
-Produces `reports/<N>/index.html` with the requirement checks and code review findings. Read-only
+`<PR>` is a Cassandra PR number (`5201`) or a project-qualified one (`sidecar#397`, `analytics#262`,
+`apache/cassandra-sidecar#397`, or a pull request URL). Below, `<PR>` is that argument as given,
+`<project>` is the `project` slug from step 1 and `<N>` the PR number.
+
+Produces `reports/<project>/<N>/index.html` with the requirement checks and code review findings. Read-only
 everywhere: nothing is posted to GitHub or JIRA.
 
 ## 1. Prepare
 
 ```bash
-bin/cpr prepare <N>
+bin/cpr prepare <PR>
 ```
 
 It ingests the PR, checks the PR head out into a worktree, writes a context file, extracts the
-review checklists from apache/cassandra trunk into a trusted `refdir`, and prints JSON:
-`worktree`, `base` (merge-base sha), `head`, `jira_key`, `context_file`, `lens_dir`, `panel`
-(the lenses to run, from `cpr/config/panel.json`), `checklists` (`sha`, `refdir`, `missing`),
+review checklists from apache/cassandra trunk into a trusted `refdir` (for a Sidecar or Analytics PR,
+also that project's own guides from its trunk, under `refdir/<project>/`), and prints JSON:
+`project`, `repo`, `project_name`, `standards` and `testing_doc` (the project's standards and testing
+docs), `worktree`, `base` (merge-base sha), `head`, `jira_key`, `context_file`, `lens_dir`, `panel`
+(the lenses to run, from `cpr/config/panel.json`), `checklists` (`sha`, `refdir`, `missing`, and for a
+subproject `guides`: `repo`, `sha`, `missing`),
 `tier` (`none`, `small`, `medium`, `large`), and `bundle` (per lens: `status`, `files`,
 `categories`, `focus`, `not_reviewed`, `error`). Stop and report if it exits non-zero.
 
 The JSON also carries `author` and `author_is_committer` (from the committer roster). Building runs the
 PR author's code, so it is gated:
 
-- If `author_is_committer` is true, start `bin/cpr build <N>` **in the background** right away
+- If `author_is_committer` is true, start `bin/cpr build <PR>` **in the background** right away
   (`run_in_background`; it takes about 5 minutes and runs sandboxed) and let it run while the lenses work.
-  It saves `.work/build-runs/<N>/<head>/status.json`; step 4 reads it. Do not start a second build for the
+  It saves `.work/build-runs/<project>/<N>/<head>/status.json`; step 4 reads it. Do not start a second build for the
   same head.
 - If it is false, do not build. The report will say "Not built for this head". Tell the owner that they can
-  approve this exact head with `bin/cpr build <N> --approve` and then re-render (step 4).
+  approve this exact head with `bin/cpr build <PR> --approve` and then re-render (step 4).
 
 Delete any `*.json` already in `lens_dir` for this head sha before running lenses, so a stale lens
 output can never be merged.
@@ -47,11 +54,12 @@ lens with no `bundle` entry runs with an empty bundle. Each prompt is:
 
 ```
 Panel mode. worktree: <worktree>. base: <base>.
-change: "none — external apache/cassandra PR #<N> for <jira_key or 'no ticket'>; the contract is the ticket and PR description in the context file".
+change: "none — external <repo> PR #<N> for <jira_key or 'no ticket'>; the contract is the ticket and PR description in the context file".
+project: <project_name>
 context: <context_file>
-standards: <repo root>/docs/research/cassandra-standards.md
-testing_doc: <repo root>/docs/report/testing.md
-refdir: <checklists.refdir>   (trusted checklists, apache/cassandra trunk @ <checklists.sha>)
+standards: <standards>
+testing_doc: <testing_doc>
+refdir: <checklists.refdir>   (trusted checklists, apache/cassandra trunk @ <checklists.sha>; for a subproject also its guides, <checklists.guides.repo> trunk @ <checklists.guides.sha>)
 tier: <tier>
 bundle: <the lens's bundle entry as JSON: files, categories, focus, not_reviewed>
 Your lens: <entry.name> — <entry.focus>.
@@ -68,7 +76,8 @@ diff `git -C <worktree> diff <base>...HEAD` and the code it touches.
 Output EXACTLY the JSON review contract from your role definition (summary, spec_conformance,
 tests_ran, tests_detail, findings[{id, severity, impact, confidence, location, rule, problem, fix}],
 approve) and nothing else. Use file paths relative to the repo root with the new-file line number
-in `location`, e.g. src/java/org/apache/cassandra/db/Foo.java:123.
+in `location`, e.g. src/java/org/apache/cassandra/db/Foo.java:123 or
+server/src/main/java/org/apache/cassandra/sidecar/routes/FooHandler.java:45.
 ```
 
 If an agent type is not available (Claude Code loads project agents such as `cass-logic-boundary`
@@ -91,10 +100,10 @@ report shows; if it wrote none, render anyway and the section says "Not built fo
 inside `cpr review`.
 
 ```bash
-bin/cpr review <N> --lenses <lens_dir>
+bin/cpr review <PR> --lenses <lens_dir>
 ```
 
 This merges the lens outputs under the panel rules in `cpr/review.py` and writes the report. Tell
 the user the report path, the recommendation line, the per-lens status line it prints, and the build status
 (or that the PR was not built and how to approve it). Offer
-`open reports/<N>/index.html`.
+`open reports/<project>/<N>/index.html`.

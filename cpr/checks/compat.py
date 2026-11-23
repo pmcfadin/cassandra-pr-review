@@ -1,32 +1,21 @@
-"""Compatibility surfaces: config, system properties, protocol, CQL, nodetool, JMX/metrics, vtables."""
+"""Compatibility surfaces (the project's list: config, protocol, CQL, nodetool, ... for Cassandra; REST API,
+schema, adapters, ... for Sidecar; bridges and Avro schemas for Analytics), plus Cassandra's config checks."""
 
 import re
 
 from cpr.checks import Result, check, ev
 
-SURFACES = [
-    ("config", re.compile(r"^(conf/cassandra[^/]*\.yaml|src/java/org/apache/cassandra/config/Config\.java)$")),
-    ("native protocol", re.compile(r"^(src/java/org/apache/cassandra/transport/|doc/native_protocol)")),
-    ("CQL grammar", re.compile(r"^src/antlr/")),
-    ("CQL semantics", re.compile(r"^src/java/org/apache/cassandra/cql3/")),
-    ("messaging", re.compile(r"^src/java/org/apache/cassandra/net/")),
-    ("sstable format", re.compile(r"^src/java/org/apache/cassandra/io/sstable/")),
-    ("commitlog / hints", re.compile(r"^src/java/org/apache/cassandra/(db/commitlog|hints)/")),
-    ("schema / system tables", re.compile(r"^src/java/org/apache/cassandra/(schema/|db/SystemKeyspace)")),
-    ("nodetool", re.compile(r"^src/java/org/apache/cassandra/tools/nodetool/")),
-    ("JMX", re.compile(r"MBean\.java$")),
-    ("metrics", re.compile(r"^src/java/org/apache/cassandra/metrics/")),
-    ("virtual tables", re.compile(r"^src/java/org/apache/cassandra/db/virtual/")),
-    ("guardrails", re.compile(r"^src/java/org/apache/cassandra/db/guardrails/")),
-    ("dependencies", re.compile(r"^(\.build/(build-resolve|parent-pom-template|cassandra-deps-template|cassandra-build-deps-template)\.xml|lib/)")),
-]
 _SYSPROP_RE = re.compile(r"System\.(getProperty|setProperty|getenv)\s*\(|\b(Integer\.getInteger|Long\.getLong|Boolean\.getBoolean)\s*\(")
 
 
-def touched_surfaces(paths):
+def touched_surfaces(paths, project=None):
+    """{surface name: [paths]} for the project's surfaces (default apache/cassandra)."""
+    if project is None:
+        from cpr import project as project_mod
+        project = project_mod.load(project_mod.DEFAULT)
     out = {}
     for p in paths:
-        for name, rx in SURFACES:
+        for name, rx in project.compat_surfaces:
             if rx.search(p):
                 out.setdefault(name, []).append(p)
     return out
@@ -90,7 +79,7 @@ def nodetool_help(bundle, ctx):
 @check("compat.surfaces", "Compatibility surfaces touched", "compatibility", "compatibility", blocking=False,
        owner="reviewer")
 def surfaces(bundle, ctx):
-    found = touched_surfaces(ctx.paths)
+    found = touched_surfaces(ctx.paths, ctx.project)
     if not found:
         return Result("pass", "No public or on-disk compatibility surface touched")
     rows = [ev(f"**{name}**: " + ", ".join(f"`{p}`" for p in ps[:5]) + (f" (+{len(ps) - 5} more)" if len(ps) > 5 else ""))

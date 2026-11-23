@@ -174,7 +174,7 @@ class Coverage(unittest.TestCase):
 
 class Loading(unittest.TestCase):
     def write(self, work, data, head=SHA):
-        p = buildresult.status_path(work, 5198, head)
+        p = buildresult.status_path(work, "cassandra", 5198, head)
         os.makedirs(os.path.dirname(p))
         with open(p, "w") as f:
             json.dump(data, f)
@@ -182,21 +182,21 @@ class Loading(unittest.TestCase):
     def test_loads_only_the_current_head(self):
         with tempfile.TemporaryDirectory() as w:
             self.write(w, passing())
-            self.assertEqual(buildresult.load(w, 5198, SHA)["status"], "pass")
-            self.assertIsNone(buildresult.load(w, 5198, SHA2))
+            self.assertEqual(buildresult.load(w, "cassandra", 5198, SHA)["status"], "pass")
+            self.assertIsNone(buildresult.load(w, "cassandra", 5198, SHA2))
 
     def test_file_for_another_head_inside_the_dir_is_ignored(self):
         with tempfile.TemporaryDirectory() as w:
             self.write(w, passing(head=SHA2))
-            self.assertIsNone(buildresult.load(w, 5198, SHA))
+            self.assertIsNone(buildresult.load(w, "cassandra", 5198, SHA))
 
     def test_garbage_is_not_built(self):
         with tempfile.TemporaryDirectory() as w:
-            p = buildresult.status_path(w, 5198, SHA)
+            p = buildresult.status_path(w, "cassandra", 5198, SHA)
             os.makedirs(os.path.dirname(p))
             with open(p, "w") as f:
                 f.write("{not json")
-            self.assertIsNone(buildresult.load(w, 5198, SHA))
+            self.assertIsNone(buildresult.load(w, "cassandra", 5198, SHA))
 
     def test_build_report_reads_the_saved_run(self):
         with tempfile.TemporaryDirectory() as w:
